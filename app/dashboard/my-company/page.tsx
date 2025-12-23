@@ -12,6 +12,7 @@ export default function MyCompanyPage() {
   const [loading, setLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [notification, setNotification] = useState<{type: 'success' | 'error', show: boolean}>({type: 'success', show: false})
   
   const [formData, setFormData] = useState<CompanyInfo>({
     legalName: '',
@@ -76,19 +77,24 @@ export default function MyCompanyPage() {
   };
 
   const handleSave = async () => {
-    if (!currentUser) return;
-    
-    const success = await updateCompanyInfo(currentUser.uid, formData);
+    if (!currentUser) {
+      setNotification({type: 'error', show: true})
+      setTimeout(() => setNotification({type: 'error', show: false}), 5000)
+      return
+    }
+
+    const success = await updateCompanyInfo(currentUser.uid, formData)
     
     if (success) {
-      setOriginalData(formData); // Update the original data
-      setIsEditMode(false);
-      console.log('Company data saved successfully');
+      setOriginalData(formData)
+      setIsEditMode(false)
+      setNotification({type: 'success', show: true})
+      setTimeout(() => setNotification({type: 'success', show: false}), 5000)
     } else {
-      console.error('Failed to save company data');
-      // TODO: Show error message to user
+      setNotification({type: 'error', show: true})
+      setTimeout(() => setNotification({type: 'error', show: false}), 5000)
     }
-  };
+  }
 
   const handleCancel = () => {
     setFormData(originalData); // Revert to saved data
@@ -108,6 +114,43 @@ export default function MyCompanyPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
+      {notification.show && (
+        <div className="fixed top-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4 min-w-[400px] max-w-md">
+          <div className="flex items-start gap-3">
+            {notification.type === 'success' ? (
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="flex-shrink-0 w-6 h-6">
+                <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            )}
+            <div className="flex-1">
+              <h3 className="text-base font-semibold text-gray-900 mb-1">
+                {notification.type === 'success' ? 'Changes saved' : 'Changes not saved'}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {notification.type === 'success' 
+                  ? 'Your company information has been updated and is now live in your dashboard.' 
+                  : 'We couldn\'t save your updates—please try again, and if it keeps happening, check your connection.'}
+              </p>
+            </div>
+            <button 
+              onClick={() => setNotification({...notification, show: false})}
+              className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       <DashboardNav />
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
@@ -120,10 +163,10 @@ export default function MyCompanyPage() {
             {!isEditMode && (
               <button
                 onClick={() => setIsEditMode(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 bg-gray-100 hover:bg-gray-200 transition-colors"
+                className="rounded-full border-2 border-[#1B4A41] bg-white px-6 py-2 text-[#1B4A41] font-bold text-base leading-6 hover:bg-gray-50 flex items-center"
               >
-                <Edit2 className="w-4 h-4" />
-                <span className="font-semibold">Edit</span>
+                <Edit2 className="w-4 h-4 mr-2" />
+                <span>Edit</span>
               </button>
             )}
           </div>
@@ -144,10 +187,10 @@ export default function MyCompanyPage() {
                     name="legalName"
                     value={formData.legalName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                     {formData.legalName}
                   </div>
                 )}
@@ -164,10 +207,10 @@ export default function MyCompanyPage() {
                     name="websiteUrl"
                     value={formData.websiteUrl}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                     {formData.websiteUrl}
                   </div>
                 )}
@@ -184,10 +227,10 @@ export default function MyCompanyPage() {
                     name="yearFounded"
                     value={formData.yearFounded}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                     {formData.yearFounded}
                   </div>
                 )}
@@ -204,10 +247,10 @@ export default function MyCompanyPage() {
                     name="numEmployees"
                     value={formData.numEmployees}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                     {formData.numEmployees}
                   </div>
                 )}
@@ -224,10 +267,10 @@ export default function MyCompanyPage() {
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                     {formData.address}
                   </div>
                 )}
@@ -244,10 +287,10 @@ export default function MyCompanyPage() {
                     name="address2"
                     value={formData.address2}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                     {formData.address2 || '-'}
                   </div>
                 )}
@@ -266,10 +309,10 @@ export default function MyCompanyPage() {
                       name="city"
                       value={formData.city}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                     />
                   ) : (
-                    <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                    <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                       {formData.city}
                     </div>
                   )}
@@ -285,7 +328,7 @@ export default function MyCompanyPage() {
                       name="state"
                       value={formData.state}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                     >
                       <option>Maryland</option>
                       <option>Virginia</option>
@@ -295,7 +338,7 @@ export default function MyCompanyPage() {
                       <option>West Virginia</option>
                     </select>
                   ) : (
-                    <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                    <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                       {formData.state}
                     </div>
                   )}
@@ -312,10 +355,10 @@ export default function MyCompanyPage() {
                       name="zipCode"
                       value={formData.zipCode}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                     />
                   ) : (
-                    <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                    <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                       {formData.zipCode}
                     </div>
                   )}
@@ -339,7 +382,7 @@ export default function MyCompanyPage() {
                     name="businessService"
                     value={formData.businessService}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                   >
                     <option>Plumbing</option>
                     <option>HVAC</option>
@@ -350,7 +393,7 @@ export default function MyCompanyPage() {
                     <option>Landscaping</option>
                   </select>
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                     {formData.businessService}
                   </div>
                 )}
@@ -367,10 +410,10 @@ export default function MyCompanyPage() {
                     name="serviceArea"
                     value={formData.serviceArea}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
                     {formData.serviceArea}
                   </div>
                 )}

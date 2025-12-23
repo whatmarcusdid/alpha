@@ -1,8 +1,6 @@
-// lib/firebase.ts
 let firebaseExports: any = {};
 
 if (typeof window !== 'undefined') {
-  // Only import Firebase modules in the browser
   const { initializeApp, getApps, getApp } = require('firebase/app');
   const { getAuth } = require('firebase/auth');
   const { getFirestore } = require('firebase/firestore');
@@ -12,8 +10,8 @@ if (typeof window !== 'undefined') {
     authDomain: "tradesitegenie.firebaseapp.com",
     projectId: "tradesitegenie",
     storageBucket: "tradesitegenie.firebasestorage.app",
-    messagingSenderId: "692679763264",
-    appId: "1:692679763264:web:25bad17a7b382b7554c6a5",
+    messagingSenderId: "655550863852",
+    appId: "1:655550863852:web:3f1e3d0e3a40e3e8e3e3e3"
   };
 
   const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

@@ -1,6 +1,13 @@
 
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = require('firebase/firestore');
+  firestoreFunctions = { doc, getDoc, setDoc, updateDoc, serverTimestamp };
+}
 
 // Firestore data types
 interface UserMetrics {
@@ -60,8 +67,8 @@ export async function getUserData(userId: string): Promise<UserProfile | null> {
   }
   
   try {
-    const userDocRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
+    const userDocRef = firestoreFunctions.doc(db, 'users', userId);
+    const userDoc = await firestoreFunctions.getDoc(userDocRef);
     
     if (userDoc.exists()) {
       return userDoc.data() as UserProfile;
@@ -104,11 +111,11 @@ export async function initializeUserProfile(
   }
   
   try {
-    const userDocRef = doc(db, 'users', userId);
-    await setDoc(userDocRef, {
+    const userDocRef = firestoreFunctions.doc(db, 'users', userId);
+    await firestoreFunctions.setDoc(userDocRef, {
       email,
       displayName,
-      createdAt: serverTimestamp(),
+      createdAt: firestoreFunctions.serverTimestamp(),
       subscription: { tier: 'monthly', status: 'inactive' },
       metrics: getDefaultMetrics()
     });
@@ -130,9 +137,9 @@ export async function updateUserMetrics(
   }
   
   try {
-    const userDocRef = doc(db, 'users', userId);
-    await setDoc(userDocRef, {
-      metrics: { ...metrics, lastUpdated: serverTimestamp() }
+    const userDocRef = firestoreFunctions.doc(db, 'users', userId);
+    await firestoreFunctions.setDoc(userDocRef, {
+      metrics: { ...metrics, lastUpdated: firestoreFunctions.serverTimestamp() }
     }, { merge: true });
     return true;
   } catch (error) {
@@ -169,11 +176,11 @@ export async function updateCompanyInfo(
   }
   
   try {
-    const userDocRef = doc(db, 'users', userId);
-    await setDoc(userDocRef, {
+    const userDocRef = firestoreFunctions.doc(db, 'users', userId);
+    await firestoreFunctions.setDoc(userDocRef, {
       company: {
         ...companyInfo,
-        lastUpdated: serverTimestamp()
+        lastUpdated: firestoreFunctions.serverTimestamp()
       }
     }, { merge: true });
     return true;
