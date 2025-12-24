@@ -15,7 +15,7 @@ import {
   ChevronDown,
   LogOut
 } from 'lucide-react';
-import { TSGLogo } from '@/components/ui/TSGLogo';
+import { TSGLogo } from '@/components/ui/logo';
 
 const navItems = [
   { name: 'Home', href: '/dashboard', icon: Home },

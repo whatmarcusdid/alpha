@@ -1,5 +1,5 @@
 // components/layout/Header.tsx
-import { TSGLogo } from "@/components/ui/TSGLogo";
+import { TSGLogo } from "@/components/ui/logo";
 
 export function Header() {
   return (
