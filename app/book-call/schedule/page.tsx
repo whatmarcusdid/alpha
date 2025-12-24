@@ -39,7 +39,7 @@ export default function SchedulePage() {
       if (docSnap.exists()) {
         const data = docSnap.data() as BookingData
         console.log('Booking data loaded:', data)
-        setBookingData({ id, ...data })
+        setBookingData(data)
       } else {
         console.log('No booking data found, redirecting to /book-call')
         router.push('/book-call')

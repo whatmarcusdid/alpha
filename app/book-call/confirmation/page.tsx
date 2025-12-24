@@ -32,7 +32,7 @@ export default function ConfirmationPage() {
       const docSnap = await getDoc(docRef)
 
       if (docSnap.exists()) {
-        setBookingData({ id, ...(docSnap.data() as BookingData) })
+        setBookingData(docSnap.data() as BookingData)
       } else {
         router.push('/book-call')
       }
