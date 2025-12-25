@@ -52,7 +52,7 @@ export function DashboardNav() {
           e.stopPropagation();
           setShowDropdown(!showDropdown);
         }}
-        className="flex items-center space-x-2 min-w-[112px] min-h-[71px] justify-center hover:bg-gray-50 rounded-lg transition-colors"
+        className="flex items-center space-x-2 min-w-[112px] min-h-[71px] justify-center hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40 rounded-lg transition-colors"
       >
         <div className="w-8 h-8 rounded-full bg-[#1b4a41] flex items-center justify-center">
           <span className="text-white text-sm font-semibold">M</span>
@@ -108,8 +108,8 @@ export function DashboardNav() {
                     className={`
                       flex flex-col items-center min-w-[112px] min-h-[71px] justify-center rounded-lg text-sm font-medium transition-colors
                       ${isActive 
-                        ? 'bg-[#D9D5C5]/40 text-[#1B4A41] hover:bg-[#D9D5C5]/40' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-[#D9D5C5]/40 text-[#1B4A41]' 
+                        : 'text-gray-600 hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40'
                       }
                     `}>
                     <Icon className="h-5 w-5 mb-1" />
@@ -123,9 +123,13 @@ export function DashboardNav() {
               {userDropdown}
               <Link 
                 href="/dashboard/settings"
-                className={`flex items-center justify-center min-w-[112px] min-h-[71px] rounded-lg transition-colors ${pathname === '/dashboard/settings' ? 'bg-[#D9D5C5]/40 text-[#1B4A41]' : 'hover:bg-gray-50'}`}
+                className={`flex items-center justify-center min-w-[112px] min-h-[71px] rounded-lg transition-colors ${
+                  pathname === '/dashboard/settings' 
+                    ? 'bg-[#D9D5C5]/40 text-[#1B4A41]' 
+                    : 'text-gray-600 hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40'
+                }`}
               >
-                <Settings className="h-5 w-5 text-gray-600" />
+                <Settings className="h-5 w-5" />
               </Link>
             </div>
           </div>
@@ -138,7 +142,10 @@ export function DashboardNav() {
           <TSGLogo />
           <div className="flex items-center space-x-2">
             {userDropdown}
-            <Link href="/dashboard/settings">
+            <Link 
+              href="/dashboard/settings"
+              className="hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40 rounded-lg p-2 transition-colors"
+            >
               <Settings className="h-5 w-5 text-gray-600" />
             </Link>
           </div>
@@ -156,10 +163,13 @@ export function DashboardNav() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex flex-col items-center justify-center flex-1 h-full text-xs font-medium transition-colors ${isActive 
-                    ? 'text-[#1B4A41]' 
-                    : 'text-gray-600'
-                  }`}>
+                className={`
+                  flex flex-col items-center justify-center flex-1 h-full text-xs font-medium transition-colors
+                  ${isActive 
+                    ? 'bg-[#D9D5C5]/40 text-[#1B4A41]' 
+                    : 'text-gray-600 hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40'
+                  }
+                `}>
                 <Icon className="h-5 w-5 mb-1" />
                 <span>{item.name}</span>
               </Link>

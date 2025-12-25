@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   signInWithEmail,
   signInWithGoogle,
   signInWithApple,
+  handleRedirectResult,
 } from '@/lib/auth';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -24,33 +25,50 @@ export function SignInForm() {
   const [loading, setLoading] = useState(false);
   const [ssoLoading, setSsoLoading] = useState<'google' | 'apple' | null>(null);
 
-  const handleSignIn = async (signInMethod: () => Promise<any>) => {
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const user = await handleRedirectResult();
+        if (user) {
+          router.push('/dashboard');
+        }
+      } catch (error: any) {
+        setError(error.message);
+      }
+    };
+    checkRedirectResult();
+  }, [router]);
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      await signInMethod();
+      await signInWithEmail(email, password);
       router.push('/dashboard');
     } catch (error: any) {
       setError(error.message);
     } finally {
       setLoading(false);
-      setSsoLoading(null);
     }
-  };
-
-  const handleEmailSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleSignIn(() => signInWithEmail(email, password));
   };
 
   const handleGoogleSignIn = () => {
     setSsoLoading('google');
-    handleSignIn(signInWithGoogle);
+    setError(null);
+    signInWithGoogle().catch((error) => {
+      setError(error.message);
+      setSsoLoading(null);
+    });
   };
 
   const handleAppleSignIn = () => {
     setSsoLoading('apple');
-    handleSignIn(signInWithApple);
+    setError(null);
+    signInWithApple().catch((error) => {
+      setError(error.message);
+      setSsoLoading(null);
+    });
   };
 
   return (

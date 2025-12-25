@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z, ZodIssue } from "zod";
-import { TSGLogo } from "@/components/ui/logo";
+import { BookingLayout } from "@/components/layouts/booking-layout";
+import { BookingCard } from "@/components/ui/booking-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,21 +41,33 @@ export default function BookCallPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const tradeOptions = [
-    "Plumbing",
-    "HVAC",
-    "Electrical",
+    "Plumbing only",
+    "HVAC only",
+    "Electrical only",
+    "Multi-trade",
+    "General Contractor",
     "Roofing",
     "Painting",
     "Landscaping",
-    "General Contractor",
-    "Other",
+    "Pest Control",
+    "Junk Removal",
+    "Tree Service",
+    "Pressure Washing",
+    "Septic",
   ];
 
   const frustrationOptions = [
-    "Forms break randomly",
-    "It's slow on mobile",
-    "Get more calls",
-    "Rank better locally",
+    "Site is slow (especially on mobile)",
+    "Site goes down or breaks randomly",
+    "Contact forms don't work (leads get missed)",
+    "Too many spam leads / spam form submissions",
+    "Not showing up on Google (local search)",
+    "Website looks outdated / not professional",
+    "Hard to update content (I have to call someone)",
+    "Security concerns (hacks, malware, warnings)",
+    "Plugin/theme updates are risky (something always breaks)",
+    "Hosting issues (slow, unreliable, confusing)",
+    "I don't know what's wrong — I just know it's not working",
     "Other",
   ];
 
@@ -67,7 +80,6 @@ export default function BookCallPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Form submitted!");
     setIsLoading(true);
 
     const processedData = {
@@ -77,28 +89,19 @@ export default function BookCallPage() {
         : `https://${formData.websiteUrl}`,
     };
 
-    console.log("Processed data:", processedData);
-
     const result = bookingIntakeSchema.safeParse(processedData);
 
     if (!result.success) {
-      console.log("Validation errors:", result.error.issues);
       setErrors(result.error.issues);
       setIsLoading(false);
       return;
     }
 
-    console.log("Validation passed! Saving to Firestore...");
     setErrors([]);
 
     try {
       const docId = await saveBookingIntake(result.data);
-      console.log("Saved to Firestore with ID:", docId);
-
       sessionStorage.setItem("bookingIntakeId", docId);
-      console.log("Saved to sessionStorage:", docId);
-
-      console.log("Navigating to /book-call/schedule...");
       router.push("/book-call/schedule");
     } catch (error) {
       console.error("Error saving information:", error);
@@ -115,191 +118,268 @@ export default function BookCallPage() {
       : `https://${formData.websiteUrl}`,
   }).success;
 
-  useEffect(() => {
-    console.log("Current form data:", formData);
-    console.log("Is form valid:", isFormValid);
-  }, [formData, isFormValid]);
-
   return (
-    <div className="bg-stone-50 min-h-screen flex flex-col items-center justify-center py-12">
-      <div className="w-full max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-md">
-        <div className="flex justify-center mb-8">
-          <TSGLogo />
-        </div>
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Tell us a little about your business
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Help us make your Website Game Plan Call worth your time. This takes
-            2-3 minutes. Your answers let us tailor the plan to your goals.
-          </p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                className="min-h-[40px]"
-              />
-              {errors.find((e) => e.path[0] === "firstName") && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.find((e) => e.path[0] === "firstName")?.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                className="min-h-[40px]"
-              />
-              {errors.find((e) => e.path[0] === "lastName") && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.find((e) => e.path[0] === "lastName")?.message}
-                </p>
-              )}
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="businessName">Business Name</Label>
+    <BookingLayout>
+        <BookingCard>
+      {/* Page Header */}
+      <div className="w-full">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          Tell us a little about your business
+        </h1>
+        <p className="mt-3 text-base leading-relaxed text-gray-600">
+          Help us make your Website Game Plan Call worth your time. This takes
+          2-3 minutes. Your answers let us tailor the plan to your goals.
+        </p>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="w-full space-y-6">
+        <div>
+            <Label
+              htmlFor="firstName"
+              className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+            >
+              Business Owner First Name
+            </Label>
             <Input
-              id="businessName"
-              name="businessName"
-              value={formData.businessName}
+              id="firstName"
+              name="firstName"
+              value={formData.firstName}
               onChange={handleInputChange}
-              className="min-h-[40px]"
+              placeholder="Mike"
+              className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
             />
-            {errors.find((e) => e.path[0] === "businessName") && (
-              <p className="text-red-500 text-sm mt-1">
+            {errors.find((e) => e.path[0] === "firstName") && (
+              <p className="mt-2 text-sm text-red-600">
+                {errors.find((e) => e.path[0] === "firstName")?.message}
+              </p>
+            )}
+        </div>
+        <div>
+            <Label
+              htmlFor="lastName"
+              className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+            >
+              Business Owner Last Name
+            </Label>
+            <Input
+              id="lastName"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleInputChange}
+              placeholder="Johnson"
+              className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
+            />
+            {errors.find((e) => e.path[0] === "lastName") && (
+              <p className="mt-2 text-sm text-red-600">
+                {errors.find((e) => e.path[0] === "lastName")?.message}
+              </p>
+            )}
+        </div>
+
+        {/* Business Name */}
+        <div>
+          <Label
+            htmlFor="businessName"
+            className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+          >
+            Business name
+          </Label>
+          <Input
+            id="businessName"
+            name="businessName"
+            value={formData.businessName}
+            onChange={handleInputChange}
+            placeholder="Red Maple Plumbing"
+            className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
+          />
+          {errors.find((e) => e.path[0] === "businessName") && (
+              <p className="mt-2 text-sm text-red-600">
                 {errors.find((e) => e.path[0] === "businessName")?.message}
               </p>
             )}
-          </div>
-          <div>
-            <Label htmlFor="email">Business Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="mike@redmapleplumbing.com"
-              className="min-h-[40px]"
-            />
-            {errors.find((e) => e.path[0] === "email") && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.find((e) => e.path[0] === "email")?.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <Label htmlFor="websiteUrl">Website URL</Label>
-            <Input
-              id="websiteUrl"
-              name="websiteUrl"
-              value={formData.websiteUrl}
-              onChange={handleInputChange}
-              placeholder="https://example.com"
-              className="min-h-[40px]"
-            />
-            {errors.find((e) => e.path[0] === "websiteUrl") && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.find((e) => e.path[0] === "websiteUrl")?.message}
-              </p>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="tradeType">What is your trade?</Label>
-              <select
-                id="tradeType"
-                name="tradeType"
-                value={formData.tradeType}
-                onChange={handleInputChange}
-                className="w-full min-h-[40px] border-gray-300 rounded-md shadow-sm"
-              >
-                <option value="">Select your trade</option>
-                {tradeOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              {errors.find((e) => e.path[0] === "tradeType") && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.find((e) => e.path[0] === "tradeType")?.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="numEmployees">Number of Employees</Label>
-              <Input
-                id="numEmployees"
-                name="numEmployees"
-                type="text"
-                value={formData.numEmployees}
-                onChange={handleInputChange}
-                className="min-h-[40px]"
-              />
-              {errors.find((e) => e.path[0] === "numEmployees") && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.find((e) => e.path[0] === "numEmployees")?.message}
-                </p>
-              )}
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="biggestFrustration">
-              What's your single biggest frustration with your website?
+        </div>
+
+        {/* Business Email */}
+        <div>
+          <Label
+            htmlFor="email"
+            className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+          >
+            Business email
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            placeholder="mike@redmapleplumbing.com"
+            className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
+          />
+          {errors.find((e) => e.path[0] === "email") && (
+            <p className="mt-2 text-sm text-red-600">
+              {errors.find((e) => e.path[0] === "email")?.message}
+            </p>
+          )}
+        </div>
+
+        {/* Website URL */}
+        <div>
+          <Label
+            htmlFor="websiteUrl"
+            className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+          >
+            Business Website URL
+          </Label>
+          <Input
+            id="websiteUrl"
+            name="websiteUrl"
+            value={formData.websiteUrl}
+            onChange={handleInputChange}
+            placeholder="www.redmapleplumbing.com"
+            className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
+          />
+          {errors.find((e) => e.path[0] === "websiteUrl") && (
+            <p className="mt-2 text-sm text-red-600">
+              {errors.find((e) => e.path[0] === "websiteUrl")?.message}
+            </p>
+          )}
+        </div>
+        <div>
+            <Label
+              htmlFor="tradeType"
+              className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+            >
+              Trade / service type
             </Label>
             <select
-              id="biggestFrustration"
-              name="biggestFrustration"
-              value={formData.biggestFrustration}
+              id="tradeType"
+              name="tradeType"
+              value={formData.tradeType}
               onChange={handleInputChange}
-              className="w-full min-h-[40px] border-gray-300 rounded-md shadow-sm"
+              className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border border-[#B5B6B5] bg-white px-4 py-2.5 text-gray-900 shadow-sm transition-colors focus:border-green-500 focus:ring-green-500"
             >
-              <option value="">Select your biggest frustration</option>
-              {frustrationOptions.map((option) => (
+              <option value="" className="text-gray-400">
+                Please select one
+              </option>
+              {tradeOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
               ))}
             </select>
-            {errors.find((e) => e.path[0] === "biggestFrustration") && (
-              <p className="text-red-500 text-sm mt-1">
-                {
-                  errors.find((e) => e.path[0] === "biggestFrustration")
-                    ?.message
-                }
+            {errors.find((e) => e.path[0] === "tradeType") && (
+              <p className="mt-2 text-sm text-red-600">
+                {errors.find((e) => e.path[0] === "tradeType")?.message}
               </p>
             )}
           </div>
+          <div>
+            <Label
+              htmlFor="numEmployees"
+              className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+            >
+              Number of employees
+            </Label>
+            <Input
+              id="numEmployees"
+              name="numEmployees"
+              type="text"
+              value={formData.numEmployees}
+              onChange={handleInputChange}
+              placeholder="5"
+              className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
+            />
+            {errors.find((e) => e.path[0] === "numEmployees") && (
+              <p className="mt-2 text-sm text-red-600">
+                {errors.find((e) => e.path[0] === "numEmployees")?.message}
+              </p>
+            )}
+          </div>
+
+        {/* Biggest Frustration */}
+        <div>
+          <Label
+            htmlFor="biggestFrustration"
+            className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+          >
+            Biggest frustration with your website today
+          </Label>
+          <select
+            id="biggestFrustration"
+            name="biggestFrustration"
+            value={formData.biggestFrustration}
+            onChange={handleInputChange}
+            className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border border-[#B5B6B5] bg-white px-4 py-2.5 text-gray-900 shadow-sm transition-colors focus:border-green-500 focus:ring-green-500"
+          >
+            <option value="" className="text-gray-400">
+              Please select one
+            </option>
+            {frustrationOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          {errors.find((e) => e.path[0] === "biggestFrustration") && (
+            <p className="mt-2 text-sm text-red-600">
+              {
+                errors.find((e) => e.path[0] === "biggestFrustration")
+                  ?.message
+              }
+            </p>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex w-full justify-center pt-2">
           <Button
             type="submit"
-            className={`w-full min-h-[40px] rounded-md font-medium transition-colors ${
-              !isFormValid || isLoading
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-green-500 hover:bg-green-600 text-white"
-            }`}
             disabled={!isFormValid || isLoading}
+            className={`min-w-[264px] rounded-[360px] px-6 py-3 text-base font-semibold transition-all ${
+              !isFormValid || isLoading
+                ? "cursor-not-allowed bg-gray-200 text-gray-500"
+                : "bg-green-500 text-[#1B4A41] shadow-sm hover:bg-green-600 hover:shadow-md active:scale-[0.98]"
+            }`}
           >
-            {isLoading ? "Saving..." : "Continue to scheduling"}
+            {isLoading ? (
+               <span className="flex items-center justify-center">
+                <svg
+                  className="-ml-1 mr-3 h-5 w-5 animate-spin text-[#1B4A41]"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Saving...
+              </span>
+            ) : (
+              "Continue to scheduling"
+            )}
           </Button>
-        </form>
-        <p className="text-center text-gray-600 text-sm mt-8">
-          We keep this simple and confidential. We'll never share your
-          information, and we won't touch your website without permission.
-        </p>
-      </div>
-    </div>
+        </div>
+      </form>
+
+      {/* Privacy Notice */}
+      <p className="w-full text-center text-sm leading-relaxed text-gray-500">
+        We keep this simple and confidential. We'll never share your
+        information, and we won't touch your website without permission.
+      </p>
+      </BookingCard>
+    </BookingLayout>
   );
 }

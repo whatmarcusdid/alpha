@@ -10,7 +10,8 @@ if (typeof window !== 'undefined') {
     updateProfile,
     signInWithEmailAndPassword,
     GoogleAuthProvider,
-    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     signOut: firebaseSignOut,
     onAuthStateChanged,
     OAuthProvider,
@@ -21,7 +22,8 @@ if (typeof window !== 'undefined') {
     updateProfile,
     signInWithEmailAndPassword,
     GoogleAuthProvider,
-    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     firebaseSignOut,
     onAuthStateChanged,
     OAuthProvider,
@@ -77,24 +79,33 @@ async function signInWithEmail(email: string, password: string): Promise<User> {
   }
 }
 
-async function signInWithGoogle(): Promise<User> {
+async function signInWithGoogle(): Promise<void> {
   if (!auth) throw new Error("Firebase Auth is not available.");
   try {
     const provider = new authFunctions.GoogleAuthProvider();
-    const result = await authFunctions.signInWithPopup(auth, provider);
-    return result.user;
+    await authFunctions.signInWithRedirect(auth, provider);
   } catch (error) {
     throw new Error(getFriendlyErrorMessage(error));
   }
 }
 
-async function signInWithApple(): Promise<User> {
+async function signInWithApple(): Promise<void> {
   if (!auth) throw new Error("Firebase Auth is not available.");
   try {
     const provider = new authFunctions.OAuthProvider('apple.com');
-    const result = await authFunctions.signInWithPopup(auth, provider);
-    return result.user;
+    await authFunctions.signInWithRedirect(auth, provider);
   } catch (error) {
+    throw new Error(getFriendlyErrorMessage(error));
+  }
+}
+
+async function handleRedirectResult(): Promise<User | null> {
+  if (!auth) return null;
+  try {
+    const result = await authFunctions.getRedirectResult(auth);
+    return result?.user || null;
+  } catch (error) {
+    console.error("Redirect sign-in error:", error);
     throw new Error(getFriendlyErrorMessage(error));
   }
 }
@@ -131,6 +142,7 @@ export {
   signInWithEmail,
   signInWithGoogle,
   signInWithApple,
+  handleRedirectResult,
   signOut,
   onAuthStateChange,
   getFriendlyErrorMessage,
