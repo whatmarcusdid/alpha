@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveBookingIntake } from "@/lib/booking";
+import { addProspectToNotion } from "@/lib/notion";
 
 const bookingIntakeSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -102,10 +103,20 @@ export default function BookCallPage() {
     try {
       const docId = await saveBookingIntake(result.data);
       sessionStorage.setItem("bookingIntakeId", docId);
+
+      // Add to Notion Sales Pipeline (non-blocking)
+      try {
+        await addProspectToNotion(result.data);
+        console.log('✅ Added to Notion Sales Pipeline');
+      } catch (notionError) {
+        // Don't block the user flow if Notion fails
+        console.error('⚠️ Notion sync failed (non-blocking):', notionError);
+      }
+
       router.push("/book-call/schedule");
     } catch (error) {
-      console.error("Error saving information:", error);
-      alert("There was an error saving your information. Please try again.");
+      console.error("Error submitting form:", error);
+      alert("There was an error submitting your information. Please try again.");
     } finally {
       setIsLoading(false);
     }
