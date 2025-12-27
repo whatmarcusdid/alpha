@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChange } from '@/lib/auth';
-import { submitSupportRequest, AttachmentFile } from '@/lib/firestore/support';
+import { formatNotionProperties, NotionSupportRequest } from '@/lib/notion/support';
 import { uploadSupportAttachment, validateFile } from '@/lib/firebase/storage';
 import { DashboardNav } from '@/components/layout/DashboardNav';
 import {
@@ -13,6 +13,8 @@ import {
   PaperClipIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function SupportPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -21,10 +23,20 @@ export default function SupportPage() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState<{
-    type: 'success' | 'error';
     show: boolean;
+    type: 'success' | 'error';
     message: string;
-  }>({ type: 'success', show: false, message: '' });
+    subtitle?: string;
+  }>({ show: false, type: 'success', message: '' });
+
+  useEffect(() => {
+    if (notification.show) {
+      const timer = setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification.show]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChange((user) => {
@@ -36,14 +48,14 @@ export default function SupportPage() {
     return () => unsubscribe();
   }, []);
 
-  const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message, show: true });
-    setTimeout(() => setNotification((prev) => ({ ...prev, show: false })), 5000);
+  const handleCopyPhone = () => {
+    navigator.clipboard.writeText('(555) 123-4567');
+    setNotification({ show: true, type: 'success', message: 'Copied to clipboard!' });
   };
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    showNotification('success', `${label} copied!`);
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText('support@tradesitegenie.com');
+    setNotification({ show: true, type: 'success', message: 'Copied to clipboard!' });
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +76,7 @@ export default function SupportPage() {
     const validFiles = files.filter(file => {
         const validation = validateFile(file);
         if (!validation.valid) {
-            showNotification('error', validation.error || 'Invalid file.');
+            setNotification({ show: true, type: 'error', message: 'Invalid File', subtitle: validation.error });
             return false;
         }
         return true;
@@ -82,53 +94,177 @@ export default function SupportPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-        showNotification('error', 'You must be logged in to submit a request.');
+     e.preventDefault();
+     if (!user) {
+       setNotification({
+         show: true,
+         type: 'error',
+         message: 'Support form submission failed',
+         subtitle: 'You must be logged in to submit a request.'
+       });
+       return;
+     }
+     if (!description.trim()) {
+       setNotification({
+         show: true,
+         type: 'error',
+         message: 'Support form submission failed',
+         subtitle: 'Please provide a description of the issue.'
+       });
+       return;
+     }
+
+     setIsSubmitting(true);
+
+     try {
+       // Upload attachments to Firebase Storage first
+       const uploadedUrls: string[] = [];
+       
+       for (const file of attachments) {
+         // Generate a unique filename with timestamp
+         const timestamp = Date.now();
+         const fileName = `${timestamp}-${file.name}`;
+         const storageRef = ref(storage, `support-attachments/${fileName}`);
+         
+         // Upload file
+         await uploadBytes(storageRef, file);
+         
+         // Get download URL
+         const downloadUrl = await getDownloadURL(storageRef);
+         uploadedUrls.push(downloadUrl);
+       }
+
+       // Send support request to Zapier webhook for Notion automation
+      const zapierWebhookUrl = process.env.NEXT_PUBLIC_ZAPIER_WEBHOOK_URL;
+
+      if (!zapierWebhookUrl) {
+        console.error('⚠️ Zapier webhook URL not configured');
+        setNotification({
+         show: true,
+         type: 'error',
+         message: 'Support form submission failed',
+         subtitle: 'Configuration error. Please contact support.'
+       });
         return;
-    }
-    if (!description.trim()) {
-        showNotification('error', 'Please provide a description.');
-        return;
-    }
+      }
 
-    setIsSubmitting(true);
+      try {
+        const webhookPayload = {
+          // Basic info
+          customerEmail: requestFromEmail,
+          description: description,
+          submittedAt: new Date().toISOString(),
+          
+          // Attachments
+          attachmentUrls: uploadedUrls,
+          attachmentCount: uploadedUrls.length,
+          
+          // Formatted attachment list for Notion description
+          attachmentList: uploadedUrls.length > 0 
+            ? uploadedUrls.map((url, index) => {
+                const fileName = url.split('/').pop()?.split('?')[0] || `attachment-${index + 1}`;
+                return `[${decodeURIComponent(fileName)}](${url})`;
+              }).join('\n')
+            : '',
+          
+          // Pre-formatted fields for easy Notion mapping
+          notionTitle: `Support Request from ${requestFromEmail}`,
+          notionDescription: description + (uploadedUrls.length > 0 
+            ? '\n\n**Attachments:**\n' + uploadedUrls.map((url, index) => {
+                const fileName = url.split('/').pop()?.split('?')[0] || `attachment-${index + 1}`;
+                return `- [${decodeURIComponent(fileName)}](${url})`;
+              }).join('\n')
+            : ''),
+          notionType: 'Support Ticket',
+          notionStatus: 'New',
+          notionPriority: 'Medium',
+          notionAssignedTo: 'Unassigned',
+          notionCreatedDate: new Date().toISOString().split('T')[0],
+          notionReportedDate: new Date().toISOString().split('T')[0],
+        };
 
-    try {
-        // Create a temporary request to get an ID
-        const tempRequest = await submitSupportRequest(user.uid, requestFromEmail, description, []);
-        if (!tempRequest.success || !tempRequest.requestId) {
-            throw new Error(tempRequest.error || 'Failed to create support request.');
+        console.log('📤 Sending to Zapier:', webhookPayload);
+
+        const response = await fetch('/api/zapier-webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(webhookPayload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Zapier webhook failed: ${response.status}`);
         }
 
-        const uploadedAttachments: AttachmentFile[] = [];
-        for (const file of attachments) {
-            const upload = await uploadSupportAttachment(file, tempRequest.requestId);
-            if (upload.success && upload.attachment) {
-                uploadedAttachments.push(upload.attachment);
-            } else {
-                throw new Error(upload.error || `Failed to upload ${file.name}`);
-            }
-        }
-        
-        // Finalize request with attachment data
-        const finalResult = await submitSupportRequest(user.uid, requestFromEmail, description, uploadedAttachments);
-        if (!finalResult.success) {
-            throw new Error(finalResult.error || 'Failed to finalize support request.');
-        }
-
-        showNotification('success', 'Support request submitted successfully!');
+        console.log('✅ Support request sent to Zapier successfully');
+        setNotification({ 
+         show: true, 
+         type: 'success', 
+         message: 'Support form submitted successfully' 
+       });
         resetForm();
 
-    } catch (error: any) {
-        showNotification('error', error.message || 'An unknown error occurred.');
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
+      } catch (webhookError: any) {
+        console.error('❌ Zapier webhook error:', webhookError);
+        setNotification({
+         show: true,
+         type: 'error',
+         message: 'Support form submission failed',
+         subtitle: "We couldn't submit your form—please try again, and if it keeps happening, check your connection."
+       });
+      }
+
+     } catch (error: any) {
+       console.error('Submission error:', error);
+       setNotification({ show: true, type: 'error', message: 'Submission Error', subtitle: error.message || 'Failed to submit support request. Please try again.' });
+     } finally {
+       setIsSubmitting(false);
+     }
+   };
 
   return (
     <>
+      {notification.show && (
+     <div className="fixed top-4 right-4 z-50 animate-fade-in">
+       <div className="bg-white rounded-lg shadow-lg px-6 py-4 flex items-start gap-4 min-w-[400px] max-w-[500px]">
+         {/* Icon */}
+         <div className="flex-shrink-0 mt-0.5">
+           {notification.type === 'success' ? (
+             <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4"/>
+             </svg>
+           ) : (
+             <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+               <path d="M12 2L1 21h22L12 2zm0 3.5L19.5 19h-15L12 5.5zM11 10v4h2v-4h-2zm0 5v2h2v-2h-2z"/>
+             </svg>
+           )}
+         </div>
+         
+         {/* Content */}
+         <div className="flex-1">
+           <p className="font-semibold text-[#232521]">
+             {notification.message}
+           </p>
+           {notification.subtitle && (
+             <p className="text-sm mt-1 text-[#232521]">
+               {notification.subtitle}
+             </p>
+           )}
+         </div>
+         
+         {/* Close Button */}
+         <button
+           onClick={() => setNotification({ show: false, type: 'success', message: '' })}
+           className="flex-shrink-0 text-[#737373] hover:text-[#232521] transition-colors"
+         >
+           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+           </svg>
+         </button>
+       </div>
+     </div>
+   )}
+
       <div className="min-h-screen bg-[#F7F6F1] p-4">
         <DashboardNav />
         <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -144,21 +280,21 @@ export default function SupportPage() {
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><PhoneIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                       <p className="font-semibold">(555) 123-4567</p>
                       <p className="text-xs text-gray-500">Mon–Fri, 9 AM–5 PM EST</p>
-                      <a href="tel:+15551234567" className="mt-4 px-4 py-2 text-sm font-semibold text-[#1b4a41] bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition">Call</a>
+                      <a href="tel:+15551234567" className="mt-2 px-4 py-2 rounded-full border-2 border-[#1B4A41] bg-white text-[#1B4A41] font-semibold hover:bg-gray-50 transition-colors">Call Number</a>
                   </div>
                   {/* Text Us */}
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                       <p className="font-semibold">(555) 123-4567</p>
                       <p className="text-xs text-gray-500">Anytime</p>
-                      <button onClick={() => copyToClipboard('(555) 123-4567', 'Number')} className="mt-4 px-4 py-2 text-sm font-semibold text-[#1b4a41] bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition">Copy Number</button>
+                      <button onClick={handleCopyPhone} className="mt-2 px-4 py-2 rounded-full border-2 border-[#1B4A41] bg-white text-[#1B4A41] font-semibold hover:bg-gray-50 transition-colors">Copy Number</button>
                   </div>
                   {/* Email Us */}
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                       <p className="font-semibold">support@tradesitegenie.com</p>
                       <p className="text-xs text-gray-500">Anytime</p>
-                      <button onClick={() => copyToClipboard('support@tradesitegenie.com', 'Email')} className="mt-4 px-4 py-2 text-sm font-semibold text-[#1b4a41] bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition">Copy Email</button>
+                      <button onClick={handleCopyEmail} className="mt-2 px-4 py-2 rounded-full border-2 border-[#1B4A41] bg-white text-[#1B4A41] font-semibold hover:bg-gray-50 transition-colors">Copy Email</button>
                   </div>
               </div>
           </div>
@@ -219,18 +355,6 @@ export default function SupportPage() {
           </div>
         </main>
       </div>
-
-      {/* Notification Toast */}
-      {notification.show && (
-        <div className={`fixed top-5 right-5 w-full max-w-sm rounded-lg shadow-lg p-4 text-white ${notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
-          <div className="flex items-center justify-between">
-            <p className="font-medium">{notification.message}</p>
-            <button onClick={() => setNotification({ ...notification, show: false })} className="p-1 rounded-full hover:bg-white/20">
-              <XMarkIcon className="h-5 w-5"/>
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

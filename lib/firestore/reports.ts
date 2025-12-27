@@ -7,7 +7,7 @@ export interface Report {
   createdDate: Date;
   updatedDate: Date;
   fileUrl: string;
-  type: string;
+  type: 'performance' | 'traffic';
 }
 
 let firestoreFunctions: any = {};
@@ -59,7 +59,7 @@ export async function getReportsForUser(userId: string): Promise<Report[]> {
           ? data.createdDate.toDate() 
           : new Date(),
         updatedDate: data.updatedDate instanceof firestoreFunctions.Timestamp 
-          ? data.updatedAt.toDate() 
+          ? data.updatedDate.toDate()  // ✅ FIXED: Changed from updatedAt to updatedDate
           : new Date(),
         fileUrl: data.fileUrl,
         type: data.type,

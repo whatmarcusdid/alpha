@@ -2,13 +2,14 @@ import { app } from '@/lib/firebase';
 import type { AttachmentFile } from '@/lib/firestore/support';
 
 let storageFunctions: any = {};
+let storage: any = null;
 
 const MAX_FILE_SIZE_BYTES = 52428800; // 50 MB
 const ALLOWED_FILE_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
 
 if (typeof window !== 'undefined') {
   const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
-  const storage = getStorage(app);
+  storage = getStorage(app);
   storageFunctions = {
     storage,
     ref,
@@ -66,3 +67,5 @@ export async function uploadSupportAttachment(
     return { success: false, error: 'Failed to upload file. Please try again.' };
   }
 }
+
+export { storage };
