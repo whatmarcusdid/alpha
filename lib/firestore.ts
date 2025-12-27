@@ -88,10 +88,21 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
   }
   
   try {
-    const userData = await getUserData(userId);
-    if (userData && userData.metrics) {
-      return userData.metrics;
+    const userDocRef = firestoreFunctions.doc(db, 'users', userId);
+    const userDoc = await firestoreFunctions.getDoc(userDocRef);
+    
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      
+      // Read from 'stats' map in Firestore
+      return {
+        websiteTraffic: data.stats?.websiteTraffic || 0,
+        averageSiteSpeed: data.stats?.siteSpeedSeconds || 0,
+        supportHoursRemaining: data.stats?.supportHoursRemaining || 0,
+        maintenanceHoursRemaining: data.stats?.maintenanceHoursRemaining || 0
+      };
     }
+    
     return getDefaultMetrics();
   } catch (error) {
     console.error('Error fetching user metrics:', error);

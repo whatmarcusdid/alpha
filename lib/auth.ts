@@ -15,6 +15,7 @@ if (typeof window !== 'undefined') {
     signOut: firebaseSignOut,
     onAuthStateChanged,
     OAuthProvider,
+    updateEmail,
   } = require("firebase/auth");
 
   authFunctions = {
@@ -27,6 +28,7 @@ if (typeof window !== 'undefined') {
     firebaseSignOut,
     onAuthStateChanged,
     OAuthProvider,
+    updateEmail,
   };
 }
 
@@ -39,6 +41,7 @@ type AuthErrorCode =
   | "auth/email-already-in-use"
   | "auth/popup-closed-by-user"
   | "auth/cancelled-popup-request"
+  | "auth/requires-recent-login"
   | "auth/account-exists-with-different-credential";
 
 const authErrorMap: Record<AuthErrorCode, string> = {
@@ -49,6 +52,7 @@ const authErrorMap: Record<AuthErrorCode, string> = {
   "auth/email-already-in-use": "This email is already in use by another account.",
   "auth/popup-closed-by-user": "Sign-in process was cancelled. Please try again.",
   "auth/cancelled-popup-request": "Sign-in process was cancelled. Please try again.",
+  "auth/requires-recent-login": "Please log out and log back in, then try updating your email again",
   "auth/account-exists-with-different-credential": "An account already exists with this email address. Please sign in using the method you originally used."
 };
 
@@ -57,6 +61,32 @@ function getFriendlyErrorMessage(error: any): string {
 }
 
 // --- AUTHENTICATION FUNCTIONS ---
+
+export async function updateUserEmail(newEmail: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (typeof window === 'undefined') {
+      return { success: false, error: 'This function can only be called in the browser' };
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'No user is currently logged in' };
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return { success: false, error: 'Invalid email format' };
+    }
+
+    await authFunctions.updateEmail(user, newEmail);
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error updating email:', error);
+    return { success: false, error: getFriendlyErrorMessage(error) };
+  }
+}
 
 async function signUpWithEmail(email: string, password: string, displayName: string): Promise<User> {
   if (!auth) throw new Error("Firebase Auth is not available.");

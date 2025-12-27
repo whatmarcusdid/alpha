@@ -61,22 +61,24 @@ export function DashboardNav() {
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-          <div className="px-4 py-3 flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-[#1b4a41] flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-semibold">M</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">Marcus White</p>
-              <p className="text-sm text-gray-500 truncate">whitem0824@gmail.com</p>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200 my-2"></div>
-
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+            <Link 
+              href="/dashboard/profile"
+              className="block px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-200"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#1b4a41] flex items-center justify-center text-white font-semibold">
+                  M
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-[#232521]">Marcus White</div>
+                  <div className="text-sm text-gray-600">whitem0824@gmail.com</div>
+                </div>
+              </div>
+            </Link>
           <button
             onClick={handleSignOut}
-            className="w-full px-4 py-2 text-left flex items-center space-x-2 hover:bg-gray-50 transition-colors"
+            className="w-full px-4 py-3 text-left flex items-center space-x-2 hover:bg-gray-50 transition-colors"
           >
             <LogOut className="h-4 w-4 text-gray-600" />
             <span className="text-sm font-medium text-gray-900">Sign Out</span>

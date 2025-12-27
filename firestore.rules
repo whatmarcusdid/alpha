@@ -5,17 +5,25 @@ service cloud.firestore {
     
     // Users collection
     match /users/{userId} {
-      // Root user doc
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
+      // Allow users to read their own document and update their own profile
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId
+        && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profile', 'displayName']));
+
       // Reports subcollection
       match /reports/{reportId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
       
-      // ✅ Meetings subcollection (ADD THIS)
+      // Meetings subcollection
       match /meetings/{meetingId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Transactions subcollection
+      match /transactions/{transactionId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;  // Only server/admin can write transactions
       }
     }
 
@@ -23,6 +31,16 @@ service cloud.firestore {
     match /bookingIntakes/{docId} {
       allow create: if true; // Anyone can create
       allow read, update, delete: if request.auth != null; // Only authenticated users can read, update, or delete
+    }
+
+    // Support Requests collection
+    match /support_requests/{requestId} {
+      allow create: if request.auth != null 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.requestFromEmail is string
+        && request.resource.data.description is string;
+      
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
     // Default deny
