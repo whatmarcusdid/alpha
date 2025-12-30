@@ -64,7 +64,7 @@ export function getPrice(tier: PricingTier, cycle: BillingCycle): number {
   const plan = PRICING[tier];
   
   if (tier === 'advanced' && cycle === 'annual') {
-    return plan.discountedAnnual!;
+    return PRICING.advanced.discountedAnnual!;
   }
   
   return plan[cycle] as number;
