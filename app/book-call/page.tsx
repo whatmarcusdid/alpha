@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z, ZodIssue } from "zod";
-import { BookingLayout } from "@/components/layouts/booking-layout";
+import { BookingLayout } from "@/components/layout/booking-layout";
 import { BookingCard } from "@/components/ui/booking-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

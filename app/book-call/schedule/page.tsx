@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { BookingLayout } from "@/components/layouts/booking-layout";
+import { BookingLayout } from "@/components/layout/booking-layout";
 import { BookingCard } from "@/components/ui/booking-card";
 import { Button } from "@/components/ui/button";
 

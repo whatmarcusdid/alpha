@@ -1,6 +1,6 @@
 'use client';
 
-import { BookingLayout } from "@/components/layouts/booking-layout";
+import { BookingLayout } from "@/components/layout/booking-layout";
 import { BookingCard } from "@/components/ui/booking-card";
 
 export default function ConfirmationPage() {

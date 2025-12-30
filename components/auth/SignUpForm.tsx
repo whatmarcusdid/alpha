@@ -133,7 +133,7 @@ export function SignUpForm() {
             type="password"
             placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.boundingClientRect.bottom, e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             required
             disabled={loading}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg min-h-[40px]"

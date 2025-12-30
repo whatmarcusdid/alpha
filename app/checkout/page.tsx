@@ -4,8 +4,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Elements } from '@stripe/react-stripe-js';
 import { stripePromise, PRICING, PricingTier, BillingCycle, getPrice, getRenewalDate } from '@/lib/stripe';
-import CheckoutForm from '@/components/CheckoutForm';
-import { PageCard } from '@/components/ui/PageCard';
+import CheckoutForm from '@/components/checkout/CheckoutForm';
+import { PageCard } from '@/components/layout/PageCard';
 import { Header } from '@/components/layout/Header';
 
 function CheckoutContent() {
