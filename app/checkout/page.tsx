@@ -28,18 +28,15 @@ function CheckoutContent() {
     const createPaymentIntent = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          'https://us-central1-tradesitegenie.cloudfunctions.net/createPaymentIntent',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              amount: total,
-              tier,
-              billingCycle,
-            }),
-          }
-        );
+        const response = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: total,
+            tier,
+            billingCycle,
+          }),
+        });
 
         const data = await response.json();
         
