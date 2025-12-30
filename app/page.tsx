@@ -1,6 +1,6 @@
 import { Header } from "@/components/layout/Header";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import { SecondaryButton } from "@/components/ui/SecondaryButton";
 
 export default function LandingPage() {
   return (
@@ -25,24 +25,13 @@ export default function LandingPage() {
             </p>
             
             <div className="flex gap-4 pt-2">
-              <Link href="/signin">
-                <Button 
-                  variant="outline"
-                  size="lg"
-                  className="px-8 py-3 border-2 border-[#232521] text-[#232521] bg-white hover:bg-gray-50 rounded-full font-medium"
-                >
-                  Sign In
-                </Button>
-              </Link>
+              <PrimaryButton href="/signin">
+                Sign In
+              </PrimaryButton>
               
-              <Link href="/signup">
-                <Button 
-                  size="lg"
-                  className="px-8 py-3 bg-[#9be382] hover:bg-[#8cd370] text-[#1b4a41] rounded-full font-semibold"
-                >
-                  Sign Up
-                </Button>
-              </Link>
+              <SecondaryButton href="/signup">
+                Sign Up
+              </SecondaryButton>
             </div>
           </div>
           

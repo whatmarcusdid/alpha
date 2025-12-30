@@ -7,6 +7,8 @@ import { onAuthStateChange } from '@/lib/auth';
 import { getSubscriptionForUser, Subscription } from '@/lib/stripe/subscription';
 import { getTransactionsForUser, Transaction } from '@/lib/stripe/transactions';
 import { DashboardNav } from '@/components/layout/DashboardNav';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 export default function TransactionsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -35,40 +37,56 @@ export default function TransactionsPage() {
     }
   }, [user]);
 
-  const formatDate = (date: Date) => {
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+  function formatDate(date: Date | undefined): string {
+    if (!date || !(date instanceof Date)) {
+      return 'N/A';
+    }
+    
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
     const year = date.getFullYear();
     return `${month}/${day}/${year}`;
+  }
+
+  const formatAmount = (amount: number | undefined) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '$0.00';
+    }
+    return `$${(amount / 100).toFixed(2)}`;
   };
 
-  const formatAmount = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+  const getSubscriptionPrice = (tier: 'monthly' | 'quarterly' | 'yearly') => {
+    const prices = {
+      'monthly': '$69.00',
+      'quarterly': '$207.00',
+      'yearly': '$679.00'
+    };
+    return prices[tier] || '$0.00';
   };
 
   const getStatusBadge = (status: Subscription['status']) => {
     switch (status) {
       case 'active':
         return <span className="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">Active</span>;
-      case 'past_due':
-        return <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold">Past Due</span>;
-      case 'canceled':
-      case 'unpaid':
-      case 'cancel_at_period_end':
-        return <span className="px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-semibold">Canceled</span>;
+      case 'cancelled':
+        return <span className="px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-semibold">Cancelled</span>;
+      case 'expired':
+        return <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold">Expired</span>;
+      default:
+        return <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold">Unknown</span>;
     }
   };
 
   const getTransactionStatusBadge = (status: Transaction['status']) => {
-     switch (status) {
+    switch (status) {
       case 'completed':
         return <span className="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">Completed</span>;
       case 'failed':
         return <span className="px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-semibold">Failed</span>;
-      case 'processing':
-         return <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold">Processing</span>;
-       case 'refunded':
-         return <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold">Refunded</span>;
+      case 'pending':
+        return <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold">Pending</span>;
+      default:
+        return <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold">Unknown</span>;
     }
   }
 
@@ -78,12 +96,9 @@ export default function TransactionsPage() {
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#232521]">Transactions</h1>
-          <Link 
-            href="/pricing"
-            className="bg-[#9be382] text-[#232521] font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors"
-          >
+          <PrimaryButton href="/pricing">
             Upgrade My Subscription
-          </Link>
+          </PrimaryButton>
         </div>
 
         {/* Active Subscription Card */}
@@ -95,28 +110,31 @@ export default function TransactionsPage() {
             <div>
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-lg text-[#232521]">{subscription.planName}</p>
-                  <p className="text-gray-500">Renews on {formatDate(subscription.renewalDate)}</p>
+                  <p className="font-semibold text-lg text-[#232521]">
+                    Genie Maintenance - {subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)} Plan
+                  </p>
+                  <p className="text-gray-500">
+                    {subscription.status === 'active' ? 'Renews on' : 'Ended on'} {formatDate(subscription.endDate)}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-[#232521]">{formatAmount(subscription.amount)}<span className="text-sm font-normal text-gray-500">/{subscription.planCadence.replace('ly','')}</span></p>
+                  <p className="text-xl font-bold text-[#232521]">{getSubscriptionPrice(subscription.tier)}<span className="text-sm font-normal text-gray-500">/{subscription.tier.replace('ly', '')}</span></p>
                   {getStatusBadge(subscription.status)}
                 </div>
               </div>
-              {subscription.status === 'past_due' && <p className="text-yellow-600 text-sm mt-2">Please update your payment method to keep your account active.</p>}
+              {subscription.status === 'expired' && <p className="text-yellow-600 text-sm mt-2">Your subscription has expired. Please renew to continue service.</p>}
               <div className="mt-6">
-                 <button onClick={() => alert('Redirecting to Stripe to manage subscription (MVP)')} className="bg-white border border-gray-300 text-[#232521] font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-50 transition-colors">Manage Subscription</button>
+                <SecondaryButton onClick={() => alert('Redirecting to Stripe to manage subscription (MVP)')}>
+                  Manage Subscription
+                </SecondaryButton>
               </div>
             </div>
           ) : (
             <div className="text-center py-8">
               <p className="text-gray-500 mb-4">No active subscription</p>
-              <Link 
-                href="/pricing"
-                className="bg-[#1b4a41] text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors"
-              >
+              <SecondaryButton href="/pricing">
                 Choose a Plan
-              </Link>
+              </SecondaryButton>
             </div>
           )}
         </div>
@@ -148,7 +166,7 @@ export default function TransactionsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(transaction.date)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatAmount(transaction.amount)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{getTransactionStatusBadge(transaction.status)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{transaction.paymentMethod.brand} •••• {transaction.paymentMethod.last4}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{transaction.paymentMethodBrand} •••• {transaction.paymentMethodLast4}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => window.open(transaction.invoiceUrl, '_blank')}

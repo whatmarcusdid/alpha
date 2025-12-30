@@ -9,6 +9,7 @@ import { Site } from '@/types';
 import { GlobeAltIcon } from '@heroicons/react/24/outline';
 import { DashboardNav } from '@/components/layout/DashboardNav';
 import { updateSiteThumbnail } from '@/lib/firestore/updateSiteThumbnail';
+import { PageCard } from '@/components/layout/PageCard';
 
 export default function SitesPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -88,7 +89,7 @@ export default function SitesPage() {
     <div className="min-h-screen bg-[#F7F6F1] p-4">
       <DashboardNav />
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8">
+        <PageCard>
           <h1 className="text-2xl font-semibold text-gray-900 mb-8">Sites</h1>
           {
             loading ? (
@@ -129,7 +130,7 @@ export default function SitesPage() {
               <div className="text-center py-16 px-4 border-2 border-dashed border-gray-200 rounded-lg">
                 <GlobeAltIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h2 className="mt-4 text-lg font-semibold text-gray-900">No Websites Added</h2>
-                <p className="mt-2 max-w-md mx-auto text-sm text-gray-500">
+                <p className="mt-2 max-w-md mx-.PageCardto text-sm text-gray-500">
                   No websites have been added to your plan. Get started with one of our packages in order to add your website to the dashboard.
                 </p>
                 <div className="mt-6">
@@ -142,7 +143,7 @@ export default function SitesPage() {
               </div>
             )
           }
-        </div>
+        </PageCard>
       </main>
     </div>
   );

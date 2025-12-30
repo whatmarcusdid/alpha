@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signUpWithEmail, signInWithGoogle, signInWithApple } from '@/lib/auth';
-import { initializeUserProfile } from '@/lib/firestore';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GoogleIcon, AppleIcon } from '@/components/ui/icons';
 import { Loader2 } from 'lucide-react';
+import { doc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export function SignUpForm() {
   const router = useRouter();
@@ -27,7 +28,21 @@ export function SignUpForm() {
     setError(null);
     try {
       const user = await signUpWithEmail(email, password, name);
-      await initializeUserProfile(user.uid, user.email || email, name);
+      await setDoc(doc(collection(db, 'users'), user.uid), {
+        email: user.email,
+        fullName: name,
+        createdAt: serverTimestamp(),
+        subscription: {
+          tier: 'monthly',
+          status: 'inactive'
+        },
+        stats: {
+          websiteTraffic: 0,
+          siteSpeedSeconds: 0,
+          supportHoursRemaining: 10,
+          maintenanceHoursRemaining: 10
+        }
+      });
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
@@ -118,7 +133,7 @@ export function SignUpForm() {
             type="password"
             placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.boundingClientRect.bottom, e.target.value)}
             required
             disabled={loading}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg min-h-[40px]"

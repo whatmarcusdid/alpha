@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AppleIcon, GoogleIcon } from '@/components/ui/icons';
 import { Loader2 } from 'lucide-react';
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
 
 export function SignInForm() {
   const router = useRouter();
@@ -119,21 +120,13 @@ export function SignInForm() {
           </Alert>
         )}
 
-        <Button
+        <PrimaryButton
           type="submit"
-          size="lg"
-          className="w-full bg-[#9be382] hover:bg-[#8cd370] text-[#1b4a41] font-bold shadow-sm transition-transform duration-150 ease-in-out hover:scale-[1.01]"
           disabled={loading}
+          className="w-full"
         >
-          {loading && !ssoLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
-            </>
-          ) : (
-            'Sign In'
-          )}
-        </Button>
+          {loading ? 'Signing in...' : 'Sign in'}
+        </PrimaryButton>
       </form>
 
       <div className="relative pt-2">
@@ -152,7 +145,7 @@ export function SignInForm() {
           variant="outline"
           onClick={handleGoogleSignIn}
           disabled={loading || ssoLoading === 'apple'}
-          className="w-full h-11 bg-white border border-[#747775] text-[#1F1F1F] text-sm font-medium rounded-md flex items-center justify-center px-4 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 transition-colors"
+          className="w-full h-11 bg-white border border-[#747775] text-[#1F1F1F] text-sm font-medium rounded-[360px] flex items-center justify-center px-4 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 transition-colors"
         >
           {ssoLoading === 'google' ? (
             <Loader2 className="mr-3 h-5 w-5 animate-spin" />
@@ -165,7 +158,7 @@ export function SignInForm() {
         <Button
           onClick={handleAppleSignIn}
           disabled={loading || ssoLoading === 'google'}
-          className="w-full h-11 bg-black text-white text-sm font-medium rounded-md flex items-center justify-center px-4 hover:bg-gray-800 active:bg-gray-900 disabled:opacity-50 transition-colors"
+          className="w-full h-11 bg-black text-white text-sm font-medium rounded-[360px] flex items-center justify-center px-4 hover:bg-gray-800 active:bg-gray-900 disabled:opacity-50 transition-colors"
         >
           {ssoLoading === 'apple' ? (
             <Loader2 className="mr-3 h-5 w-5 animate-spin" />

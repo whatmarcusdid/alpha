@@ -3,18 +3,27 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { getCompanyInfo, updateCompanyInfo, CompanyInfo } from '@/lib/firestore';
+import { getCompanyData, updateCompanyData, CompanyData } from '@/lib/firestore/company';
 import { DashboardNav } from '@/components/layout/DashboardNav';
 import { Edit2 } from 'lucide-react';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
+import { NotificationToast } from '@/components/ui/NotificationToast';
+import { PageCard } from '@/components/layout/PageCard';
 
 export default function MyCompanyPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [notification, setNotification] = useState<{type: 'success' | 'error', show: boolean}>({type: 'success', show: false})
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    type: 'success' | 'error';
+    message: string;
+    subtitle?: string;
+  }>({ show: false, type: 'success', message: '', subtitle: '' });
   
-  const [formData, setFormData] = useState<CompanyInfo>({
+  const [formData, setFormData] = useState<CompanyData>({
     legalName: '',
     websiteUrl: '',
     yearFounded: '',
@@ -39,7 +48,7 @@ export default function MyCompanyPage() {
       setCurrentUser(user);
       
       // Fetch company data from Firestore
-      const companyData = await getCompanyInfo(user.uid);
+      const companyData = await getCompanyData(user.uid);
       
       if (companyData) {
         // User has existing company data
@@ -78,21 +87,36 @@ export default function MyCompanyPage() {
 
   const handleSave = async () => {
     if (!currentUser) {
-      setNotification({type: 'error', show: true})
-      setTimeout(() => setNotification({type: 'error', show: false}), 5000)
-      return
+      setNotification({
+        show: true,
+        type: 'error',
+        message: 'Not logged in',
+        subtitle: 'Please log in to save changes.'
+      });
+      setTimeout(() => setNotification({ ...notification, show: false }), 5000);
+      return;
     }
 
-    const success = await updateCompanyInfo(currentUser.uid, formData)
+    const success = await updateCompanyData(currentUser.uid, formData);
     
     if (success) {
-      setOriginalData(formData)
-      setIsEditMode(false)
-      setNotification({type: 'success', show: true})
-      setTimeout(() => setNotification({type: 'success', show: false}), 5000)
+      setOriginalData(formData);
+      setIsEditMode(false);
+      setNotification({
+        show: true,
+        type: 'success',
+        message: 'Changes saved',
+        subtitle: 'Your company information has been updated and is now live in your dashboard.'
+      });
+      setTimeout(() => setNotification({ ...notification, show: false }), 5000);
     } else {
-      setNotification({type: 'error', show: true})
-      setTimeout(() => setNotification({type: 'error', show: false}), 5000)
+      setNotification({
+        show: true,
+        type: 'error',
+        message: 'Changes not saved',
+        subtitle: 'We couldn\'t save your updates—please try again, and if it keeps happening, check your connection.'
+      });
+      setTimeout(() => setNotification({ ...notification, show: false }), 5000);
     }
   }
 
@@ -114,65 +138,35 @@ export default function MyCompanyPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
-      {notification.show && (
-        <div className="fixed top-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4 min-w-[400px] max-w-md">
-          <div className="flex items-start gap-3">
-            {notification.type === 'success' ? (
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            ) : (
-              <div className="flex-shrink-0 w-6 h-6">
-                <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-            )}
-            <div className="flex-1">
-              <h3 className="text-base font-semibold text-gray-900 mb-1">
-                {notification.type === 'success' ? 'Changes saved' : 'Changes not saved'}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {notification.type === 'success' 
-                  ? 'Your company information has been updated and is now live in your dashboard.' 
-                  : 'We couldn\'t save your updates—please try again, and if it keeps happening, check your connection.'}
-              </p>
-            </div>
-            <button 
-              onClick={() => setNotification({...notification, show: false})}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      <NotificationToast
+        show={notification.show}
+        type={notification.type}
+        message={notification.message}
+        subtitle={notification.subtitle}
+        onDismiss={() => setNotification({ ...notification, show: false })}
+      />
       <DashboardNav />
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
-        <div className="bg-white rounded-lg p-8 min-h-[calc(100vh-theme(spacing.32))]">
+        <PageCard>
           
           {/* Page Header */}
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold text-[#232521]">My Company</h1>
             
             {!isEditMode && (
-              <button
+              <SecondaryButton
                 onClick={() => setIsEditMode(true)}
-                className="rounded-full border-2 border-[#1B4A41] bg-white px-6 py-2 text-[#1B4A41] font-bold text-base leading-6 hover:bg-gray-50 flex items-center"
+                className="flex items-center gap-2"
               >
-                <Edit2 className="w-4 h-4 mr-2" />
+                <Edit2 className="w-4 h-4" />
                 <span>Edit</span>
-              </button>
+              </SecondaryButton>
             )}
           </div>
 
           {/* General Information Section */}
-          <div className="bg-[#FAF9F5] rounded-lg border border-[#6F797A]/40 p-6 mb-6">
+          <div className="max-w-[600px] mx-auto mb-6">
             <h2 className="text-2xl font-bold text-[#232521] mb-6">General Information</h2>
             
             <div className="space-y-4">
@@ -368,7 +362,7 @@ export default function MyCompanyPage() {
           </div>
 
           {/* Business Services Section */}
-          <div className="bg-[#FAF9F5] rounded-lg border border-[#6F797A]/40 p-6">
+          <div className="max-w-[600px] mx-auto">
             <h2 className="text-2xl font-bold text-[#232521] mb-6">Business Services</h2>
             
             <div className="space-y-4">
@@ -424,21 +418,15 @@ export default function MyCompanyPage() {
           {/* Edit Mode Action Buttons */}
           {isEditMode && (
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4">
-              <button
-                onClick={handleCancel}
-                className="px-6 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 font-semibold transition-colors"
-              >
+              <SecondaryButton onClick={handleCancel}>
                 Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-6 py-2 rounded-full bg-[#9be382] hover:bg-[#8bd372] text-[#232521] font-semibold transition-colors"
-              >
+              </SecondaryButton>
+              <PrimaryButton onClick={handleSave}>
                 Save Changes
-              </button>
+              </PrimaryButton>
             </div>
           )}
-        </div>
+        </PageCard>
       </main>
     </div>
   );

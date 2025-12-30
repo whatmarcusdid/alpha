@@ -15,6 +15,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
+import { NotificationToast } from '@/components/ui/NotificationToast';
 
 export default function SupportPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -223,47 +226,13 @@ export default function SupportPage() {
 
   return (
     <>
-      {notification.show && (
-     <div className="fixed top-4 right-4 z-50 animate-fade-in">
-       <div className="bg-white rounded-lg shadow-lg px-6 py-4 flex items-start gap-4 min-w-[400px] max-w-[500px]">
-         {/* Icon */}
-         <div className="flex-shrink-0 mt-0.5">
-           {notification.type === 'success' ? (
-             <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4"/>
-             </svg>
-           ) : (
-             <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-               <path d="M12 2L1 21h22L12 2zm0 3.5L19.5 19h-15L12 5.5zM11 10v4h2v-4h-2zm0 5v2h2v-2h-2z"/>
-             </svg>
-           )}
-         </div>
-         
-         {/* Content */}
-         <div className="flex-1">
-           <p className="font-semibold text-[#232521]">
-             {notification.message}
-           </p>
-           {notification.subtitle && (
-             <p className="text-sm mt-1 text-[#232521]">
-               {notification.subtitle}
-             </p>
-           )}
-         </div>
-         
-         {/* Close Button */}
-         <button
-           onClick={() => setNotification({ show: false, type: 'success', message: '' })}
-           className="flex-shrink-0 text-[#737373] hover:text-[#232521] transition-colors"
-         >
-           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
-           </svg>
-         </button>
-       </div>
-     </div>
-   )}
+      <NotificationToast
+        show={notification.show}
+        type={notification.type}
+        message={notification.message}
+        subtitle={notification.subtitle}
+        onDismiss={() => setNotification({ show: false, type: 'success', message: '' })}
+      />
 
       <div className="min-h-screen bg-[#F7F6F1] p-4">
         <DashboardNav />
@@ -280,21 +249,27 @@ export default function SupportPage() {
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><PhoneIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                       <p className="font-semibold">(555) 123-4567</p>
                       <p className="text-xs text-gray-500">Mon–Fri, 9 AM–5 PM EST</p>
-                      <a href="tel:+15551234567" className="mt-2 px-4 py-2 rounded-full border-2 border-[#1B4A41] bg-white text-[#1B4A41] font-semibold hover:bg-gray-50 transition-colors">Call Number</a>
+                      <SecondaryButton href="tel:+15551234567" className="mt-2">
+                        Call Number
+                      </SecondaryButton>
                   </div>
                   {/* Text Us */}
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                       <p className="font-semibold">(555) 123-4567</p>
                       <p className="text-xs text-gray-500">Anytime</p>
-                      <button onClick={handleCopyPhone} className="mt-2 px-4 py-2 rounded-full border-2 border-[#1B4A41] bg-white text-[#1B4A41] font-semibold hover:bg-gray-50 transition-colors">Copy Number</button>
+                      <SecondaryButton onClick={handleCopyPhone} className="mt-2">
+                        Copy Number
+                      </SecondaryButton>
                   </div>
                   {/* Email Us */}
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                       <p className="font-semibold">support@tradesitegenie.com</p>
                       <p className="text-xs text-gray-500">Anytime</p>
-                      <button onClick={handleCopyEmail} className="mt-2 px-4 py-2 rounded-full border-2 border-[#1B4A41] bg-white text-[#1B4A41] font-semibold hover:bg-gray-50 transition-colors">Copy Email</button>
+                      <SecondaryButton onClick={handleCopyEmail} className="mt-2">
+                        Copy Email
+                      </SecondaryButton>
                   </div>
               </div>
           </div>
@@ -347,9 +322,9 @@ export default function SupportPage() {
               )}
 
               <div className="flex justify-end">
-                  <button type="submit" disabled={isSubmitting} className="px-8 py-2.5 rounded-full bg-[#9be382] hover:bg-[#8dd370] text-[#232521] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed">
-                      {isSubmitting ? 'Sending...' : 'Send Request'}
-                  </button>
+                  <PrimaryButton type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Sending...' : 'Send Request'}
+                  </PrimaryButton>
               </div>
             </form>
           </div>

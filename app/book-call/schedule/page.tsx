@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { BookingLayout } from "@/components/layouts/booking-layout";
 import { BookingCard } from "@/components/ui/booking-card";
@@ -22,7 +22,7 @@ export default function SchedulePage() {
 
       try {
         // Fetch directly from Firestore client-side
-        const docRef = doc(db, "bookingIntakes", bookingIntakeId);
+        const docRef = doc(collection(db, "bookingIntakes"), bookingIntakeId);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {

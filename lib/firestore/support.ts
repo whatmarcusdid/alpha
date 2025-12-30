@@ -1,11 +1,7 @@
+'use client';
+
 import { db } from '@/lib/firebase';
-
-let firestoreFunctions: any = {};
-
-if (typeof window !== 'undefined') {
-  const { collection, addDoc, serverTimestamp } = require('firebase/firestore');
-  firestoreFunctions = { collection, addDoc, serverTimestamp };
-}
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export interface AttachmentFile {
   name: string;
@@ -50,14 +46,14 @@ export async function submitSupportRequest(
   }
 
   try {
-    const supportRequestsRef = firestoreFunctions.collection(db, 'support_requests');
+    const supportRequestsRef = collection(db, 'support_requests');
     
-    const docRef = await firestoreFunctions.addDoc(supportRequestsRef, {
+    const docRef = await addDoc(supportRequestsRef, {
       requestFromEmail,
       userId,
       description: description.trim(),
       attachmentFiles,
-      createdAt: firestoreFunctions.serverTimestamp(),
+      createdAt: serverTimestamp(),
       status: 'new'
     });
 

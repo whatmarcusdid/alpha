@@ -1,42 +1,39 @@
+'use client';
+
 import { db } from '@/lib/firebase';
-
-let firestoreFunctions: any = {};
-
-if (typeof window !== 'undefined') {
-  const { doc, getDoc, updateDoc, serverTimestamp } = require('firebase/firestore');
-  firestoreFunctions = { doc, getDoc, updateDoc, serverTimestamp };
-}
+import { collection, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export interface UserProfile {
-  firstName: string;
-  lastName: string;
-  role: string;
+  fullName: string;
   email: string;
-  displayName: string;
+  phone: string;
+  role: string;
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  if (!db) {
+    console.error('Firestore db is not initialized');
+    return null;
+  }
+
   try {
-    if (typeof window === 'undefined') {
-      return null;
+    const userRef = doc(collection(db, 'users'), userId);
+    const docSnap = await getDoc(userRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        fullName: data.fullName || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        role: data.role || '',
+      };
     }
-
-    const userRef = firestoreFunctions.doc(db, 'users', userId);
-    const userSnap = await firestoreFunctions.getDoc(userRef);
-
-    if (!userSnap.exists()) {
-      return null;
-    }
-
-    const data = userSnap.data();
-    
-    return {
-      firstName: data.profile?.firstName || '',
-      lastName: data.profile?.lastName || '',
-      role: data.profile?.role || '',
-      email: data.email || '',
-      displayName: data.displayName || ''
-    };
+    return null;
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return null;
@@ -45,42 +42,22 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 
 export async function updateUserProfile(
   userId: string,
-  data: { firstName: string; lastName: string; role: string; email: string }
+  updates: Partial<UserProfile>
 ): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined') {
+    return { success: false, error: 'Not in browser environment' };
+  }
+
+  if (!db) {
+    return { success: false, error: 'Firestore db is not initialized' };
+  }
+
   try {
-    if (typeof window === 'undefined') {
-      return { success: false, error: 'This function can only be called in the browser' };
-    }
-
-    // Validate inputs
-    const firstName = data.firstName.trim();
-    const lastName = data.lastName.trim();
-    const role = data.role.trim();
-
-    if (!firstName || !lastName) {
-      return { success: false, error: 'First name and last name are required' };
-    }
-
-    if (firstName.length > 50 || lastName.length > 50) {
-      return { success: false, error: 'Names must be 50 characters or less' };
-    }
-
-    const displayName = `${firstName} ${lastName}`;
-
-    const userRef = firestoreFunctions.doc(db, 'users', userId);
-    
-    await firestoreFunctions.updateDoc(userRef, {
-      'profile.firstName': firstName,
-      'profile.lastName': lastName,
-      'profile.role': role,
-      'profile.lastUpdated': firestoreFunctions.serverTimestamp(),
-      displayName: displayName,
-      email: data.email
-    });
-
+    const userRef = doc(collection(db, 'users'), userId);
+    await updateDoc(userRef, updates);
     return { success: true };
   } catch (error: any) {
     console.error('Error updating user profile:', error);
-    return { success: false, error: error.message || 'Failed to update profile' };
+    return { success: false, error: error.message };
   }
 }

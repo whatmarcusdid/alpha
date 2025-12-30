@@ -6,6 +6,7 @@ import { onAuthStateChange } from '@/lib/auth';
 import { getReportsForUser, Report } from '@/lib/firestore/reports';
 import { DashboardNav } from '@/components/layout/DashboardNav';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
+import { PageCard } from '@/components/layout/PageCard';
 
 interface ReportWithDate extends Omit<Report, 'createdDate' | 'updatedDate'> {
   createdDate: Date;
@@ -86,7 +87,7 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-[#F7F6F1] p-4">
       <DashboardNav />
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 min-h-[calc(100vh-8rem)]">
+        <PageCard>
           <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-2xl font-bold text-[#232521]">Reports</h1>
@@ -158,7 +159,7 @@ export default function ReportsPage() {
                 <div>
                   {sortedReports.map((report) => (
                     <div key={report.id} className="px-6 py-4 grid grid-cols-12 gap-4 items-center border-b border-gray-200 last:border-b-0 hover:bg-[#F2F0E7] transition-colors">
-                      <div className="col-span-5 flex items-center space-x-4">
+                      <div className="col-span-5 flex items-.PageCardenter space-x-4">
                         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                            <DocumentTextIcon className="h-6 w-6 text-gray-600" />
                         </div>
@@ -183,7 +184,7 @@ export default function ReportsPage() {
               )}
             </div>
           </div>
-        </div>
+        </PageCard>
       </main>
     </div>
   );

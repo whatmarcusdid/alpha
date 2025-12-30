@@ -1,80 +1,72 @@
+'use client';
+
 import { db } from '@/lib/firebase';
-
-let firestoreFunctions: any = {};
-
-if (typeof window !== 'undefined') {
-  const { doc, getDoc } = require('firebase/firestore');
-  firestoreFunctions = { doc, getDoc };
-}
+import { collection, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export interface Subscription {
-  planName: string;
-  planCadence: 'monthly' | 'quarterly' | 'yearly';
-  status: 'active' | 'past_due' | 'unpaid' | 'canceled' | 'cancel_at_period_end';
-  renewalDate: Date;
-  amount: number;
-  stripeCustomerId: string;
-  stripeSubscriptionId: string;
+  tier: 'monthly' | 'quarterly' | 'yearly';
+  status: 'active' | 'cancelled' | 'expired';
+  startDate: Date;
+  endDate: Date;
 }
 
 export async function getSubscriptionForUser(userId: string): Promise<Subscription | null> {
-  if (typeof window === 'undefined' || !db) {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  if (!db) {
+    console.error('Firestore db is not initialized');
     return null;
   }
 
   try {
-    const userDocRef = firestoreFunctions.doc(db, 'users', userId);
-    const userDocSnap = await firestoreFunctions.getDoc(userDocRef);
+    const userRef = doc(collection(db, 'users'), userId);
+    const userDoc = await getDoc(userRef);
 
-    if (userDocSnap.exists()) {
-      const userData = userDocSnap.data();
-      const subscriptionData = userData.subscription;
-
-      if (!subscriptionData || !subscriptionData.tier || !subscriptionData.endDate) {
-        return null;
-      }
-
-      let planName = '';
-      let amount = 0;
-
-      switch (subscriptionData.tier) {
-        case 'monthly':
-          planName = 'Genie Maintenance - Monthly $69/mo';
-          amount = 69;
-          break;
-        case 'quarterly':
-          planName = 'Genie Maintenance - Quarterly $207/qtr';
-          amount = 207;
-          break;
-        case 'yearly':
-          planName = 'Genie Maintenance - Yearly $679/yr';
-          amount = 679;
-          break;
-        default:
-          return null; // or handle as an error
-      }
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      const subscription = data.subscription;
       
-      let subStatus: Subscription['status'] = 'canceled';
-      if (subscriptionData.status === 'active') {
-        subStatus = 'active';
+      if (subscription) {
+        return {
+          tier: subscription.tier || 'monthly',
+          status: subscription.status || 'inactive',
+          startDate: subscription.startDate?.toDate() || new Date(),
+          endDate: subscription.endDate?.toDate() || new Date(),
+        };
       }
-
-      const subscription: Subscription = {
-        planName,
-        planCadence: subscriptionData.tier,
-        status: subStatus,
-        renewalDate: subscriptionData.endDate.toDate(),
-        amount,
-        stripeCustomerId: 'cus_placeholder_mvp', // MVP: Not stored in Firestore
-        stripeSubscriptionId: 'sub_placeholder_mvp', // MVP: Not stored in Firestore
-      };
-
-      return subscription;
     }
 
     return null;
   } catch (error) {
-    console.error('Error fetching subscription data:', error);
+    console.error('Error fetching subscription:', error);
     return null;
+  }
+}
+
+export async function updateSubscription(
+  userId: string,
+  subscription: Partial<Subscription>
+): Promise<boolean> {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  if (!db) {
+    console.error('Firestore db is not initialized');
+    return false;
+  }
+
+  try {
+    const userRef = doc(collection(db, 'users'), userId);
+    await updateDoc(userRef, {
+      subscription: subscription,
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating subscription:', error);
+    return false;
   }
 }

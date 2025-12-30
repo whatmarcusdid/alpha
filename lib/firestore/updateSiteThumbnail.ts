@@ -26,10 +26,10 @@ export async function updateSiteThumbnail(
 
   try {
     // Dynamically require Firestore functions for browser-only usage.
-    const { doc, updateDoc } = require('firebase/firestore');
+    const { doc, updateDoc, collection } = require('firebase/firestore');
 
     // Get a reference to the specific site document.
-    const siteRef = doc(db, 'sites', siteId);
+    const siteRef = doc(collection(db, 'sites'), siteId);
 
     // Update the 'thumbnailUrl' field of the document.
     await updateDoc(siteRef, {

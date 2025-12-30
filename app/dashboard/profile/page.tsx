@@ -6,29 +6,10 @@ import { onAuthStateChange, signOut, updateUserEmail } from '@/lib/auth';
 import { getUserProfile, updateUserProfile, UserProfile } from '@/lib/firestore/profile';
 import { changePassword } from '@/lib/auth/password';
 import { DashboardNav } from '@/components/layout/DashboardNav';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-
-// Notification Toast Component (TSG Pattern)
-const Notification = ({ message, type, onDismiss }: { message: string; type: 'success' | 'error'; onDismiss: () => void; }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onDismiss();
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [onDismiss]);
-
-  const baseClasses = "fixed top-5 right-5 p-4 rounded-lg shadow-lg flex items-center justify-between transition-opacity duration-300 z-50";
-  const typeClasses = type === 'success' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
-
-  return (
-    <div className={`${baseClasses} ${typeClasses}`}>
-      <span>{message}</span>
-      <button onClick={onDismiss} className="ml-4 p-1 rounded-full hover:bg-black/10">
-        <XMarkIcon className="h-5 w-5" />
-      </button>
-    </div>
-  );
-};
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
+import { NotificationToast } from '@/components/ui/NotificationToast';
+import { PageCard } from '@/components/layout/PageCard';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -36,7 +17,7 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState<UserProfile | null>(null);
   const [originalData, setOriginalData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; show: boolean; message: string }>({ type: 'success', show: false, message: '' });
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; show: boolean; message: string; subtitle?: string }>({ type: 'success', show: false, message: '' });
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
 
   useEffect(() => {
@@ -59,17 +40,16 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-  const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message, show: true });
-    setTimeout(() => setNotification({ type: 'success', show: false, message: '' }), 5000);
+  const showNotification = (type: 'success' | 'error', message: string, subtitle?: string) => {
+    setNotification({ type, message, subtitle, show: true });
   };
 
   const handleSave = async () => {
     if (!formData || !user) return;
 
     // Validate
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      showNotification('error', 'First name and last name are required');
+    if (!formData.fullName.trim()) {
+      showNotification('error', 'Full name is required');
       return;
     }
 
@@ -88,10 +68,10 @@ export default function ProfilePage() {
 
       // Update profile in Firestore
       const result = await updateUserProfile(user.uid, {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        role: formData.role,
+        fullName: formData.fullName,
         email: formData.email,
+        phone: formData.phone,
+        role: formData.role,
       });
 
       if (result.success) {
@@ -113,19 +93,19 @@ export default function ProfilePage() {
   };
   
   const handlePasswordChange = async () => {
-      if (passwordData.new !== passwordData.confirm) {
-          showNotification('error', 'New passwords do not match.');
-          return;
-      }
+    if (passwordData.new !== passwordData.confirm) {
+        showNotification('error', 'New passwords do not match.');
+        return;
+    }
 
-      const result = await changePassword(passwordData.current, passwordData.new);
+    const result = await changePassword(passwordData.current, passwordData.new);
 
-      if (result.success) {
-          showNotification('success', 'Password changed successfully!');
-          setPasswordData({ current: '', new: '', confirm: '' });
-      } else {
-          showNotification('error', result.error || 'Failed to change password.');
-      }
+    if (result.success) {
+        showNotification('success', 'Password changed successfully!');
+        setPasswordData({ current: '', new: '', confirm: '' });
+    } else {
+        showNotification('error', result.error || 'Failed to change password.');
+    }
   };
   
   const handleLogout = async () => {
@@ -146,43 +126,37 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
       <DashboardNav />
-      {notification.show && <Notification type={notification.type} message={notification.message} onDismiss={() => setNotification({ ...notification, show: false })} />}
+      <NotificationToast
+        show={notification.show}
+        type={notification.type}
+        message={notification.message}
+        subtitle={notification.subtitle}
+        onDismiss={() => setNotification({ ...notification, show: false })}
+      />
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8">
+        <PageCard>
           
           {/* FULL-WIDTH HEADER */}
-          <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-200">
+          <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-[#232521]">My Profile</h1>
             <div className="flex gap-3">
               {!isEditMode ? (
                 <>
-                  <button
-                    onClick={() => setIsEditMode(true)}
-                    className="rounded-full border-2 border-[#1B4A41] bg-white px-6 py-2 text-[#1B4A41] font-bold hover:bg-gray-50"
-                  >
+                  <SecondaryButton onClick={() => setIsEditMode(true)}>
                     Edit
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="px-6 py-2 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold"
-                  >
+                  </SecondaryButton>
+                  <SecondaryButton onClick={handleLogout}>
                     Log Out
-                  </button>
+                  </SecondaryButton>
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={handleSave}
-                    className="px-6 py-2 rounded-full bg-[#9be382] hover:bg-[#8dd370] text-[#232521] font-semibold"
-                  >
+                  <PrimaryButton onClick={handleSave}>
                     Save
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="px-6 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 font-semibold"
-                  >
+                  </PrimaryButton>
+                  <SecondaryButton onClick={handleCancel}>
                     Cancel
-                  </button>
+                  </SecondaryButton>
                 </>
               )}
             </div>
@@ -198,22 +172,38 @@ export default function ProfilePage() {
               </h2>
               <div className="space-y-6">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                     <input
                         type="text"
-                        value={formData?.firstName || ''}
-                        onChange={(e) => setFormData({ ...formData!, firstName: e.target.value })}
+                        value={formData?.fullName || ''}
+                        onChange={(e) => setFormData({ ...formData!, fullName: e.target.value })}
                         disabled={!isEditMode}
                         className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                  </label>
+                  <input
+                      type="email"
+                      value={formData?.email || ''}
+                      onChange={(e) => setFormData({ ...formData!, email: e.target.value })}
+                      disabled={!isEditMode}
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                  />
+                  {!isEditMode && (
+                      <p className="text-sm text-gray-500 mt-1">Click Edit to update your email.</p>
+                  )}
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                     <input
-                        type="text"
-                        value={formData?.lastName || ''}
-                        onChange={(e) => setFormData({ ...formData!, lastName: e.target.value })}
+                        type="tel"
+                        value={formData?.phone || ''}
+                        onChange={(e) => setFormData({ ...formData!, phone: e.target.value })}
                         disabled={!isEditMode}
+                        placeholder="(240) 521-4763"
                         className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                     />
                 </div>
@@ -227,21 +217,6 @@ export default function ProfilePage() {
                         placeholder="e.g., Owner, Manager"
                         className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                     />
-                </div>
-                <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                </label>
-                <input
-                    type="email"
-                    value={formData?.email || ''}
-                    onChange={(e) => setFormData({ ...formData!, email: e.target.value })}
-                    disabled={!isEditMode}
-                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                />
-                {!isEditMode && (
-                    <p className="text-sm text-gray-500 mt-1">Click Edit to update your email.</p>
-                )}
                 </div>
               </div>
             </div>
@@ -263,7 +238,7 @@ export default function ProfilePage() {
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font--medium text-gray-700 mb-2">New Password</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
                     <input
                         type="password"
                         value={passwordData.new}
@@ -284,26 +259,24 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="flex gap-3 justify-end mt-6">
-                <button
+                  <SecondaryButton 
                     onClick={() => setPasswordData({ current: '', new: '', confirm: '' })}
                     disabled={isEditMode}
-                    className="px-6 py-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                  >
                     Clear
-                </button>
-                <button
+                  </SecondaryButton>
+                  <PrimaryButton 
                     onClick={handlePasswordChange}
                     disabled={isEditMode}
-                    className="px-6 py-2 rounded-full bg-[#9be382] hover:bg-[#8dd370] text-[#232521] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                  >
                     Update Password
-                </button>
+                  </PrimaryButton>
               </div>
             </div>
 
           </div>
           
-        </div>
+        </PageCard>
       </main>
     </div>
   );

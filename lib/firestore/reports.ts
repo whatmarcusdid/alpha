@@ -1,4 +1,7 @@
+'use client';
+
 import { db } from '@/lib/firebase';
+import { collection, query, orderBy, getDocs, Timestamp, doc } from 'firebase/firestore';
 
 export interface Report {
   id: string;
@@ -8,26 +11,6 @@ export interface Report {
   updatedDate: Date;
   fileUrl: string;
   type: 'performance' | 'traffic';
-}
-
-let firestoreFunctions: any = {};
-
-if (typeof window !== 'undefined') {
-  const { 
-    collection, 
-    query, 
-    orderBy, 
-    getDocs, 
-    Timestamp 
-  } = require('firebase/firestore');
-  
-  firestoreFunctions = { 
-    collection, 
-    query, 
-    orderBy, 
-    getDocs, 
-    Timestamp 
-  };
 }
 
 export async function getReportsForUser(userId: string): Promise<Report[]> {
@@ -41,28 +24,26 @@ export async function getReportsForUser(userId: string): Promise<Report[]> {
   }
 
   try {
-    const reportsRef = firestoreFunctions.collection(db, 'users', userId, 'reports');
-    const q = firestoreFunctions.query(
-      reportsRef, 
-      firestoreFunctions.orderBy('createdDate', 'desc')
-    );
+    const userDocRef = doc(collection(db, 'users'), userId);
+    const reportsRef = collection(userDocRef, 'reports');
+    const q = query(reportsRef, orderBy('createdDate', 'desc'));
     
-    const snapshot = await firestoreFunctions.getDocs(q);
+    const snapshot = await getDocs(q);
     
-    return snapshot.docs.map((doc: any) => {
-      const data = doc.data();
+    return snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
       return {
-        id: doc.id,
-        title: data.title,
-        subtitle: data.subtitle,
-        createdDate: data.createdDate instanceof firestoreFunctions.Timestamp 
+        id: docSnap.id,
+        title: data.title || '',
+        subtitle: data.subtitle || '',
+        createdDate: data.createdDate instanceof Timestamp 
           ? data.createdDate.toDate() 
           : new Date(),
-        updatedDate: data.updatedDate instanceof firestoreFunctions.Timestamp 
-          ? data.updatedDate.toDate()  // ✅ FIXED: Changed from updatedAt to updatedDate
+        updatedDate: data.updatedDate instanceof Timestamp 
+          ? data.updatedDate.toDate() 
           : new Date(),
-        fileUrl: data.fileUrl,
-        type: data.type,
+        fileUrl: data.fileUrl || '',
+        type: data.type || 'performance',
       } as Report;
     });
   } catch (error) {

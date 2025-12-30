@@ -19,7 +19,7 @@ export async function saveBookingIntake(formData: any) {
 
 export async function updateBookingIntake(id: string, data: any) {
   try {
-    const docRef = doc(db, 'bookingIntakes', id);
+    const docRef = doc(collection(db, 'bookingIntakes'), id);
     await updateDoc(docRef, data);
   } catch (error) {
     console.error('Error updating document: ', error);
@@ -28,7 +28,7 @@ export async function updateBookingIntake(id: string, data: any) {
 }
 
 export async function getBookingIntake(id: string) {
-  const docRef = doc(db, "bookingIntakes", id);
+  const docRef = doc(collection(db, 'bookingIntakes'), id);
   const docSnap = await getDoc(docRef);
   return docSnap.exists() ? docSnap.data() : null;
 }

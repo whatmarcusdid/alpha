@@ -1,58 +1,82 @@
+'use client';
+
 import { db } from '@/lib/firebase';
-
-// Browser-only Firestore functions
-let firestoreFunctions: any = {};
-
-if (typeof window !== 'undefined') {
-  const { collection, getDocs, query, orderBy } = require('firebase/firestore');
-  firestoreFunctions = { collection, getDocs, query, orderBy };
-}
+import { collection, doc, addDoc, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 
 export interface Transaction {
   id: string;
-  orderId: string;
-  description: string;
-  date: Date;
   amount: number;
-  status: 'completed' | 'failed' | 'processing' | 'refunded';
-  paymentMethod: {
-    brand: string;
-    last4: string;
-  };
+  date: Date;
+  description: string;
+  status: 'completed' | 'pending' | 'failed';
+  paymentMethodBrand: string;
+  paymentMethodLast4: string;
+  orderId: string;
   invoiceUrl?: string;
 }
 
 export async function getTransactionsForUser(userId: string): Promise<Transaction[]> {
-  if (typeof window === 'undefined' || !db) {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  if (!db) {
+    console.error('Firestore db is not initialized');
     return [];
   }
 
   try {
-    const transactionsRef = firestoreFunctions.collection(db, `users/${userId}/transactions`);
-    const q = firestoreFunctions.query(transactionsRef, firestoreFunctions.orderBy('date', 'desc'));
-    const querySnapshot = await firestoreFunctions.getDocs(q);
-
-    const transactions: Transaction[] = [];
-    querySnapshot.forEach((doc: any) => {
-      const data = doc.data();
-      transactions.push({
-        id: doc.id,
-        orderId: data.orderId,
-        description: data.description,
-        date: data.date.toDate(),
-        amount: data.amount,
-        status: data.status,
-        paymentMethod: {
-          brand: data.paymentMethodBrand,
-          last4: data.paymentMethodLast4,
-        },
-        invoiceUrl: data.invoiceUrl,
-      });
+    const userDocRef = doc(collection(db, 'users'), userId);
+    const transactionsRef = collection(userDocRef, 'transactions');
+    const q = query(transactionsRef, orderBy('date', 'desc'));
+    
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        amount: data.amount || 0,
+        date: data.date instanceof Timestamp ? data.date.toDate() : new Date(),
+        description: data.description || '',
+        status: data.status || 'pending',
+        paymentMethodBrand: data.paymentMethodBrand || '',
+        paymentMethodLast4: data.paymentMethodLast4 || '',
+        orderId: data.orderId || '',
+        invoiceUrl: data.invoiceUrl || undefined,
+      } as Transaction;
     });
-
-    return transactions;
   } catch (error) {
     console.error('Error fetching transactions:', error);
     return [];
+  }
+}
+
+export async function addTransaction(
+  userId: string,
+  transaction: Omit<Transaction, 'id'>
+): Promise<string | null> {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  if (!db) {
+    console.error('Firestore db is not initialized');
+    return null;
+  }
+
+  try {
+    const userDocRef = doc(collection(db, 'users'), userId);
+    const transactionsRef = collection(userDocRef, 'transactions');
+    
+    const docRef = await addDoc(transactionsRef, {
+      ...transaction,
+      createdAt: Timestamp.now(),
+    });
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding transaction:', error);
+    return null;
   }
 }
