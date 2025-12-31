@@ -2,17 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
-  // DEBUG: Check environment variables
-  console.log('=== ENV VAR DEBUG ===');
-  console.log('STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
-  console.log('STRIPE_SECRET_KEY length:', process.env.STRIPE_SECRET_KEY?.length);
-  console.log('STRIPE_SECRET_KEY prefix:', process.env.STRIPE_SECRET_KEY?.substring(0, 15));
-  console.log('All STRIPE env vars:', Object.keys(process.env).filter(k => k.includes('STRIPE')));
-  console.log('==================');
-
   // Initialize Stripe inside the function
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-12-15.clover',
+    apiVersion: '2024-04-10',
   });
 
   try {
