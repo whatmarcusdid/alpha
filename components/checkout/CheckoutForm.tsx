@@ -16,82 +16,66 @@ interface CheckoutFormProps {
   billingCycle: BillingCycle;
 }
 
-// TypeScript type for form data
-type BillingInfo = {
-  nameOnCard: string;
-  address: string;
-  address2: string;
-  city: string;
-  state: string;
-  zipCode: string;
-};
-
 export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
 
-  const [billingInfo, setBillingInfo] = useState<BillingInfo>({
-    nameOnCard: '',
-    address: '',
-    address2: '',
-    city: '',
-    state: 'Maryland',
-    zipCode: '',
-  });
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [address2, setAddress2] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('Maryland');
+  const [zipCode, setZipCode] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!billingInfo.nameOnCard.trim()) {
-      newErrors.nameOnCard = 'Name on card is required';
-    }
-    if (!billingInfo.address.trim()) {
-      newErrors.address = 'Address is required';
-    }
-    if (!billingInfo.city.trim()) {
-      newErrors.city = 'City is required';
-    }
-    if (!billingInfo.zipCode.trim()) {
-      newErrors.zipCode = 'Zip code is required';
-    } else if (!/^\d{5}(-\d{4})?$/.test(billingInfo.zipCode)) {
-      newErrors.zipCode = 'Invalid zip code format';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!stripe || !elements) {
       return;
     }
 
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsProcessing(true);
+    setLoading(true);
 
     try {
+      // Validate all form fields are filled
+      if (!name || !address || !city || !state || !zipCode) {
+        alert('Please fill in all required fields');
+        setLoading(false);
+        return;
+      }
+
+      // Validate zip code format
+      const zipRegex = /^\d{5}(-\d{4})?$/;
+      if (!zipRegex.test(zipCode)) {
+        alert('Please enter a valid zip code');
+        setLoading(false);
+        return;
+      }
+
+      // Submit the payment element to validate
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        alert(submitError.message);
+        setLoading(false);
+        return;
+      }
+
+      // Confirm the payment with Stripe
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/confirmation?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`,
           payment_method_data: {
             billing_details: {
-              name: billingInfo.nameOnCard,
+              name: name,
               address: {
-                line1: billingInfo.address,
-                line2: billingInfo.address2 || undefined,
-                city: billingInfo.city,
-                state: billingInfo.state,
-                postal_code: billingInfo.zipCode,
+                line1: address,
+                line2: address2 || undefined,
+                city: city,
+                state: state,
+                postal_code: zipCode,
                 country: 'US',
               },
             },
@@ -100,14 +84,17 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
       });
 
       if (error) {
-        console.error('Payment error:', error);
-        alert(error.message || 'Payment failed. Please try again.');
-        setIsProcessing(false);
+        // Payment failed
+        alert(error.message);
+        setLoading(false);
+      } else {
+        // Payment succeeded - Stripe will redirect to return_url
+        // No need to do anything here
       }
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Payment error:', err);
       alert('An unexpected error occurred. Please try again.');
-      setIsProcessing(false);
+      setLoading(false);
     }
   };
 
@@ -137,16 +124,11 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
             <input
               type="text"
               id="nameOnCard"
-              value={billingInfo.nameOnCard}
-              onChange={(e) => setBillingInfo({ ...billingInfo, nameOnCard: e.target.value })}
-              className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent ${
-                errors.nameOnCard ? 'border-red-500' : 'border-gray-300'
-              }`}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
               placeholder="Marcus Johnson"
             />
-            {errors.nameOnCard && (
-              <p className="mt-1 text-sm text-red-600">{errors.nameOnCard}</p>
-            )}
           </div>
 
           {/* Address */}
@@ -157,16 +139,11 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
             <input
               type="text"
               id="address"
-              value={billingInfo.address}
-              onChange={(e) => setBillingInfo({ ...billingInfo, address: e.target.value })}
-              className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent ${
-                errors.address ? 'border-red-500' : 'border-gray-300'
-              }`}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
               placeholder="8049 Old Alexandria Ferry Rd"
             />
-            {errors.address && (
-              <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-            )}
           </div>
 
           {/* Address 2 */}
@@ -177,8 +154,8 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
             <input
               type="text"
               id="address2"
-              value={billingInfo.address2}
-              onChange={(e) => setBillingInfo({ ...billingInfo, address2: e.target.value })}
+              value={address2}
+              onChange={(e) => setAddress2(e.target.value)}
               className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
             />
           </div>
@@ -192,16 +169,11 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
               <input
                 type="text"
                 id="city"
-                value={billingInfo.city}
-                onChange={(e) => setBillingInfo({ ...billingInfo, city: e.target.value })}
-                className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent ${
-                  errors.city ? 'border-red-500' : 'border-gray-300'
-                }`}
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
                 placeholder="Clinton"
               />
-              {errors.city && (
-                <p className="mt-1 text-sm text-red-600">{errors.city}</p>
-              )}
             </div>
 
             <div>
@@ -210,8 +182,8 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
               </label>
               <select
                 id="state"
-                value={billingInfo.state}
-                onChange={(e) => setBillingInfo({ ...billingInfo, state: e.target.value })}
+                value={state}
+                onChange={(e) => setState(e.target.value)}
                 className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
               >
                 {states.map((state) => (
@@ -229,16 +201,11 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
               <input
                 type="text"
                 id="zipCode"
-                value={billingInfo.zipCode}
-                onChange={(e) => setBillingInfo({ ...billingInfo, zipCode: e.target.value })}
-                className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent ${
-                  errors.zipCode ? 'border-red-500' : 'border-gray-300'
-                }`}
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
                 placeholder="20735"
               />
-              {errors.zipCode && (
-                <p className="mt-1 text-sm text-red-600">{errors.zipCode}</p>
-              )}
             </div>
           </div>
         </div>
@@ -252,8 +219,8 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
       </div>
 
       {/* Submit Button */}
-      <PrimaryButton type="submit" disabled={!stripe || isProcessing}>
-        {isProcessing ? 'Processing...' : 'Place Order'}
+      <PrimaryButton type="submit" disabled={!stripe || loading}>
+        {loading ? 'Processing...' : 'Place Order'}
       </PrimaryButton>
 
       <div className="text-center">

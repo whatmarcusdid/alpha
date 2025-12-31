@@ -3,6 +3,8 @@ import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
 
+// Force redeploy to pick up STRIPE_SECRET_KEY secret - 2025-12-30
+
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
@@ -184,7 +186,12 @@ export const updateCustomerFromNotion = onRequest(
 // NEW FUNCTION: Create Stripe Payment Intent
 // ============================================================================
 export const createPaymentIntent = onRequest(
-  {region: "us-central1", cors: true},
+  {
+    region: "us-central1",
+    cors: true,
+    secrets: ["STRIPE_SECRET_KEY"],
+    vpcConnectorEgressSettings: "ALL_TRAFFIC",
+  },
   async (request, response) => {
     logger.debug("--- CREATE PAYMENT INTENT REQUEST ---");
     logger.debug("Request Body:", request.body);
