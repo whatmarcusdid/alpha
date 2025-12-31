@@ -9,6 +9,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { PricingTier, BillingCycle } from '@/lib/stripe';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { TertiaryButton } from '@/components/ui/TertiaryButton';
 
 interface CheckoutFormProps {
   amount: number;
@@ -218,20 +219,10 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
         <PaymentElement />
       </div>
 
-      {/* Submit Button */}
-      <PrimaryButton type="submit" disabled={!stripe || loading}>
-        {loading ? 'Processing...' : 'Place Order'}
-      </PrimaryButton>
-
-      <div className="text-center">
-        <button
-          type="button"
-          onClick={() => router.push('/pricing')}
-          className="text-sm text-gray-600 hover:text-[#232521]"
-        >
-          Go Back
-        </button>
-      </div>
+      {/* Submit Button - visually hidden, triggered by external button */}
+      <button type="submit" id="checkout-submit-btn" className="hidden">
+        Submit
+      </button>
     </form>
   );
 }
