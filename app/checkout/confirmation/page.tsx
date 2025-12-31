@@ -3,6 +3,8 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PRICING, PricingTier, BillingCycle, getRenewalDate } from '@/lib/stripe';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { Header } from '@/components/layout/Header';
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
@@ -49,129 +51,69 @@ function ConfirmationContent() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1]">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-2xl">🧞</span>
-            <span className="text-xl font-bold text-[#232521]">TRADESITEGENIE</span>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-          {/* Success Icon */}
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-          </div>
-
-          <h1 className="text-3xl font-bold text-[#232521] mb-2">
+        <div className="bg-white rounded-lg border border-gray-200 p-8">
+          
+          <h1 className="text-3xl font-bold text-[#232521] mb-2 text-left">
             That's it—your site's in good hands now!
           </h1>
-          <p className="text-gray-600 mb-8">
+          <p className="text-gray-600 mb-4 text-left">
             Welcome to TradeSiteGenie. We'll handle the tech stuff while you focus on running your business.
           </p>
 
-          <p className="text-sm text-gray-600 mb-8">
-            A receipt and your onboarding link has been to: <span className="font-semibold">marcus@allstarplumbingdmv.com</span>
+          <p className="text-sm text-gray-600 mb-8 text-left">
+            A receipt and your onboarding link has been to: marcus@allstarplumbingdmv.com
           </p>
 
           {/* Order Summary */}
-          <div className="bg-[#F7F6F1] rounded-lg p-6 mb-8 text-left">
+          <div className="mb-8">
             <h2 className="text-xl font-bold text-[#232521] mb-4">Order Summary</h2>
             
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Plan:</span>
-                <span className="font-semibold text-[#232521]">
-                  Genie Maintenance - {planData.name} Plan
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Duration:</span>
-                <span className="font-semibold text-[#232521]">1 Year</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Support Hours:</span>
-                <span className="font-semibold text-[#232521]">{planData.features[1]}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Maintenance Hours:</span>
-                <span className="font-semibold text-[#232521]">{planData.features[2]}</span>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-300 my-4"></div>
-
-            <h3 className="font-semibold text-[#232521] mb-2">Features Included:</h3>
-            <ul className="space-y-1 text-sm">
-              {planData.deliverables.map((deliverable, index) => (
-                <li key={index} className="flex items-center text-gray-600">
-                  <span className="mr-2">•</span>
-                  {deliverable}
-                </li>
-              ))}
+            <ul className="space-y-2 text-sm mb-4">
+              <li>Plan: GenieMaintenance - {planData.name} Plan</li>
+              <li>Duration: 1 Year</li>
+              <li>Support Hours: 4 hours/year</li>
+              <li>Maintenance Hours: 8 hours/year</li>
+              <li className="mt-4 font-semibold">Features Included:</li>
+              <li className="ml-4">Ongoing Security Monitoring & Backups</li>
+              <li className="ml-4">Monthly Traffic Analytics Reports</li>
+              <li className="ml-4">Monthly Performance Checkups</li>
+              <li className="ml-4">Monthly Plugin & Theme Updates</li>
             </ul>
-
-            <div className="border-t border-gray-300 my-4"></div>
-
-            <div className="flex justify-between text-lg font-bold">
-              <span className="text-[#232521]">Total Paid Today:</span>
-              <span className="text-[#232521]">${parseFloat(amount).toFixed(2)}</span>
-            </div>
             
-            <div className="flex justify-between text-sm mt-2">
-              <span className="text-gray-600">Order ID:</span>
-              <span className="font-mono text-[#232521]">{orderDetails.orderId}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Date:</span>
-              <span className="text-[#232521]">{orderDetails.date}</span>
-            </div>
+            <p className="text-sm font-semibold mb-1">Total Paid Today: ${parseFloat(amount).toFixed(2)}</p>
+            <p className="text-sm">Order ID: {orderDetails.orderId}</p>
+            <p className="text-sm">Date: {orderDetails.date}</p>
           </div>
 
           {/* What Happens Next */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 text-left">
+          <div className="mb-8">
             <h3 className="font-bold text-[#232521] mb-3">What Happens Next</h3>
-            <ul className="space-y-3 text-sm text-gray-700">
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>Check your inbox for a welcome email with your login link</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>Join your scheduled welcome call to review your site and set priorities</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>Start requesting support tasks using your included hours anytime through your dashboard</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>Expect your first analytics report at the end of the upcoming quarter</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>We'll run regular security scans and update your plugins behind the scenes—no action needed</span>
-              </li>
+            <ul className="space-y-2 text-sm text-gray-700 list-disc ml-5">
+              <li>Check your inbox for a welcome email with your login link</li>
+              <li>Join your scheduled welcome call to review your site and set priorities</li>
+              <li>Start requesting support tasks using your included hours anytime through your dashboard</li>
+              <li>Expect your first analytics report at the end of the upcoming quarter</li>
+              <li>We'll run regular security scans and update your plugins behind the scenes—no action needed</li>
             </ul>
           </div>
 
-          {/* Need Anything Section */}
-          <div className="border-t border-gray-200 pt-6">
+          {/* Need Anything? */}
+          <div className="mb-8">
+            <h3 className="font-bold text-[#232521] mb-2">Need Anything?</h3>
             <p className="text-sm text-gray-600">
-              Questions or edits? Reach out anytime at <a href="mailto:support@tradesitegenie.com" className="text-[#9be382] hover:underline font-semibold">support@tradesitegenie.com</a>
+              Questions or edits? Reach out anytime at support@tradesitegenie.com
             </p>
           </div>
 
-          <button
+          <PrimaryButton
             onClick={() => router.push('/checkout/wordpress-credentials')}
-            className="mt-8 w-full px-6 py-4 rounded-full bg-[#9be382] hover:bg-[#8dd370] text-[#232521] font-semibold text-lg transition-colors"
+            className="w-full"
           >
             Continue
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>
