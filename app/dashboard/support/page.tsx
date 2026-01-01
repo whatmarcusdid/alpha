@@ -5,7 +5,6 @@ import type { User } from 'firebase/auth';
 import { onAuthStateChange } from '@/lib/auth';
 import { formatNotionProperties, NotionSupportRequest } from '@/lib/notion/support';
 import { uploadSupportAttachment, validateFile } from '@/lib/firebase/storage';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 import {
   PhoneIcon,
   EnvelopeIcon,
@@ -18,6 +17,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
+import { DashboardNav } from '@/components/layout/DashboardNav';
 
 export default function SupportPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -235,7 +235,7 @@ export default function SupportPage() {
       />
 
       <div className="min-h-screen bg-[#F7F6F1] p-4">
-        <DashboardNav />
+      <DashboardNav />
         <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-2xl font-bold text-[#232521] mb-6">Support Hub</h1>
 

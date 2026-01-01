@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getCompanyData, updateCompanyData, CompanyData } from '@/lib/firestore/company';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 import { Edit2 } from 'lucide-react';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import { PageCard } from '@/components/layout/PageCard';
+import { DashboardNav } from '@/components/layout/DashboardNav';
 
 export default function MyCompanyPage() {
   const router = useRouter();
@@ -138,6 +138,7 @@ export default function MyCompanyPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
+      <DashboardNav />
       <NotificationToast
         show={notification.show}
         type={notification.type}
@@ -145,7 +146,6 @@ export default function MyCompanyPage() {
         subtitle={notification.subtitle}
         onDismiss={() => setNotification({ ...notification, show: false })}
       />
-      <DashboardNav />
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
         <PageCard>

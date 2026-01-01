@@ -6,9 +6,9 @@ import type { User } from 'firebase/auth';
 import { onAuthStateChange } from '@/lib/auth';
 import { getSubscriptionForUser, Subscription } from '@/lib/stripe/subscription';
 import { getTransactionsForUser, Transaction } from '@/lib/stripe/transactions';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { DashboardNav } from '@/components/layout/DashboardNav';
 
 export default function TransactionsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -92,7 +92,7 @@ export default function TransactionsPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
-      <DashboardNav />
+    <DashboardNav />
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#232521]">Transactions</h1>

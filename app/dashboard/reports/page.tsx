@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChange } from '@/lib/auth';
 import { getReportsForUser, Report } from '@/lib/firestore/reports';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
 import { PageCard } from '@/components/layout/PageCard';
+import { DashboardNav } from '@/components/layout/DashboardNav';
 
 interface ReportWithDate extends Omit<Report, 'createdDate' | 'updatedDate'> {
   createdDate: Date;
@@ -85,7 +85,7 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
-      <DashboardNav />
+    <DashboardNav />
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageCard>
           <div className="flex justify-between items-start mb-6">

@@ -7,9 +7,9 @@ import { onAuthStateChange } from '@/lib/auth';
 import { getSitesForUser } from '@/lib/firestore/sites';
 import { Site } from '@/types';
 import { GlobeAltIcon } from '@heroicons/react/24/outline';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 import { updateSiteThumbnail } from '@/lib/firestore/updateSiteThumbnail';
 import { PageCard } from '@/components/layout/PageCard';
+import { DashboardNav } from '@/components/layout/DashboardNav';
 
 export default function SitesPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -87,7 +87,7 @@ export default function SitesPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
-      <DashboardNav />
+    <DashboardNav />
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageCard>
           <h1 className="text-2xl font-semibold text-gray-900 mb-8">Sites</h1>

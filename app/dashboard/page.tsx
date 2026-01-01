@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 import { Button } from '@/components/ui/button';
 import { getUserMetrics } from '@/lib/firestore';
 import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
+import { DashboardNav } from '@/components/layout/DashboardNav';
 
 type Meeting = {
   month: string;
@@ -101,9 +101,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
-      {/* Navigation */}
-      <DashboardNav />
-
+    <DashboardNav />
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
         <div className="bg-white rounded-lg p-8 min-h-[calc(100vh-theme(spacing.32))]">

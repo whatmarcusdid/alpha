@@ -5,11 +5,11 @@ import type { User } from 'firebase/auth';
 import { onAuthStateChange, signOut, updateUserEmail } from '@/lib/auth';
 import { getUserProfile, updateUserProfile, UserProfile } from '@/lib/firestore/profile';
 import { changePassword } from '@/lib/auth/password';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import { PageCard } from '@/components/layout/PageCard';
+import { DashboardNav } from '@/components/layout/DashboardNav';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -115,7 +115,6 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F7F6F1] p-4">
-        <DashboardNav />
         <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <p>Loading profile...</p>
         </main>
@@ -125,7 +124,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
-      <DashboardNav />
+    <DashboardNav />
       <NotificationToast
         show={notification.show}
         type={notification.type}
