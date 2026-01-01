@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
+// Force a rebuild
 module.exports = {
-  darkMode: "class",
+  darkMode: ["class"],
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -8,6 +9,13 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        'mobile-min': '320px',
+        'mobile': '430px',
+        'tablet-sm': '744px',
+        'tablet': '1025px',
+        'desktop': '1025px',
+      },
       colors: {
         'tsg-green': '#9be382',
         'tsg-teal': '#1b4a41',
