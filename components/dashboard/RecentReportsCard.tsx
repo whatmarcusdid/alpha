@@ -57,8 +57,13 @@ export function RecentReportsCard() {
       {loading ? (
         <div className="text-center text-gray-500 py-8">Loading reports...</div>
       ) : reports.length === 0 ? (
-        <div className="text-center text-gray-500 py-8">
-          <p className="mb-4">Your first report is coming soon.</p>
+        <div className="text-center py-8">
+          <p className="text-base font-semibold text-[#232521] mb-2">
+            Your first report is coming soon
+          </p>
+          <p className="text-sm text-gray-600">
+            Once we capture all relevant data from your site, your report will appear here.
+          </p>
         </div>
       ) : (
         <ul className="divide-y divide-gray-100">
@@ -84,8 +89,8 @@ export function RecentReportsCard() {
         </ul>
       )}
 
-      <div className="mt-6 text-center">
-        <Link href="/dashboard/reports" className="text-[#1b4a41] font-semibold text-sm inline-flex items-center gap-1 hover:underline">
+      <div className="mt-6 pt-4 border-t border-gray-100 text-center">
+        <Link href="/dashboard/reports" className="text-[#1b4a41] font-semibold text-sm inline-flex items-center gap-1 hover:text-[#0f3830] transition-colors">
           View All Reports <ArrowRightIcon className="w-4 h-4" />
         </Link>
       </div>

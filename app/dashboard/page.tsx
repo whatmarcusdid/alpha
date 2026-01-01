@@ -146,8 +146,6 @@ export default function DashboardPage() {
             
             {/* Left Column (2/3 width) */}
             <div className="lg:col-span-2 space-y-6">
-              <RecentReportsCard />
-
               <div className="w-full rounded bg-[#FAF9F5] border border-[#6F797A]/40 p-4 flex items-start justify-between gap-6">
   
                 {/* Left Column - Badge + Heading + Text stacked */}
@@ -179,6 +177,8 @@ export default function DashboardPage() {
                 </div>
                 
               </div>
+
+              <RecentReportsCard />
             </div>
 
             {/* Right Column (1/3 width) */}
