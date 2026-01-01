@@ -7,12 +7,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { DashboardNav } from '@/components/layout/DashboardNav';
 import { Button } from '@/components/ui/button';
 import { getUserMetrics } from '@/lib/firestore';
-
-type Report = {
-  id: number;
-  title: string;
-  date: string;
-};
+import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
 
 type Meeting = {
   month: string;
@@ -54,7 +49,6 @@ export default function DashboardPage() {
     { type: 'support', value: 0, label: 'Support Hours Remaining' },
     { type: 'maintenance', value: 0, label: 'Maintenance Hours Remaining' }
   ]);
-  const [reports, setReports] = useState<Report[]>([]);
   const [upcomingMeeting, setUpcomingMeeting] = useState<Meeting | null>(null);
 
   useEffect(() => {
@@ -152,7 +146,8 @@ export default function DashboardPage() {
             
             {/* Left Column (2/3 width) */}
             <div className="lg:col-span-2 space-y-6">
-              
+              <RecentReportsCard />
+
               <div className="w-full rounded bg-[#FAF9F5] border border-[#6F797A]/40 p-4 flex items-start justify-between gap-6">
   
                 {/* Left Column - Badge + Heading + Text stacked */}
@@ -183,43 +178,6 @@ export default function DashboardPage() {
                   </Link>
                 </div>
                 
-              </div>
-
-              {/* Recent Reports Section */}
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-[#232521] mb-4">Recent Reports</h2>
-                
-                {reports.length === 0 ? (
-                  /* Empty State */
-                  <div className="bg-white rounded border border-[#6F797A]/40 p-8 text-center">
-                    <h3 className="text-xl font-semibold text-[#232521] mb-2">
-                      Your first report is coming soon
-                    </h3>
-                    <p className="text-base text-gray-600">
-                      Your maintenance reports will appear here as we complete work on your site
-                    </p>
-                  </div>
-                ) : (
-                  /* Reports List */
-                  <div className="space-y-3">
-                    {reports.map((report) => (
-                      <div 
-                        key={report.id}
-                        className="bg-white rounded border border-[#6F797A]/40 p-4 flex items-center justify-between hover:shadow-sm transition-shadow"
-                      >
-                        <div>
-                          <h3 className="text-base font-semibold text-[#232521] mb-1">
-                            {report.title}
-                          </h3>
-                          <p className="text-sm text-gray-600">{report.date}</p>
-                        </div>
-                        <button className="text-base font-semibold text-[#1b4a41] hover:text-[#0f3830] transition-colors">
-                          Download
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
