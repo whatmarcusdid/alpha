@@ -58,15 +58,12 @@ export async function getReportsForUser(userId: string): Promise<Report[]> {
  * @returns A promise that resolves to an array of up to 3 Report objects.
  */
 export async function getRecentReportsForUser(userId: string): Promise<Report[]> {
-  console.log('🔍 getRecentReportsForUser called with userId:', userId);
-  
   if (typeof window === 'undefined') {
-    console.log('⚠️ Skipping - server-side render');
     return [];
   }
 
   if (!db) {
-    console.error('❌ Firestore db is not initialized');
+    console.error('Firestore db is not initialized');
     return [];
   }
 
@@ -74,44 +71,23 @@ export async function getRecentReportsForUser(userId: string): Promise<Report[]>
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
-    
-    console.log('📅 Filter details:', {
-      thirtyDaysAgoISO: thirtyDaysAgo.toISOString(),
-      cutoffDate: thirtyDaysAgo.toLocaleDateString(),
-      timestampSeconds: thirtyDaysAgoTimestamp.seconds
-    });
 
     const reportsRef = collection(db, 'users', userId, 'reports');
-    console.log('📂 Collection path:', `users/${userId}/reports`);
-    
     const q = query(
       reportsRef,
       where('createdDate', '>=', thirtyDaysAgoTimestamp),
       orderBy('createdDate', 'desc'),
       limit(3)
     );
-    
-    console.log('🔍 Executing query with 30-day filter...');
+
     const snapshot = await getDocs(q);
-    console.log('📊 Query result:', {
-      empty: snapshot.empty,
-      size: snapshot.size,
-      docs: snapshot.docs.length
-    });
 
     if (snapshot.empty) {
-      console.log('⚠️ No reports found in last 30 days');
       return [];
     }
 
-    const reports = snapshot.docs.map((docSnap) => {
+    return snapshot.docs.map((docSnap) => {
       const data = docSnap.data();
-      console.log('📄 Document data:', {
-        id: docSnap.id,
-        createdDate: data.createdDate,
-        title: data.title
-      });
-      
       return {
         id: docSnap.id,
         title: data.title || '',
@@ -122,12 +98,8 @@ export async function getRecentReportsForUser(userId: string): Promise<Report[]>
         type: data.type || 'performance',
       } as Report;
     });
-    
-    console.log('✅ Returning reports:', reports);
-    return reports;
-    
   } catch (error) {
-    console.error('❌ Error fetching recent reports:', error);
+    console.error('Error fetching recent reports:', error);
     return [];
   }
 }

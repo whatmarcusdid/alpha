@@ -13,8 +13,6 @@ interface ReportWithDate extends Omit<Report, 'createdDate' | 'updatedDate'> {
 }
 
 export function RecentReportsCard() {
-  console.log('🎯 RecentReportsCard component rendered');
-
   const [user, setUser] = useState<User | null>(null);
   const [reports, setReports] = useState<ReportWithDate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,46 +23,21 @@ export function RecentReportsCard() {
   }, []);
 
   useEffect(() => {
-    console.log('🔄 User state changed:', user?.uid || 'No user');
-
     if (user) {
-      console.log('🔍 Starting to fetch recent reports for user:', user.uid);
       setLoading(true);
-
       getRecentReportsForUser(user.uid)
         .then((fetchedReports) => {
-          console.log('✅ Fetched reports from Firestore:', {
-            count: fetchedReports.length,
-            reports: fetchedReports
-          });
-
           const reportsWithDates = fetchedReports.map(report => ({
             ...report,
             createdDate: new Date(report.createdDate),
             updatedDate: new Date(report.updatedDate),
           }));
-
-          console.log('📅 Reports after date conversion:', reportsWithDates);
           setReports(reportsWithDates);
         })
-        .catch((error) => {
-          console.error('❌ Error fetching reports:', error);
-        })
-        .finally(() => {
-          console.log('✅ Fetch complete, loading set to false');
-          setLoading(false);
-        });
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }
   }, [user]);
-
-  useEffect(() => {
-    console.log('📊 State updated:', {
-      hasUser: !!user,
-      userId: user?.uid,
-      reportsCount: reports.length,
-      loading
-    });
-  }, [user, reports, loading]);
 
   const formatDate = (date: Date): string => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
