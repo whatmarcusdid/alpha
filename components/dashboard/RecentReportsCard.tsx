@@ -13,6 +13,8 @@ interface ReportWithDate extends Omit<Report, 'createdDate' | 'updatedDate'> {
 }
 
 export function RecentReportsCard() {
+  console.log('🎯 RecentReportsCard component rendered');
+
   const [user, setUser] = useState<User | null>(null);
   const [reports, setReports] = useState<ReportWithDate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,21 +25,46 @@ export function RecentReportsCard() {
   }, []);
 
   useEffect(() => {
+    console.log('🔄 User state changed:', user?.uid || 'No user');
+
     if (user) {
+      console.log('🔍 Starting to fetch recent reports for user:', user.uid);
       setLoading(true);
+
       getRecentReportsForUser(user.uid)
         .then((fetchedReports) => {
+          console.log('✅ Fetched reports from Firestore:', {
+            count: fetchedReports.length,
+            reports: fetchedReports
+          });
+
           const reportsWithDates = fetchedReports.map(report => ({
             ...report,
             createdDate: new Date(report.createdDate),
             updatedDate: new Date(report.updatedDate),
           }));
+
+          console.log('📅 Reports after date conversion:', reportsWithDates);
           setReports(reportsWithDates);
         })
-        .catch(console.error)
-        .finally(() => setLoading(false));
+        .catch((error) => {
+          console.error('❌ Error fetching reports:', error);
+        })
+        .finally(() => {
+          console.log('✅ Fetch complete, loading set to false');
+          setLoading(false);
+        });
     }
   }, [user]);
+
+  useEffect(() => {
+    console.log('📊 State updated:', {
+      hasUser: !!user,
+      userId: user?.uid,
+      reportsCount: reports.length,
+      loading
+    });
+  }, [user, reports, loading]);
 
   const formatDate = (date: Date): string => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -51,7 +78,7 @@ export function RecentReportsCard() {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-white">
       <h2 className="text-lg font-bold text-[#232521] mb-4">Recent Reports</h2>
       
       {loading ? (
@@ -66,9 +93,17 @@ export function RecentReportsCard() {
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-gray-100">
+        <div className="space-y-3">
           {reports.map((report) => (
-            <li key={report.id} className="py-3 flex items-center justify-between hover:bg-[#F2F0E7] transition-colors rounded-md px-2 -mx-2">
+            <div
+              key={report.id}
+              className="flex p-[18px] justify-between items-center self-stretch rounded border border-[rgba(111,121,122,0.4)] bg-white"
+              style={{
+                borderRadius: '4px',
+                border: '1px solid rgba(111, 121, 122, 0.40)',
+                background: '#FFF'
+              }}
+            >
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                   <DocumentTextIcon className="w-6 h-6 text-gray-500" />
@@ -84,16 +119,10 @@ export function RecentReportsCard() {
               >
                 Download
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
-
-      <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-        <Link href="/dashboard/reports" className="text-[#1b4a41] font-semibold text-sm inline-flex items-center gap-1 hover:text-[#0f3830] transition-colors">
-          View All Reports <ArrowRightIcon className="w-4 h-4" />
-        </Link>
-      </div>
     </div>
   );
 }
