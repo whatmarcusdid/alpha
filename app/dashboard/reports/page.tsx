@@ -172,7 +172,11 @@ export default function ReportsPage() {
                       <div className="col-span-2 text-sm text-gray-600">{formatDate(report.updatedDate)}</div>
                       <div className="col-span-3 text-right">
                         <button 
-                          onClick={() => handleDownload(report)}
+                          onClick={() => handleDownload({
+                            ...report,
+                            createdDate: report.createdDate.toISOString(),
+                            updatedDate: report.updatedDate.toISOString()
+                          })}
                           className="text-[#1b4a41] font-semibold hover:text-[#0f3830] transition-colors"
                         >
                           Download
