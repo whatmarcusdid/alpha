@@ -28,8 +28,8 @@ async function handleSubscriptionEvent(event: Stripe.Event) {
   const subscriptionData = {
     status: subscription.status,
     tier: subscription.items.data[0]?.price.lookup_key,
-    startDate: new Date(subscription.current_period_start * 1000),
-    endDate: new Date(subscription.current_period_end * 1000),
+    startDate: new Date(subscription.currentPeriodStart * 1000),
+    endDate: new Date(subscription.currentPeriodEnd * 1000),
     stripeSubscriptionId: subscription.id,
   };
 
