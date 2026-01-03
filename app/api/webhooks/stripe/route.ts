@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
-// import { db } from '@/lib/firebase/admin'; // Assuming admin SDK setup for server-side
+import { adminDb } from '@/lib/firebase/admin';
+import * as admin from 'firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
@@ -13,27 +14,28 @@ async function handleSubscriptionEvent(event: Stripe.Event) {
   const subscription = event.data.object as Stripe.Subscription;
   const customerId = subscription.customer as string;
 
-  // Look up the user in your database by their Stripe customer ID
-  // const userRef = db.collection('users').where('stripeCustomerId', '==', customerId).limit(1);
-  // const userSnapshot = await userRef.get();
+  const userRef = adminDb.collection('users').where('stripeCustomerId', '==', customerId).limit(1);
+  const userSnapshot = await userRef.get();
 
-  // if (userSnapshot.empty) {
-  //   console.error(`No user found with Stripe customer ID: ${customerId}`);
-  //   return;
-  // }
+  if (userSnapshot.empty) {
+    console.error(`No user found with Stripe customer ID: ${customerId}`);
+    return;
+  }
 
-  // const userId = userSnapshot.docs[0].id;
-  // const userDocRef = db.collection('users').doc(userId).collection('subscriptions').doc(subscription.id);
+  const userId = userSnapshot.docs[0].id;
+  const userDocRef = adminDb.collection('users').doc(userId);
 
   const subscriptionData = {
-    status: subscription.status,
-    tier: subscription.items.data[0]?.price.lookup_key,
-    startDate: new Date(subscription.current_period_start * 1000),
-    endDate: new Date(subscription.current_period_end * 1000),
-    stripeSubscriptionId: subscription.id,
+    subscription: {
+      status: subscription.status,
+      tier: subscription.items.data[0]?.price.lookup_key,
+      startDate: admin.firestore.Timestamp.fromDate(new Date((subscription as any).current_period_start * 1000)),
+      endDate: admin.firestore.Timestamp.fromDate(new Date((subscription as any).current_period_end * 1000)),
+      stripeSubscriptionId: subscription.id,
+    }
   };
 
-  // await userDocRef.set(subscriptionData, { merge: true });
+  await userDocRef.set(subscriptionData, { merge: true });
 }
 
 export async function POST(req: NextRequest) {
