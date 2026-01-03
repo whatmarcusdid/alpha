@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 // import { db } from '@/lib/firebase/admin'; // Assuming admin SDK setup for server-side
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-12-15.clover',
+  apiVersion: '2024-04-10',
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -28,8 +28,8 @@ async function handleSubscriptionEvent(event: Stripe.Event) {
   const subscriptionData = {
     status: subscription.status,
     tier: subscription.items.data[0]?.price.lookup_key,
-    startDate: new Date((subscription as any).current_period_start * 1000),
-    endDate: new Date((subscription as any).current_period_end * 1000),
+    startDate: new Date(subscription.current_period_start * 1000),
+    endDate: new Date(subscription.current_period_end * 1000),
     stripeSubscriptionId: subscription.id,
   };
 
@@ -37,7 +37,8 @@ async function handleSubscriptionEvent(event: Stripe.Event) {
 }
 
 export async function POST(req: NextRequest) {
-  const sig = headers().get('stripe-signature');
+  const headersList = await headers();
+  const sig = headersList.get('stripe-signature');
   let event: Stripe.Event;
 
   try {
