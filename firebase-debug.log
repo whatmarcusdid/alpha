@@ -625,3 +625,248 @@
 [error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
 [debug] [2026-01-01T21:45:05.694Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
 [debug] [2026-01-01T21:45:05.695Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T10:15:51.492Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T10:15:51.496Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T10:15:51.498Z] Checked if tokens are valid: false, expires at: 1767307503665
+[debug] [2026-01-03T10:15:51.499Z] Checked if tokens are valid: false, expires at: 1767307503665
+[debug] [2026-01-03T10:15:51.499Z] > refreshing access token with scopes: []
+[debug] [2026-01-03T10:15:51.503Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-03T10:15:51.503Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-03T10:15:51.507Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T10:15:51.508Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T10:15:51.508Z] Checked if tokens are valid: false, expires at: 1767307503665
+[debug] [2026-01-03T10:15:51.508Z] Checked if tokens are valid: false, expires at: 1767307503665
+[debug] [2026-01-03T10:15:51.509Z] > refreshing access token with scopes: []
+[debug] [2026-01-03T10:15:51.509Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-03T10:15:51.510Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-03T10:15:51.632Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-03T10:15:51.633Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-03T10:15:51.668Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T10:15:51.689Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-03T10:15:51.689Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-03T10:15:51.728Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T10:15:51.859Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T10:15:51.860Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[debug] [2026-01-03T10:15:51.882Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:51.882Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:51.914Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:51.915Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:51.915Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-01-03T10:15:51.915Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/tradesitegenie
+[debug] [2026-01-03T10:15:51.918Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com [none]
+[debug] [2026-01-03T10:15:51.918Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com x-goog-quota-user=projects/tradesitegenie
+[debug] [2026-01-03T10:15:52.050Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T10:15:52.050Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[debug] [2026-01-03T10:15:52.052Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.052Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.080Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.080Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.081Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-01-03T10:15:52.081Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/tradesitegenie
+[debug] [2026-01-03T10:15:52.086Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com [none]
+[debug] [2026-01-03T10:15:52.086Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com x-goog-quota-user=projects/tradesitegenie
+[debug] [2026-01-03T10:15:52.237Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com 403
+[debug] [2026-01-03T10:15:52.237Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com [omitted]
+[debug] [2026-01-03T10:15:52.316Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-01-03T10:15:52.317Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-01-03T10:15:52.370Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com 403
+[debug] [2026-01-03T10:15:52.370Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com [omitted]
+[debug] [2026-01-03T10:15:52.475Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-01-03T10:15:52.476Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T10:15:52.501Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T10:15:52.501Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T10:15:52.502Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.502Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.506Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T10:15:52.582Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T10:15:52.582Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T10:15:52.593Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T10:15:52.594Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T10:15:52.647Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T10:15:52.647Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T10:15:52.647Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.647Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.647Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T10:15:52.731Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T10:15:52.732Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T10:15:52.732Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.732Z] Checked if tokens are valid: true, expires at: 1767438950693
+[debug] [2026-01-03T10:15:52.735Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T10:15:52.751Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T10:15:52.751Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T10:15:52.757Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T10:15:52.758Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T10:15:52.883Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T10:15:52.886Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T10:15:52.896Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T10:15:52.896Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:17:55.488Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:17:55.490Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:17:55.491Z] Checked if tokens are valid: false, expires at: 1767438950693
+[debug] [2026-01-03T13:17:55.492Z] Checked if tokens are valid: false, expires at: 1767438950693
+[debug] [2026-01-03T13:17:55.492Z] > refreshing access token with scopes: []
+[debug] [2026-01-03T13:17:55.495Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-03T13:17:55.496Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-03T13:17:55.499Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:17:55.500Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:17:55.500Z] Checked if tokens are valid: false, expires at: 1767438950693
+[debug] [2026-01-03T13:17:55.500Z] Checked if tokens are valid: false, expires at: 1767438950693
+[debug] [2026-01-03T13:17:55.501Z] > refreshing access token with scopes: []
+[debug] [2026-01-03T13:17:55.501Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-03T13:17:55.501Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-03T13:17:55.590Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-03T13:17:55.590Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-03T13:17:55.619Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:17:55.627Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-03T13:17:55.628Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-03T13:17:55.649Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:17:55.763Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:17:55.764Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[debug] [2026-01-03T13:17:55.787Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:55.787Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:55.813Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:55.814Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:55.814Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-01-03T13:17:55.814Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/tradesitegenie
+[debug] [2026-01-03T13:17:55.816Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com [none]
+[debug] [2026-01-03T13:17:55.816Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com x-goog-quota-user=projects/tradesitegenie
+[debug] [2026-01-03T13:17:55.971Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:17:55.976Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[debug] [2026-01-03T13:17:55.980Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:55.982Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:55.995Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:55.995Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:55.996Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-01-03T13:17:55.996Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/tradesitegenie
+[debug] [2026-01-03T13:17:56.000Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com [none]
+[debug] [2026-01-03T13:17:56.001Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com x-goog-quota-user=projects/tradesitegenie
+[debug] [2026-01-03T13:17:56.148Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com 403
+[debug] [2026-01-03T13:17:56.148Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com [omitted]
+[debug] [2026-01-03T13:17:56.255Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-01-03T13:17:56.256Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:17:56.293Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:17:56.295Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:17:56.295Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:56.296Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:56.296Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:17:56.310Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com 403
+[debug] [2026-01-03T13:17:56.310Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebaseio.com [omitted]
+[debug] [2026-01-03T13:17:56.405Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:17:56.406Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:17:56.420Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:17:56.420Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:17:56.498Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:17:56.499Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:17:56.501Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:56.501Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:56.501Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:17:56.516Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-01-03T13:17:56.516Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/tradesitegenie/services/firebasedataconnect.googleapis.com [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:17:56.566Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:17:56.567Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:17:56.567Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:56.571Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:17:56.571Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:17:56.605Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:17:56.605Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:17:56.610Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:17:56.610Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:17:56.640Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:17:56.640Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:17:56.643Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:17:56.643Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:31:05.381Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:31:05.386Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:31:05.390Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:05.390Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:05.391Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:31:05.563Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:31:05.563Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:31:05.569Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:31:05.569Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:31:07.690Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:31:07.691Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:31:07.692Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:07.692Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:07.692Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:31:07.748Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:31:07.748Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:31:07.749Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:07.749Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:07.750Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:31:07.794Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:31:07.795Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:31:07.801Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:31:07.801Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:31:07.860Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:31:07.861Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:31:07.866Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:31:07.866Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:31:37.250Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:31:37.250Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:31:37.251Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:37.251Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:37.251Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:31:37.377Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:31:37.378Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-03T13:31:37.390Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-03T13:31:37.390Z] > authorizing via signed-in user (whitem0824@gmail.com)
+[debug] [2026-01-03T13:31:37.390Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:37.390Z] Checked if tokens are valid: true, expires at: 1767449874628
+[debug] [2026-01-03T13:31:37.391Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo [none]
+[debug] [2026-01-03T13:31:37.490Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo 200
+[debug] [2026-01-03T13:31:37.491Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/tradesitegenie/billingInfo {"name":"projects/tradesitegenie/billingInfo","projectId":"tradesitegenie","billingAccountName":"billingAccounts/01060F-9E9BF8-C47E09","billingEnabled":true}
+[info] 
+=== Firestore Setup Actuation
+[info] ✔  Wrote firestore.rules 
+[info] ✔  Wrote firestore.indexes.json 
+[info] ✔  Wrote configuration info to firebase.json 
+[info] ✔  Wrote project information to .firebaserc 

@@ -1,16 +1,11 @@
 'use client';
-
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Site } from '@/types';
 
 export async function getSitesForUser(userId: string): Promise<Site[]> {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
   if (!db) {
-    console.error('Firestore db is not initialized');
+    console.error('Firestore is not initialized. This function must be called on the client side.');
     return [];
   }
 

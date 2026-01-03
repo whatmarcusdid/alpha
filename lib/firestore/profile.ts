@@ -1,7 +1,6 @@
 'use client';
-
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection } from 'firebase/firestore';
 
 export interface UserProfile {
   fullName: string;
@@ -11,12 +10,8 @@ export interface UserProfile {
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
   if (!db) {
-    console.error('Firestore db is not initialized');
+    console.error('Firestore is not initialized. This function must be called on the client side.');
     return null;
   }
 
@@ -44,12 +39,9 @@ export async function updateUserProfile(
   userId: string,
   updates: Partial<UserProfile>
 ): Promise<{ success: boolean; error?: string }> {
-  if (typeof window === 'undefined') {
-    return { success: false, error: 'Not in browser environment' };
-  }
-
   if (!db) {
-    return { success: false, error: 'Firestore db is not initialized' };
+    console.error('Firestore is not initialized. This function must be called on the client side.');
+    return { success: false, error: 'Firestore is not initialized' };
   }
 
   try {

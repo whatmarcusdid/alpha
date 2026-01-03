@@ -4,17 +4,28 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { User } from 'firebase/auth';
 import { onAuthStateChange } from '@/lib/auth';
-import { getSubscriptionForUser, Subscription } from '@/lib/stripe/subscription';
-import { getTransactionsForUser, Transaction } from '@/lib/stripe/transactions';
+import { getSubscriptionForUser, Subscription, cancelSubscription, switchToSafetyNet } from '@/lib/stripe/subscriptions';
+import { getTransactionsForUser } from '@/lib/stripe/transactions';
+import type { Transaction } from './transactions.d';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { DashboardNav } from '@/components/layout/DashboardNav';
+import ManageSubscriptionModal from '@/components/modals/ManageSubscriptionModal';
+import CancelConfirmModal from '@/components/modals/CancelConfirmModal';
+import SafetyNetDownsellModal from '@/components/modals/SafetyNetDownsellModal';
 
 export default function TransactionsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalState, setModalState] = useState<'closed' | 'manage' | 'confirm' | 'downsell'>('closed');
+  const [selectedCancellationReason, setSelectedCancellationReason] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string; show: boolean }>({
+    type: 'success',
+    message: '',
+    show: false,
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChange(setUser);
@@ -55,13 +66,29 @@ export default function TransactionsPage() {
     return `$${(amount / 100).toFixed(2)}`;
   };
 
-  const getSubscriptionPrice = (tier: 'monthly' | 'quarterly' | 'yearly') => {
-    const prices = {
-      'monthly': '$69.00',
-      'quarterly': '$207.00',
-      'yearly': '$679.00'
+  const getSubscriptionPrice = (tier: string, billingFrequency: string) => {
+    const priceMap: Record<string, Record<string, string>> = {
+      essential: {
+        monthly: '$69.00',
+        quarterly: '$207.00',
+        yearly: '$679.00'
+      },
+      advanced: {
+        monthly: '$129.00',
+        quarterly: '$387.00',
+        yearly: '$1,299.00'
+      },
+      premium: {
+        monthly: '$259.00',
+        quarterly: '$777.00',
+        yearly: '$2,599.00'
+      },
+      safety_net: {
+        yearly: '$299.00'
+      }
     };
-    return prices[tier] || '$0.00';
+    
+    return priceMap[tier]?.[billingFrequency] || '$0.00';
   };
 
   const getStatusBadge = (status: Subscription['status']) => {
@@ -90,9 +117,96 @@ export default function TransactionsPage() {
     }
   }
 
+  const closeAllModals = () => {
+    setModalState('closed');
+    setSelectedCancellationReason(null);
+  };
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message, show: true });
+    setTimeout(() => {
+      setNotification({ type, message, show: false });
+    }, 5000);
+  };
+
+  const refreshSubscription = async () => {
+    if (user) {
+      const sub = await getSubscriptionForUser(user.uid);
+      setSubscription(sub);
+    }
+  };
+
+  const handleManageClick = () => {
+    setModalState('manage');
+  };
+
+  const handleCancelClick = () => {
+    setModalState('confirm');
+  };
+
+  const handleKeepSubscription = () => {
+    closeAllModals();
+  };
+
+  const handleContinueToDownsell = (reason: string) => {
+    setSelectedCancellationReason(reason);
+    setModalState('downsell');
+  };
+
+  const handleClaimOffer = async () => {
+    if (!user || !subscription?.stripeSubscriptionId || !selectedCancellationReason) return;
+    
+    try {
+      const result = await switchToSafetyNet(
+        user.uid,
+        subscription.stripeSubscriptionId,
+        selectedCancellationReason
+      );
+      
+      if (result.success) {
+        showNotification('success', 'Successfully switched to Safety Net Plan!');
+        closeAllModals();
+        await refreshSubscription();
+      } else {
+        showNotification('error', result.error || 'Failed to switch to Safety Net');
+      }
+    } catch (error: any) {
+      showNotification('error', error.message || 'An error occurred');
+    }
+  };
+
+  const handleFinalCancellation = async () => {
+    if (!user || !subscription?.stripeSubscriptionId || !selectedCancellationReason) return;
+    
+    try {
+      const result = await cancelSubscription(
+        user.uid,
+        subscription.stripeSubscriptionId,
+        selectedCancellationReason
+      );
+      
+      if (result.success) {
+        showNotification('success', 'Subscription cancelled. Access until end of period.');
+        closeAllModals();
+        await refreshSubscription();
+      } else {
+        showNotification('error', result.error || 'Failed to cancel subscription');
+      }
+    } catch (error: any) {
+      showNotification('error', error.message || 'An error occurred');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
-    <DashboardNav />
+      {notification.show && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg text-white ${
+          notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}>
+          {notification.message}
+        </div>
+      )}
+      <DashboardNav />
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#232521]">Transactions</h1>
@@ -118,13 +232,13 @@ export default function TransactionsPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-[#232521]">{getSubscriptionPrice(subscription.tier)}<span className="text-sm font-normal text-gray-500">/{subscription.tier.replace('ly', '')}</span></p>
+                <p className="text-xl font-bold text-[#232521]">{getSubscriptionPrice(subscription.tier, subscription.billingFrequency || 'yearly')}<span className="text-sm font-normal text-gray-500">/{subscription.billingFrequency?.replace('ly', '') || 'year'}</span></p>
                   {getStatusBadge(subscription.status)}
                 </div>
               </div>
               {subscription.status === 'expired' && <p className="text-yellow-600 text-sm mt-2">Your subscription has expired. Please renew to continue service.</p>}
               <div className="mt-6">
-                <SecondaryButton onClick={() => alert('Redirecting to Stripe to manage subscription (MVP)')}>
+                <SecondaryButton onClick={handleManageClick}>
                   Manage Subscription
                 </SecondaryButton>
               </div>
@@ -189,6 +303,29 @@ export default function TransactionsPage() {
           )}
         </div>
       </main>
+
+      <ManageSubscriptionModal
+        isOpen={modalState === 'manage'}
+        onClose={closeAllModals}
+        onCancelClick={handleCancelClick}
+        currentPaymentMethod="Visa •••• 4242"
+      />
+
+      <CancelConfirmModal
+        isOpen={modalState === 'confirm'}
+        onClose={closeAllModals}
+        onKeepSubscription={handleKeepSubscription}
+        onContinue={handleContinueToDownsell}
+      />
+
+      <SafetyNetDownsellModal
+        isOpen={modalState === 'downsell'}
+        onClose={closeAllModals}
+        onClaimOffer={handleClaimOffer}
+        onCancelSubscription={handleFinalCancellation}
+        currentPrice={subscription ? getSubscriptionPrice(subscription.tier, subscription.billingFrequency || 'yearly') : '$679.00'}
+        renewalDate={subscription ? formatDate(subscription.endDate) : 'N/A'}
+      />
     </div>
   );
 }

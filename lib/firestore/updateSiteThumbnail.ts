@@ -1,9 +1,8 @@
-
 import { db } from '@/lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 /**
  * Updates the thumbnail URL for a specific site in Firestore.
- * This function is designed to run only in the browser.
  *
  * @param {string} siteId - The ID of the site document to update.
  * @param {string} thumbnailUrl - The new URL for the site's thumbnail.
@@ -13,25 +12,13 @@ export async function updateSiteThumbnail(
   siteId: string,
   thumbnailUrl: string
 ): Promise<boolean> {
-  // Guard: This function should only run in the browser environment.
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  // Guard: Ensure Firestore is initialized.
   if (!db) {
-    console.error('Firestore db is not initialized');
+    console.error('Firestore is not initialized. This function must be called on the client side.');
     return false;
   }
 
   try {
-    // Dynamically require Firestore functions for browser-only usage.
-    const { doc, updateDoc, collection } = require('firebase/firestore');
-
-    // Get a reference to the specific site document.
-    const siteRef = doc(collection(db, 'sites'), siteId);
-
-    // Update the 'thumbnailUrl' field of the document.
+    const siteRef = doc(db, 'sites', siteId);
     await updateDoc(siteRef, {
       thumbnailUrl: thumbnailUrl,
     });

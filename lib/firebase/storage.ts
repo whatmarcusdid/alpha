@@ -1,3 +1,4 @@
+'use client';
 import { app } from '@/lib/firebase';
 import type { AttachmentFile } from '@/lib/firestore/support';
 

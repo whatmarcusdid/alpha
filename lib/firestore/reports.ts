@@ -1,5 +1,4 @@
 'use client';
-
 import { db } from '@/lib/firebase';
 import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 
@@ -19,12 +18,8 @@ export interface Report {
  * @returns A promise that resolves to an array of Report objects.
  */
 export async function getReportsForUser(userId: string): Promise<Report[]> {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
   if (!db) {
-    console.error('Firestore db is not initialized');
+    console.error('Firestore is not initialized. This function must be called on the client side.');
     return [];
   }
 
@@ -58,12 +53,8 @@ export async function getReportsForUser(userId: string): Promise<Report[]> {
  * @returns A promise that resolves to an array of up to 3 Report objects.
  */
 export async function getRecentReportsForUser(userId: string): Promise<Report[]> {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
   if (!db) {
-    console.error('Firestore db is not initialized');
+    console.error('Firestore is not initialized. This function must be called on the client side.');
     return [];
   }
 

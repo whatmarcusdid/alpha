@@ -1,5 +1,4 @@
 'use client';
-
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -26,11 +25,8 @@ export async function submitSupportRequest(
   description: string,
   attachmentFiles: AttachmentFile[]
 ): Promise<{ success: boolean; requestId?: string; error?: string }> {
-  if (typeof window === 'undefined') {
-    return { success: false, error: 'Cannot submit on server side' };
-  }
-
   if (!db) {
+    console.error('Firestore is not initialized. This function must be called on the client side.');
     return { success: false, error: 'Firestore not initialized' };
   }
 

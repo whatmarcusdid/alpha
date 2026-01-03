@@ -1,7 +1,15 @@
 'use client';
 
 import { db } from '@/lib/firebase';
-import { collection, doc, addDoc, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  addDoc,
+  query,
+  orderBy,
+  getDocs,
+  Timestamp,
+} from 'firebase/firestore';
 
 export interface Transaction {
   id: string;
@@ -16,23 +24,18 @@ export interface Transaction {
 }
 
 export async function getTransactionsForUser(userId: string): Promise<Transaction[]> {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
   if (!db) {
-    console.error('Firestore db is not initialized');
+    console.error('Firestore is not initialized.');
     return [];
   }
 
   try {
-    const userDocRef = doc(collection(db, 'users'), userId);
-    const transactionsRef = collection(userDocRef, 'transactions');
+    const transactionsRef = collection(doc(collection(db, 'users'), userId), 'transactions');
     const q = query(transactionsRef, orderBy('date', 'desc'));
-    
+
     const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map((docSnap) => {
+
+    return snapshot.docs.map((docSnap: any) => {
       const data = docSnap.data();
       return {
         id: docSnap.id,
@@ -56,24 +59,19 @@ export async function addTransaction(
   userId: string,
   transaction: Omit<Transaction, 'id'>
 ): Promise<string | null> {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
   if (!db) {
-    console.error('Firestore db is not initialized');
+    console.error('Firestore is not initialized.');
     return null;
   }
 
   try {
-    const userDocRef = doc(collection(db, 'users'), userId);
-    const transactionsRef = collection(userDocRef, 'transactions');
+    const transactionsRef = collection(doc(collection(db, 'users'), userId), 'transactions');
     
     const docRef = await addDoc(transactionsRef, {
       ...transaction,
       createdAt: Timestamp.now(),
     });
-    
+
     return docRef.id;
   } catch (error) {
     console.error('Error adding transaction:', error);

@@ -1,7 +1,6 @@
 'use client';
-
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection } from 'firebase/firestore';
 
 export interface CompanyData {
   legalName: string;
@@ -18,35 +17,22 @@ export interface CompanyData {
 }
 
 export async function getCompanyData(userId: string): Promise<CompanyData | null> {
-  console.log('🔍 getCompanyData called with userId:', userId);
-  
-  if (typeof window === 'undefined') {
-    console.log('❌ Not in browser, returning null');
-    return null;
-  }
-
   if (!db) {
-    console.error('❌ Firestore db is not initialized');
+    console.error('Firestore is not initialized. This function must be called on the client side.');
     return null;
   }
 
   try {
-    console.log('🔍 Fetching user document...');
     const userRef = doc(collection(db, 'users'), userId);
     const userDoc = await getDoc(userRef);
 
-    console.log('📊 User document exists:', userDoc.exists());
-
     if (userDoc.exists()) {
       const data = userDoc.data();
-      console.log('📄 Full user data:', data);
-      console.log('📄 Company data from user doc:', data.company);
-      
       const company = data.company || {};
       
-      const companyData = {
+      return {
         legalName: company.legalName || '',
-        websiteUrl: data.websiteUrl || '',  // websiteUrl is at root level
+        websiteUrl: data.websiteUrl || '',
         yearFounded: company.yearFounded || '',
         numEmployees: company.numEmployees || '',
         address: company.address || '',
@@ -55,17 +41,13 @@ export async function getCompanyData(userId: string): Promise<CompanyData | null
         state: company.state || '',
         zipCode: company.zipCode || '',
         businessService: company.businessService || '',
-        serviceArea: company.serviceArea || data.serviceArea || '',  // Can be at root or in company
+        serviceArea: company.serviceArea || data.serviceArea || '',
       };
-      
-      console.log('✅ Returning company data:', companyData);
-      return companyData;
     }
 
-    console.log('⚠️ User document does not exist');
     return null;
   } catch (error) {
-    console.error('❌ Error fetching company data:', error);
+    console.error('Error fetching company data:', error);
     return null;
   }
 }
@@ -74,20 +56,21 @@ export async function updateCompanyData(
   userId: string,
   companyData: Partial<CompanyData>
 ): Promise<{ success: boolean; error?: string }> {
-  if (typeof window === 'undefined') {
-    return { success: false, error: 'Not in browser environment' };
-  }
-
   if (!db) {
+    console.error('Firestore is not initialized. This function must be called on the client side.');
     return { success: false, error: 'Firestore is not initialized' };
   }
 
   try {
     const userRef = doc(collection(db, 'users'), userId);
-    await updateDoc(userRef, {
-      company: companyData,
-      'company.lastUpdated': new Date(),
-    });
+    
+    const updatePayload: { [key: string]: any } = {};
+    for (const [key, value] of Object.entries(companyData)) {
+      updatePayload[`company.${key}`] = value;
+    }
+    updatePayload['company.lastUpdated'] = new Date().toISOString();
+
+    await updateDoc(userRef, updatePayload);
     
     return { success: true };
   } catch (error: any) {
