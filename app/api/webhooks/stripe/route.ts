@@ -11,6 +11,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 async function handleSubscriptionEvent(event: Stripe.Event) {
+  if (!adminDb) {
+    console.warn('Firebase Admin not initialized - skipping database update');
+    return;
+  }
+  
   const subscription = event.data.object as Stripe.Subscription;
   const customerId = subscription.customer as string;
 
