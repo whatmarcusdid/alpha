@@ -1,10 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { SAFETY_NET_ANNUAL } from '@/lib/stripe/subscriptions';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2024-11-20.acacia',
 });
 
 export async function POST(req: NextRequest) {
@@ -15,26 +14,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Retrieve the current subscription to get the subscription item ID
+    // Retrieve the current subscription to get customer and item details
     const currentSubscription = await stripe.subscriptions.retrieve(currentSubscriptionId);
 
-    if (!currentSubscription) {
-      return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
-    }
-
-    const subscriptionItem = currentSubscription.items.data[0];
-
-    // Update the subscription to the new plan
-    const updatedSubscription = await stripe.subscriptions.update(currentSubscriptionId, {
-      items: [
-        {
-          id: subscriptionItem.id,
-          price: SAFETY_NET_ANNUAL,
-        },
-      ],
+    const newSubscription = await stripe.subscriptions.create({
+      customer: currentSubscription.customer as string,
+      items: [{ price: SAFETY_NET_ANNUAL }],
+      trial_period_days: 30,
     });
 
-    return NextResponse.json({ success: true, subscription: updatedSubscription });
+    // Optionally, you can cancel the old subscription immediately
+    await stripe.subscriptions.del(currentSubscriptionId);
+
+    return NextResponse.json({ success: true, newSubscription });
   } catch (error: any) {
     console.error('Error switching to Safety Net:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
