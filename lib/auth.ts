@@ -1,4 +1,4 @@
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, sendPasswordResetEmail, getRedirectResult, OAuthProvider, signInWithRedirect, signInWithEmailAndPassword, onAuthStateChanged, User, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, sendPasswordResetEmail, getRedirectResult, OAuthProvider, signInWithRedirect, signInWithEmailAndPassword, onAuthStateChanged, User, updateEmail, reauthenticateWithCredential, EmailAuthProvider, createUserWithEmailAndPassword } from 'firebase/auth';
 import { app } from './firebase';
 
 export const auth = getAuth(app);
@@ -43,6 +43,38 @@ export async function signInWithEmail(email: string, password: string): Promise<
     }
     
     throw new Error(error.message || 'Failed to sign in');
+  }
+}
+
+export async function signUpWithEmail(
+  email: string, 
+  password: string,
+  displayName?: string
+): Promise<User> {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Optionally update display name if provided
+    if (displayName && userCredential.user) {
+      const { updateProfile } = await import('firebase/auth');
+      await updateProfile(userCredential.user, { displayName });
+    }
+    
+    return userCredential.user;
+  } catch (error: any) {
+    console.error('Sign-up error:', error);
+    
+    if (error.code === 'auth/email-already-in-use') {
+      throw new Error('An account with this email already exists');
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error('Invalid email address');
+    } else if (error.code === 'auth/weak-password') {
+      throw new Error('Password should be at least 6 characters');
+    } else if (error.code === 'auth/operation-not-allowed') {
+      throw new Error('Email/password accounts are not enabled');
+    }
+    
+    throw new Error(error.message || 'Failed to create account');
   }
 }
 
