@@ -32,7 +32,7 @@ export async function getCompanyData(userId: string): Promise<CompanyData | null
       
       return {
         legalName: company.legalName || '',
-        websiteUrl: data.websiteUrl || '',
+        websiteUrl: company.websiteUrl || '',
         yearFounded: company.yearFounded || '',
         numEmployees: company.numEmployees || '',
         address: company.address || '',
@@ -41,7 +41,7 @@ export async function getCompanyData(userId: string): Promise<CompanyData | null
         state: company.state || '',
         zipCode: company.zipCode || '',
         businessService: company.businessService || '',
-        serviceArea: company.serviceArea || data.serviceArea || '',
+        serviceArea: company.serviceArea || '',
       };
     }
 
@@ -55,10 +55,10 @@ export async function getCompanyData(userId: string): Promise<CompanyData | null
 export async function updateCompanyData(
   userId: string,
   companyData: Partial<CompanyData>
-): Promise<{ success: boolean; error?: string }> {
+): Promise<boolean> {
   if (!db) {
     console.error('Firestore is not initialized. This function must be called on the client side.');
-    return { success: false, error: 'Firestore is not initialized' };
+    return false;
   }
 
   try {
@@ -72,9 +72,9 @@ export async function updateCompanyData(
 
     await updateDoc(userRef, updatePayload);
     
-    return { success: true };
+    return true;
   } catch (error: any) {
     console.error('Error updating company data:', error);
-    return { success: false, error: error.message };
+    return false;
   }
 }

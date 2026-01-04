@@ -14,7 +14,7 @@ import { TertiaryButton } from '@/components/ui/TertiaryButton';
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tier = (searchParams.get('tier') as PricingTier) || 'essential';
+  const tier = (searchParams?.get('tier') as PricingTier) || 'essential';
   
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('annual');
   const [clientSecret, setClientSecret] = useState<string>('');

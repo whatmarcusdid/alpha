@@ -10,7 +10,7 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // TypeScript Interfaces for the incoming payload
-interface StatsPayload {
+interface MetricsPayload {
   websiteTraffic?: number;
   siteSpeedSeconds?: number;
   supportHoursRemaining?: number;
@@ -28,13 +28,13 @@ interface CompanyPayload {
   serviceArea?: string;
   yearFounded?: string;
   numEmployees?: string;
+  websiteUrl?: string;
 }
 
 interface NotionWebhookPayload {
   userId: string;
-  stats?: StatsPayload;
+  metrics?: MetricsPayload;
   company?: CompanyPayload;
-  websiteUrl?: string;
 }
 
 // ============================================================================
@@ -60,9 +60,8 @@ export const updateCustomerFromNotion = onRequest(
 
       const {
         userId,
-        stats,
+        metrics,
         company,
-        websiteUrl,
       }: NotionWebhookPayload = request.body;
 
       logger.debug("Extracted userId:", {userId, type: typeof userId});
@@ -99,16 +98,16 @@ export const updateCustomerFromNotion = onRequest(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      if (stats) {
-        logger.debug("Processing stats payload:", {stats});
-        Object.entries(stats).forEach(([key, value]) => {
-          logger.debug("Processing stats field:", {
+      if (metrics) {
+        logger.debug("Processing metrics payload:", {metrics});
+        Object.entries(metrics).forEach(([key, value]) => {
+          logger.debug("Processing metrics field:", {
             key,
             value,
             type: typeof value,
           });
           if (value !== undefined && value !== null) {
-            updateData[`stats.${key}`] = value;
+            updateData[`metrics.${key}`] = value;
           }
         });
       }
@@ -125,11 +124,6 @@ export const updateCustomerFromNotion = onRequest(
             updateData[`company.${key}`] = value;
           }
         });
-      }
-
-      if (websiteUrl) {
-        logger.debug("Processing websiteUrl:", {websiteUrl});
-        updateData.websiteUrl = websiteUrl;
       }
 
       logger.debug("Final updateData object constructed:", {updateData});

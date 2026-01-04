@@ -20,13 +20,13 @@ export async function getUserMetrics(userId: string) {
 
     if (userDoc.exists()) {
       const data = userDoc.data();
-      const stats = data.stats || {};
+      const metrics = data.metrics || {};
       
       return {
-        websiteTraffic: stats.websiteTraffic || 0,
-        averageSiteSpeed: stats.siteSpeedSeconds || 0,
-        supportHoursRemaining: stats.supportHoursRemaining || 0,
-        maintenanceHoursRemaining: stats.maintenanceHoursRemaining || 0,
+        websiteTraffic: metrics.websiteTraffic || 0,
+        averageSiteSpeed: metrics.siteSpeedSeconds || 0,
+        supportHoursRemaining: metrics.supportHoursRemaining || 0,
+        maintenanceHoursRemaining: metrics.maintenanceHoursRemaining || 0,
       };
     }
 

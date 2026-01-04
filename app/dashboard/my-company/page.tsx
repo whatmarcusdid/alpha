@@ -404,7 +404,7 @@ export default function MyCompanyPage() {
                     name="serviceArea"
                     value={formData.serviceArea}
                     onChange={handleInputChange}
-                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4A41]"
                   />
                 ) : (
                   <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">

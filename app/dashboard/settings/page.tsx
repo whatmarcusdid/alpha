@@ -1,14 +1,81 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth';
+import { getCompanyData, updateCompanyData, CompanyData } from '@/lib/firestore/company';
 import { DashboardNav } from '@/components/layout/DashboardNav';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { DestructiveButton } from '@/components/ui/DestructiveButton';
 import { GoogleIcon, AppleIcon } from '@/components/ui/icons';
+import { Edit2 } from 'lucide-react';
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [timeZone, setTimeZone] = useState('Eastern Standard Time (EST)');
   const [emailFrequency, setEmailFrequency] = useState('real-time');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [formData, setFormData] = useState<CompanyData>({
+    legalName: '',
+    websiteUrl: '',
+    yearFounded: '',
+    numEmployees: '',
+    address: '',
+    address2: '',
+    city: '',
+    state: 'Maryland',
+    zipCode: '',
+    businessService: 'Plumbing',
+    serviceArea: ''
+  });
+  const [originalData, setOriginalData] = useState(formData);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const user = await getCurrentUser();
+      if (!user) {
+        router.push('/signin');
+        return;
+      }
+      setCurrentUser(user);
+      
+      const companyData = await getCompanyData(user.uid);
+      if (companyData) {
+        setFormData(companyData);
+        setOriginalData(companyData);
+      }
+      
+      setLoading(false);
+    };
+    checkAuth();
+  }, [router]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSave = async () => {
+    if (!currentUser) return;
+
+    const success = await updateCompanyData(currentUser.uid, formData);
+    if (success) {
+      setOriginalData(formData);
+      setIsEditMode(false);
+    } else {
+      // Handle error
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData(originalData);
+    setIsEditMode(false);
+  };
 
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
@@ -16,6 +83,152 @@ export default function SettingsPage() {
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold text-[#232521] mb-8">Settings</h1>
         
+        {/* Company Info Section */}
+        <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-[#232521]">Company Information</h2>
+            {!isEditMode && (
+              <SecondaryButton onClick={() => setIsEditMode(true)} className="flex items-center gap-2">
+                <Edit2 className="w-4 h-4" />
+                <span>Edit</span>
+              </SecondaryButton>
+            )}
+          </div>
+          <div className="max-w-[600px] mx-auto">
+            <div className="space-y-4">
+              {/* Legal Entity Name */}
+              <div>
+                <label className="block text-sm font-medium text-[#232521] mb-2">Legal Entity Name or DBA Name</label>
+                {isEditMode ? (
+                  <input type="text" name="legalName" value={formData.legalName} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                ) : (
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.legalName}</div>
+                )}
+              </div>
+
+              {/* Business Website URL */}
+              <div>
+                <label className="block text-sm font-medium text-[#232521] mb-2">Business Website URL</label>
+                {isEditMode ? (
+                  <input type="text" name="websiteUrl" value={formData.websiteUrl} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                ) : (
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.websiteUrl}</div>
+                )}
+              </div>
+
+              {/* Year Founded */}
+              <div>
+                <label className="block text-sm font-medium text-[#232521] mb-2">Year founded</label>
+                {isEditMode ? (
+                  <input type="text" name="yearFounded" value={formData.yearFounded} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                ) : (
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.yearFounded}</div>
+                )}
+              </div>
+
+              {/* Number of Employees */}
+              <div>
+                <label className="block text-sm font-medium text-[#232521] mb-2">Number of employees</label>
+                {isEditMode ? (
+                  <input type="text" name="numEmployees" value={formData.numEmployees} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                ) : (
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.numEmployees}</div>
+                )}
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-[#232521] mb-2">Address</label>
+                {isEditMode ? (
+                  <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                ) : (
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.address}</div>
+                )}
+              </div>
+
+              {/* Address 2 (Optional) */}
+              <div>
+                <label className="block text-sm font-medium text-[#232521] mb-2">Address 2 (Optional)</label>
+                {isEditMode ? (
+                  <input type="text" name="address2" value={formData.address2} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                ) : (
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.address2 || '-'}</div>
+                )}
+              </div>
+
+              {/* City, State, Zip Code */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#232521] mb-2">City</label>
+                  {isEditMode ? (
+                    <input type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                  ) : (
+                    <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.city}</div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#232521] mb-2">State</label>
+                  {isEditMode ? (
+                    <select name="state" value={formData.state} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg">
+                      <option>Maryland</option>
+                      <option>Virginia</option>
+                      <option>DC</option>
+                      <option>Delaware</option>
+                      <option>Pennsylvania</option>
+                      <option>West Virginia</option>
+                    </select>
+                  ) : (
+                    <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.state}</div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#232521] mb-2">Zip Code</label>
+                  {isEditMode ? (
+                    <input type="text" name="zipCode" value={formData.zipCode} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                  ) : (
+                    <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.zipCode}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Business Service */}
+              <div>
+                <label className="block text-sm font-medium text-[#232521] mb-2">Select your business services</label>
+                {isEditMode ? (
+                  <select name="businessService" value={formData.businessService} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg">
+                    <option>Plumbing</option>
+                    <option>HVAC</option>
+                    <option>Electrical</option>
+                    <option>Roofing</option>
+                    <option>Painting</option>
+                    <option>General Contractor</option>
+                    <option>Landscaping</option>
+                  </select>
+                ) : (
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.businessService}</div>
+                )}
+              </div>
+
+              {/* Service Area */}
+              <div>
+                <label className="block text-sm font-medium text-[#232521] mb-2">Enter your service area</label>
+                {isEditMode ? (
+                  <input type="text" name="serviceArea" value={formData.serviceArea} onChange={handleInputChange} className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg" />
+                ) : (
+                  <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">{formData.serviceArea}</div>
+                )}
+              </div>
+
+              {isEditMode && (
+                <div className="flex justify-end gap-4">
+                  <SecondaryButton onClick={handleCancel}>Cancel</SecondaryButton>
+                  <PrimaryButton onClick={handleSave}>Save Changes</PrimaryButton>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
           <h2 className="text-2xl font-bold text-[#232521] mb-4">Time Zone</h2>
           <div className="max-w-[600px] mx-auto">
@@ -153,16 +366,6 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-600 mb-2">Last updated: July 1, 2025</p>
               <p className="text-sm text-gray-600">Questions about these policies? Contact us at <a href="mailto:support@tradesitegenie.com" className="text-[#1B4A41] hover:underline">support@tradesitegenie.com</a></p>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-          <h2 className="text-2xl font-bold text-[#232521] mb-4">Feedback Submission</h2>
-          <div className="max-w-[600px] mx-auto">
-            <p className="text-sm text-gray-600 mb-4">Help us improve by sharing your experience using TradeSiteGenie.</p>
-            <SecondaryButton onClick={() => console.log('Submit feedback clicked')} className="w-full">
-              Submit Feedback
-            </SecondaryButton>
           </div>
         </div>
 

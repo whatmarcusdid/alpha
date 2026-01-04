@@ -8,13 +8,12 @@ import { Button } from '@/components/ui/button';
 import { getUserMetrics } from '@/lib/firestore';
 import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
 import { DashboardNav } from '@/components/layout/DashboardNav';
-
-type Meeting = {
-  month: string;
-  day: string;
-  title: string;
-  datetime: string;
-};
+import { getUserSupportTickets } from '@/lib/firestore/supportTickets';
+import { getMeetings } from '@/lib/firestore/meetings';
+import { SupportTicket } from '@/types/supportTicket';
+import { Meeting } from '@/types/user';
+import { UpcomingMeetingCard } from '@/components/dashboard/UpcomingMeetingCard';
+import { NoMeetingsCard } from '@/components/dashboard/NoMeetingsCard';
 
 function getMetricColor(metricType: string, value: number): string {
   switch (metricType) {
@@ -49,7 +48,8 @@ export default function DashboardPage() {
     { type: 'support', value: 0, label: 'Support Hours Remaining' },
     { type: 'maintenance', value: 0, label: 'Maintenance Hours Remaining' }
   ]);
-  const [upcomingMeeting, setUpcomingMeeting] = useState<Meeting | null>(null);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState<Meeting[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -62,10 +62,12 @@ export default function DashboardPage() {
         const name = email.split('@')[0];
         setUserName(name.charAt(0).toUpperCase() + name.slice(1));
         
-        // Fetch user metrics from Firestore
-        const userMetrics = await getUserMetrics(user.uid);
-        
-        // Update metrics state with fetched data
+        const [userMetrics, ticketsResult, meetingsResult] = await Promise.all([
+          getUserMetrics(user.uid),
+          getUserSupportTickets(user.uid, { status: 'open' }),
+          getMeetings(user.uid)
+        ]);
+
         setMetrics([
           { type: 'traffic', value: userMetrics.websiteTraffic, label: 'Website Traffic This Month' },
           { type: 'speed', value: userMetrics.averageSiteSpeed, label: 'Average Site Speed In Seconds' },
@@ -73,6 +75,18 @@ export default function DashboardPage() {
           { type: 'maintenance', value: userMetrics.maintenanceHoursRemaining, label: 'Maintenance Hours Remaining' }
         ]);
         
+        if (ticketsResult.tickets) {
+          setSupportTickets(ticketsResult.tickets);
+        }
+
+        if (meetingsResult.meetings) {
+            const now = new Date();
+            const futureMeetings = meetingsResult.meetings
+                .filter(m => (m.date as any).toDate() > now)
+                .sort((a, b) => (a.date as any).toDate().getTime() - (b.date as any).toDate().getTime());
+            setUpcomingMeetings(futureMeetings);
+        }
+
         setLoading(false);
       }
     };
@@ -90,7 +104,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Get current date
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -102,11 +115,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#F7F6F1] p-4">
     <DashboardNav />
-      {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
         <div className="bg-white rounded-lg p-8 min-h-[calc(100vh-theme(spacing.32))]">
           
-          {/* Header Section */}
           <div className="flex items-start justify-between mb-8">
             <div>
               <p className="text-sm text-gray-600 mb-1">{dateStr}</p>
@@ -122,7 +133,6 @@ export default function DashboardPage() {
             </Button>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {metrics.map((metric, index) => {
               const borderColor = getMetricColor(metric.type, metric.value);
@@ -139,32 +149,37 @@ export default function DashboardPage() {
             })}
           </div>
 
-          {/* Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Left Column (2/3 width) */}
             <div className="lg:col-span-2 space-y-6">
               <div className="w-full rounded bg-[#FAF9F5] border border-[#6F797A]/40 p-4 flex items-start justify-between gap-6">
   
-                {/* Left Column - Badge + Heading + Text stacked */}
                 <div className="flex-1 space-y-3">
-                  {/* Support Badge */}
                   <span className="inline-flex items-center justify-center gap-2.5 px-2 py-1 rounded-full bg-[#1b4a41] text-white text-sm font-medium">
                     Support
                   </span>
                   
-                  {/* Heading */}
-                  <h3 className="text-xl font-bold text-[#232521]">
-                    Your Support Team is Standing By
-                  </h3>
+                  {supportTickets.length > 0 ? (
+                    <h3 className="text-xl font-bold text-[#232521]">
+                      You have {supportTickets.length} open support ticket(s)
+                    </h3>
+                  ) : (
+                    <h3 className="text-xl font-bold text-[#232521]">
+                      Your Support Team is Standing By
+                    </h3>
+                  )}
                   
-                  {/* Description */}
                   <p className="text-base text-gray-700 leading-relaxed">
-                    Fast, reliable help when you need it—just like having a web guy who actually shows up.
+                    {supportTickets.length > 0 ? (
+                      <Link href="/dashboard/support" className="text-[#1b4a41] hover:text-[#0f3830] transition-colors">
+                        View your tickets in the Support Hub
+                      </Link>
+                    ) : (
+                      'Fast, reliable help when you need it—just like having a web guy who actually shows up.'
+                    )}
                   </p>
                 </div>
                 
-                {/* Right Column - Contact Support Button */}
                 <div className="flex-shrink-0">
                   <Link 
                     href="/dashboard/support"
@@ -179,52 +194,18 @@ export default function DashboardPage() {
               <RecentReportsCard />
             </div>
 
-            {/* Right Column (1/3 width) */}
             <div className="lg:col-span-1">
-              
-              {/* Upcoming Meetings Section */}
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold text-[#232521]">Upcoming Meetings</h2>
                 
-                {upcomingMeeting ? (
-                  /* Meeting Scheduled State - Card Only */
-                  <div className="bg-white rounded-lg p-6 border border-[#6F797A]/40 space-y-4">
-                    {/* Calendar Badge */}
-                    <div className="inline-flex flex-col items-center bg-white rounded overflow-hidden border border-gray-200 w-32">
-                      <div className="bg-[#EF4444] text-white text-center py-2 px-4 w-full font-semibold">
-                        {upcomingMeeting.month}
-                      </div>
-                      <div className="text-5xl font-bold text-[#232521] py-3">
-                        {upcomingMeeting.day}
-                      </div>
-                    </div>
-                    
-                    {/* Meeting Details */}
-                    <div>
-                      <h3 className="text-xl font-bold text-[#232521] mb-2">
-                        {upcomingMeeting.title}
-                      </h3>
-                      <p className="text-base text-gray-600 mb-3">
-                        {upcomingMeeting.datetime}
-                      </p>
-                      <Link 
-                        href="/dashboard/meetings"
-                        className="text-base font-semibold text-[#1b4a41] hover:text-[#0f3830] transition-colors"
-                      >
-                        View Details
-                      </Link>
-                    </div>
+                {upcomingMeetings.length > 0 ? (
+                  <div className="space-y-4">
+                    {upcomingMeetings.map(meeting => (
+                      <UpcomingMeetingCard key={meeting.id} meeting={meeting} />
+                    ))}
                   </div>
                 ) : (
-                  /* Empty State - Card Only */
-                  <div className="bg-white rounded-lg p-6 border border-[#6F797A]/40">
-                    <h3 className="text-xl font-bold text-[#232521] mb-3">
-                      No Upcoming Meetings
-                    </h3>
-                    <p className="text-base text-gray-600 leading-relaxed">
-                      No meetings on the calendar right now. We'll reach out when it's time for your next semi-annual website review.
-                    </p>
-                  </div>
+                  <NoMeetingsCard />
                 )}
               </div>
             </div>

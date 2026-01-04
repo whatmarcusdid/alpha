@@ -10,10 +10,10 @@ function ConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  const tier = (searchParams.get('tier') as PricingTier) || 'essential';
-  const amount = searchParams.get('amount') || '0';
-  const billingCycle = (searchParams.get('billingCycle') as BillingCycle) || 'annual';
-  const paymentIntent = searchParams.get('payment_intent');
+  const tier = (searchParams?.get('tier') as PricingTier) || 'essential';
+  const amount = searchParams?.get('amount') || '0';
+  const billingCycle = (searchParams?.get('billingCycle') as BillingCycle) || 'annual';
+  const paymentIntent = searchParams?.get('payment_intent');
   
   const [isVerifying, setIsVerifying] = useState(true);
   const [orderDetails, setOrderDetails] = useState({
