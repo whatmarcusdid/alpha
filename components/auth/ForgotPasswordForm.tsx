@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +20,7 @@ type ForgotPasswordFormValues = z.infer<typeof ForgotPasswordSchema>;
 
 export function ForgotPasswordForm() {
   const [formState, setFormState] = useState<{ status: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ status: 'idle', message: '' });
+  const router = useRouter();
 
   const {
     register,
@@ -82,7 +84,10 @@ export function ForgotPasswordForm() {
       )}
 
       <div className="text-center">
-        <TertiaryButton href="/signin" className="w-full">
+        <TertiaryButton 
+          onClick={() => router.push('/signin')} 
+          className="w-full"
+        >
           Back to sign in
         </TertiaryButton>
       </div>
