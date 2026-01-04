@@ -59,7 +59,14 @@ export default function ProfilePage() {
     try {
       // Update email in Firebase Auth if it changed
       if (emailChanged) {
-        const emailResult = await updateUserEmail(formData.email);
+        // For email changes, require current password for security
+        const password = prompt('To change your email, please enter your current password:');
+        if (!password) {
+          showNotification('error', 'Password required to change email');
+          return;
+        }
+        
+        const emailResult = await updateUserEmail(formData.email, password);
         if (!emailResult.success) {
           showNotification('error', emailResult.error || 'Failed to update email');
           return;
