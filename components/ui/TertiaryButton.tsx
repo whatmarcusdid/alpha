@@ -1,63 +1,72 @@
-import React from 'react';
+'use client';
+
 import Link from 'next/link';
+import React from 'react';
 
 interface TertiaryButtonProps {
   children: React.ReactNode;
-  className?: string;
+  onClick?: () => void;
   href?: string;
   target?: string;
   rel?: string;
-  onClick?: () => void;
   disabled?: boolean;
+  className?: string;
   type?: 'button' | 'submit' | 'reset';
 }
 
-export function TertiaryButton({ 
-  children, 
-  className = '', 
-  href,
-  target,
-  rel,
-  onClick,
-  disabled = false,
-  type = 'button',
-}: TertiaryButtonProps) {
-  
-  const baseStyles = "text-[#1B4A41] hover:text-[#0f3830] font-semibold transition-colors block text-left";
-  const allClassNames = `${baseStyles} ${className}`.trim();
+export const TertiaryButton = React.forwardRef<HTMLButtonElement, TertiaryButtonProps>(
+  ({ 
+    children, 
+    onClick, 
+    href, 
+    target,
+    rel,
+    disabled = false, 
+    className = '', 
+    type = 'button' 
+  }, ref) => {
+    const baseStyles = 
+      'inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full border border-[#6F797A] bg-white text-[#232521] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
-  // External link (has target="_blank" or starts with http)
-  if (href && (target === '_blank' || href.startsWith('http'))) {
+    const combinedStyles = `${baseStyles} ${className}`;
+
+    // If href is provided, render as Link or anchor
+    if (href && !disabled) {
+      // External link (opens in new tab)
+      if (target === '_blank') {
+        return (
+          <a 
+            href={href} 
+            target={target}
+            rel={rel || 'noopener noreferrer'}
+            className={combinedStyles}
+          >
+            {children}
+          </a>
+        );
+      }
+      
+      // Internal link (Next.js Link)
+      return (
+        <Link href={href} className={combinedStyles}>
+          {children}
+        </Link>
+      );
+    }
+
+    // Otherwise render as button
     return (
-      <a 
-        href={href}
-        target={target}
-        rel={rel}
-        className={allClassNames}
+      <button
+        ref={ref}
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        className={combinedStyles}
       >
         {children}
-      </a>
+      </button>
     );
   }
+);
 
-  // Internal Next.js link
-  if (href) {
-    return (
-      <Link href={href} className={allClassNames}>
-        {children}
-      </Link>
-    );
-  }
-
-  // Button
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={allClassNames}
-    >
-      {children}
-    </button>
-  );
-}
+TertiaryButton.displayName = 'TertiaryButton';

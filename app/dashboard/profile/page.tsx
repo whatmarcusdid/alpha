@@ -9,7 +9,6 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import { PageCard } from '@/components/layout/PageCard';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -121,17 +120,14 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F6F1] p-4">
-        <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p>Loading profile...</p>
-        </main>
-      </div>
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <p>Loading profile...</p>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F6F1] p-4">
-    <DashboardNav />
+    <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <NotificationToast
         show={notification.show}
         type={notification.type}
@@ -139,151 +135,149 @@ export default function ProfilePage() {
         subtitle={notification.subtitle}
         onDismiss={() => setNotification({ ...notification, show: false })}
       />
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <PageCard>
-          
-          {/* FULL-WIDTH HEADER */}
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-[#232521]">My Profile</h1>
-            <div className="flex gap-3">
-              {!isEditMode ? (
-                <>
-                  <SecondaryButton onClick={() => setIsEditMode(true)}>
-                    Edit
-                  </SecondaryButton>
-                  <SecondaryButton onClick={handleLogout}>
-                    Log Out
-                  </SecondaryButton>
-                </>
-              ) : (
-                <>
-                  <PrimaryButton onClick={handleSave}>
-                    Save
-                  </PrimaryButton>
-                  <SecondaryButton onClick={handleCancel}>
-                    Cancel
-                  </SecondaryButton>
-                </>
-              )}
-            </div>
+      <PageCard>
+        
+        {/* FULL-WIDTH HEADER */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#232521]">My Profile</h1>
+          <div className="flex gap-3">
+            {!isEditMode ? (
+              <>
+                <SecondaryButton onClick={() => setIsEditMode(true)}>
+                  Edit
+                </SecondaryButton>
+                <SecondaryButton onClick={handleLogout}>
+                  Log Out
+                </SecondaryButton>
+              </>
+            ) : (
+              <>
+                <PrimaryButton onClick={handleSave}>
+                  Save
+                </PrimaryButton>
+                <SecondaryButton onClick={handleCancel}>
+                  Cancel
+                </SecondaryButton>
+              </>
+            )}
           </div>
+        </div>
 
-          {/* CENTER-ALIGNED CONTENT (600px max-width) */}
-          <div className="max-w-[600px] mx-auto">
-            
-            {/* Account Information Section */}
-            <div>
-              <h2 className="text-lg font-semibold text-[#232521] mb-4">
-                Account Information
-              </h2>
-              <div className="space-y-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input
-                        type="text"
-                        value={formData?.fullName || ''}
-                        onChange={(e) => setFormData({ ...formData!, fullName: e.target.value })}
-                        disabled={!isEditMode}
-                        className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                    />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                  </label>
+        {/* CENTER-ALIGNED CONTENT (600px max-width) */}
+        <div className="max-w-[600px] mx-auto">
+          
+          {/* Account Information Section */}
+          <div>
+            <h2 className="text-lg font-semibold text-[#232521] mb-4">
+              Account Information
+            </h2>
+            <div className="space-y-6">
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                   <input
-                      type="email"
-                      value={formData?.email || ''}
-                      onChange={(e) => setFormData({ ...formData!, email: e.target.value })}
+                      type="text"
+                      value={formData?.fullName || ''}
+                      onChange={(e) => setFormData({ ...formData!, fullName: e.target.value })}
                       disabled={!isEditMode}
                       className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                   />
-                  {!isEditMode && (
-                      <p className="text-sm text-gray-500 mt-1">Click Edit to update your email.</p>
-                  )}
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                    <input
-                        type="tel"
-                        value={formData?.phone || ''}
-                        onChange={(e) => setFormData({ ...formData!, phone: e.target.value })}
-                        disabled={!isEditMode}
-                        placeholder="(240) 521-4763"
-                        className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                    <input
-                        type="text"
-                        value={formData?.role || ''}
-                        onChange={(e) => setFormData({ ...formData!, role: e.target.value })}
-                        disabled={!isEditMode}
-                        placeholder="e.g., Owner, Manager"
-                        className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                    />
-                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                </label>
+                <input
+                    type="email"
+                    value={formData?.email || ''}
+                    onChange={(e) => setFormData({ ...formData!, email: e.target.value })}
+                    disabled={!isEditMode}
+                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                />
+                {!isEditMode && (
+                    <p className="text-sm text-gray-500 mt-1">Click Edit to update your email.</p>
+                )}
+              </div>
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                  <input
+                      type="tel"
+                      value={formData?.phone || ''}
+                      onChange={(e) => setFormData({ ...formData!, phone: e.target.value })}
+                      disabled={!isEditMode}
+                      placeholder="(240) 521-4763"
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                  />
+              </div>
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                  <input
+                      type="text"
+                      value={formData?.role || ''}
+                      onChange={(e) => setFormData({ ...formData!, role: e.target.value })}
+                      disabled={!isEditMode}
+                      placeholder="e.g., Owner, Manager"
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                  />
               </div>
             </div>
-
-            {/* Password & Security Section */}
-            <div className="mt-8 pt-8 border-t border-gray-200">
-              <h2 className="text-lg font-semibold text-[#232521] mb-4">
-                Password & Security
-              </h2>
-              <div className="space-y-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                    <input
-                        type="password"
-                        value={passwordData.current}
-                        onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
-                        disabled={isEditMode}
-                        className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                    <input
-                        type="password"
-                        value={passwordData.new}
-                        onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
-                        disabled={isEditMode}
-                        className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                    <input
-                        type="password"
-                        value={passwordData.confirm}
-                        onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                        disabled={isEditMode}
-                        className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                    />
-                </div>
-              </div>
-              <div className="flex gap-3 justify-end mt-6">
-                  <SecondaryButton 
-                    onClick={() => setPasswordData({ current: '', new: '', confirm: '' })}
-                    disabled={isEditMode}
-                  >
-                    Clear
-                  </SecondaryButton>
-                  <PrimaryButton 
-                    onClick={handlePasswordChange}
-                    disabled={isEditMode}
-                  >
-                    Update Password
-                  </PrimaryButton>
-              </div>
-            </div>
-
           </div>
-          
-        </PageCard>
-      </main>
-    </div>
+
+          {/* Password & Security Section */}
+          <div className="mt-8 pt-8 border-t border-gray-200">
+            <h2 className="text-lg font-semibold text-[#232521] mb-4">
+              Password & Security
+            </h2>
+            <div className="space-y-6">
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                  <input
+                      type="password"
+                      value={passwordData.current}
+                      onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                      disabled={isEditMode}
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                  />
+              </div>
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                  <input
+                      type="password"
+                      value={passwordData.new}
+                      onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
+                      disabled={isEditMode}
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                  />
+              </div>
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                  <input
+                      type="password"
+                      value={passwordData.confirm}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                      disabled={isEditMode}
+                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                  />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end mt-6">
+                <SecondaryButton 
+                  onClick={() => setPasswordData({ current: '', new: '', confirm: '' })}
+                  disabled={isEditMode}
+                >
+                  Clear
+                </SecondaryButton>
+                <PrimaryButton 
+                  onClick={handlePasswordChange}
+                  disabled={isEditMode}
+                >
+                  Update Password
+                </PrimaryButton>
+            </div>
+          </div>
+
+        </div>
+        
+      </PageCard>
+    </main>
   );
 }

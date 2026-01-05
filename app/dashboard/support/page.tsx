@@ -17,7 +17,6 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
-import { DashboardNav } from '@/components/layout/DashboardNav';
 
 export default function SupportPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -234,102 +233,99 @@ export default function SupportPage() {
         onDismiss={() => setNotification({ show: false, type: 'success', message: '' })}
       />
 
-      <div className="min-h-screen bg-[#F7F6F1] p-4">
-      <DashboardNav />
-        <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-2xl font-bold text-[#232521] mb-6">Support Hub</h1>
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-[#232521] mb-6">Support Hub</h1>
 
-          {/* Contact Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 mb-6">
-              <h2 className="text-xl font-semibold text-[#232521]">Many ways to reach out</h2>
-              <p className="text-sm text-gray-600 mt-1">Report an issue, request a change, or ask a quick question.</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                  {/* Call Us */}
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><PhoneIcon className="h-6 w-6 text-[#1b4a41]"/></div>
-                      <p className="font-semibold">(555) 123-4567</p>
-                      <p className="text-xs text-gray-500">Mon–Fri, 9 AM–5 PM EST</p>
-                      <SecondaryButton href="tel:+15551234567" className="mt-2">
-                        Call Number
-                      </SecondaryButton>
-                  </div>
-                  {/* Text Us */}
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/></div>
-                      <p className="font-semibold">(555) 123-4567</p>
-                      <p className="text-xs text-gray-500">Anytime</p>
-                      <SecondaryButton onClick={handleCopyPhone} className="mt-2">
-                        Copy Number
-                      </SecondaryButton>
-                  </div>
-                  {/* Email Us */}
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/></div>
-                      <p className="font-semibold">support@tradesitegenie.com</p>
-                      <p className="text-xs text-gray-500">Anytime</p>
-                      <SecondaryButton onClick={handleCopyEmail} className="mt-2">
-                        Copy Email
-                      </SecondaryButton>
-                  </div>
-              </div>
-          </div>
-
-          {/* Form Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-[#232521]">Your Support Team is Standing By</h2>
-            <p className="text-sm text-gray-600 mt-1">Please give us a description of the issue and attach screenshots or screen recordings if helpful.</p>
-            
-            <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-              <div>
-                <label htmlFor="requestFromEmail" className="block text-sm font-medium text-gray-700 mb-1">Request From</label>
-                <input type="email" id="requestFromEmail" value={requestFromEmail} onChange={e => setRequestFromEmail(e.target.value)} required className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"/>
-              </div>
-
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Please give us a description of the issue</label>
-                <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={5} className="w-full min-h-[120px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Attachments (optional)</label>
-                <div 
-                    onDrop={handleDrop} 
-                    onDragOver={e => e.preventDefault()} 
-                    className="relative flex flex-col items-center justify-center w-full min-h-[120px] px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-gray-400 transition"
-                >
-                    <PaperClipIcon className="h-8 w-8 text-gray-400 mb-2"/>
-                    <p className="text-sm text-gray-600">Click or drag files to upload</p>
-                    <p className="text-xs text-gray-500 mt-1">PDF, PNG, JPG up to 50MB</p>
-                    <input type="file" multiple onChange={handleFileChange} accept=".pdf,.png,.jpg,.jpeg" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
+        {/* Contact Card */}
+        <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 mb-6">
+            <h2 className="text-xl font-semibold text-[#232521]">Many ways to reach out</h2>
+            <p className="text-sm text-gray-600 mt-1">Report an issue, request a change, or ask a quick question.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                {/* Call Us */}
+                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><PhoneIcon className="h-6 w-6 text-[#1b4a41]"/></div>
+                    <p className="font-semibold">(555) 123-4567</p>
+                    <p className="text-xs text-gray-500">Mon–Fri, 9 AM–5 PM EST</p>
+                    <SecondaryButton href="tel:+15551234567" className="mt-2">
+                      Call Number
+                    </SecondaryButton>
                 </div>
-              </div>
-
-              {attachments.length > 0 && (
-                <div className="space-y-2">
-                    {attachments.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                            <div className="flex items-center space-x-2">
-                                <DocumentTextIcon className="h-5 w-5 text-gray-500" />
-                                <span className="text-sm text-gray-800">{file.name}</span>
-                                <span className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                            </div>
-                            <button type="button" onClick={() => handleRemoveFile(index)} className="p-1 rounded-full hover:bg-gray-200">
-                                <XMarkIcon className="h-4 w-4 text-gray-600"/>
-                            </button>
-                        </div>
-                    ))}
+                {/* Text Us */}
+                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/></div>
+                    <p className="font-semibold">(555) 123-4567</p>
+                    <p className="text-xs text-gray-500">Anytime</p>
+                    <SecondaryButton onClick={handleCopyPhone} className="mt-2">
+                      Copy Number
+                    </SecondaryButton>
                 </div>
-              )}
+                {/* Email Us */}
+                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/></div>
+                    <p className="font-semibold">support@tradesitegenie.com</p>
+                    <p className="text-xs text-gray-500">Anytime</p>
+                    <SecondaryButton onClick={handleCopyEmail} className="mt-2">
+                      Copy Email
+                    </SecondaryButton>
+                </div>
+            </div>
+        </div>
 
-              <div className="flex justify-end">
-                  <PrimaryButton type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Sending...' : 'Send Request'}
-                  </PrimaryButton>
+        {/* Form Card */}
+        <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8">
+          <h2 className="text-xl font-semibold text-[#232521]">Your Support Team is Standing By</h2>
+          <p className="text-sm text-gray-600 mt-1">Please give us a description of the issue and attach screenshots or screen recordings if helpful.</p>
+          
+          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+            <div>
+              <label htmlFor="requestFromEmail" className="block text-sm font-medium text-gray-700 mb-1">Request From</label>
+              <input type="email" id="requestFromEmail" value={requestFromEmail} onChange={e => setRequestFromEmail(e.target.value)} required className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"/>
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Please give us a description of the issue</label>
+              <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={5} className="w-full min-h-[120px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"></textarea>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Attachments (optional)</label>
+              <div 
+                  onDrop={handleDrop} 
+                  onDragOver={e => e.preventDefault()} 
+                  className="relative flex flex-col items-center justify-center w-full min-h-[120px] px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-gray-400 transition"
+              >
+                  <PaperClipIcon className="h-8 w-8 text-gray-400 mb-2"/>
+                  <p className="text-sm text-gray-600">Click or drag files to upload</p>
+                  <p className="text-xs text-gray-500 mt-1">PDF, PNG, JPG up to 50MB</p>
+                  <input type="file" multiple onChange={handleFileChange} accept=".pdf,.png,.jpg,.jpeg" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
               </div>
-            </form>
-          </div>
-        </main>
-      </div>
+            </div>
+
+            {attachments.length > 0 && (
+              <div className="space-y-2">
+                  {attachments.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                              <DocumentTextIcon className="h-5 w-5 text-gray-500" />
+                              <span className="text-sm text-gray-800">{file.name}</span>
+                              <span className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                          </div>
+                          <button type="button" onClick={() => handleRemoveFile(index)} className="p-1 rounded-full hover:bg-gray-200">
+                              <XMarkIcon className="h-4 w-4 text-gray-600"/>
+                          </button>
+                      </div>
+                  ))}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+                <PrimaryButton type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Sending...' : 'Send Request'}
+                </PrimaryButton>
+            </div>
+          </form>
+        </div>
+      </main>
     </>
   );
 }

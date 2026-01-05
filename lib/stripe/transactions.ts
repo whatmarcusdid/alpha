@@ -1,15 +1,21 @@
 'use client';
 
 import { db } from '@/lib/firebase';
-import {
-  collection,
-  doc,
-  addDoc,
-  query,
-  orderBy,
-  getDocs,
-  Timestamp,
-} from 'firebase/firestore';
+
+// Use a browser-only pattern to avoid SSR errors
+let firestoreFunctions: any = {};
+if (typeof window !== 'undefined') {
+  const firestore = require('firebase/firestore');
+  firestoreFunctions = {
+    collection: firestore.collection,
+    doc: firestore.doc,
+    addDoc: firestore.addDoc,
+    query: firestore.query,
+    orderBy: firestore.orderBy,
+    getDocs: firestore.getDocs,
+    Timestamp: firestore.Timestamp,
+  };
+}
 
 export interface Transaction {
   id: string;
@@ -24,33 +30,61 @@ export interface Transaction {
 }
 
 export async function getTransactionsForUser(userId: string): Promise<Transaction[]> {
-  if (!db) {
-    console.error('Firestore is not initialized.');
+  console.log('🔍 getTransactionsForUser called with userId:', userId);
+  
+  if (typeof window === 'undefined' || !firestoreFunctions.collection || !db) {
+    console.log('❌ Browser check failed or Firestore not initialized');
     return [];
   }
 
   try {
-    const transactionsRef = collection(doc(collection(db, 'users'), userId), 'transactions');
-    const q = query(transactionsRef, orderBy('date', 'desc'));
+    console.log('✅ Building Firestore query...');
+    
+    const transactionsRef = firestoreFunctions.collection(
+      firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId),
+      'transactions'
+    );
+    
+    console.log('✅ Transactions ref created');
+    
+    const q = firestoreFunctions.query(transactionsRef, firestoreFunctions.orderBy('date', 'desc'));
+    
+    console.log('✅ Query created, executing...');
+    
+    const snapshot = await firestoreFunctions.getDocs(q);
+    
+    console.log('📊 Snapshot received. Empty?', snapshot.empty);
+    console.log('📊 Number of docs:', snapshot.docs?.length || 0);
 
-    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      console.log('⚠️ No transactions found');
+      return [];
+    }
 
-    return snapshot.docs.map((docSnap: any) => {
-      const data = docSnap.data();
+    console.log('✅ Processing', snapshot.docs.length, 'transactions...');
+    
+    const transactions = snapshot.docs.map((doc: any) => {
+      const data = doc.data();
+      console.log('📄 Processing doc:', doc.id, data);
+      
       return {
-        id: docSnap.id,
-        amount: data.amount || 0,
-        date: data.date instanceof Timestamp ? data.date.toDate() : new Date(),
-        description: data.description || '',
-        status: data.status || 'pending',
-        paymentMethodBrand: data.paymentMethodBrand || '',
-        paymentMethodLast4: data.paymentMethodLast4 || '',
-        orderId: data.orderId || '',
-        invoiceUrl: data.invoiceUrl || undefined,
-      } as Transaction;
+        id: doc.id,
+        amount: data.amount,
+        date: data.date instanceof firestoreFunctions.Timestamp ? data.date.toDate() : new Date(data.date),
+        description: data.description,
+        status: data.status,
+        paymentMethodBrand: data.paymentMethodBrand,
+        paymentMethodLast4: data.paymentMethodLast4,
+        orderId: data.orderId,
+        invoiceUrl: data.invoiceUrl,
+      };
     });
+    
+    console.log('✅ Returning', transactions.length, 'transactions:', transactions);
+    
+    return transactions;
   } catch (error) {
-    console.error('Error fetching transactions:', error);
+    console.error('❌ Error fetching transactions:', error);
     return [];
   }
 }
@@ -59,18 +93,18 @@ export async function addTransaction(
   userId: string,
   transaction: Omit<Transaction, 'id'>
 ): Promise<string | null> {
-  if (!db) {
-    console.error('Firestore is not initialized.');
+  if (typeof window === 'undefined' || !firestoreFunctions.collection || !db) {
+    console.error('Cannot add transaction on the server-side or Firestore is not initialized.');
     return null;
   }
 
   try {
-    const transactionsRef = collection(doc(collection(db, 'users'), userId), 'transactions');
-    
-    const docRef = await addDoc(transactionsRef, {
-      ...transaction,
-      createdAt: Timestamp.now(),
-    });
+    const transactionsRef = firestoreFunctions.collection(
+      firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId),
+      'transactions'
+    );
+
+    const docRef = await firestoreFunctions.addDoc(transactionsRef, transaction);
 
     return docRef.id;
   } catch (error) {
