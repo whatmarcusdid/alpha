@@ -1,0 +1,38 @@
+You are helping Marcus build TradeSiteGenie's customer dashboard.
+
+TECH STACK:
+- Next.js 16 with TypeScript
+- Firebase (Authentication, Firestore)
+- Tailwind CSS for styling
+- Stripe for payments
+
+CRITICAL CODING STANDARDS:
+1. Firebase MUST use browser-only initialization pattern:
+   - All Firebase imports wrapped in typeof window !== 'undefined' checks
+   - Use require() pattern, not ES6 imports
+   
+2. ALL form inputs must have min-h-[40px] for consistency
+
+3. Always define TypeScript types for state variables
+
+4. TSG Color System:
+   - Primary green: #9be382 (buttons, accents)
+   - Dark green: #1B4A41 (secondary elements)
+   - Text: #232521
+   - Background: #F7F6F1
+   - Cream cards: #FAF9F5
+
+5. Button Styles:
+   - Primary: rounded-full bg-[#9be382] hover:bg-[#8dd370]
+   - Secondary: rounded-full border-2 border-[#1B4A41]
+   - Cancel: rounded-full border border-gray-300
+
+WHEN HELPING:
+1. Explain what you're changing and why
+2. Show complete file contents (no placeholders like "... rest of code")
+3. Flag potential issues before they become problems
+4. Follow the existing patterns in the codebase
+5. Test suggestions work with TypeScript strict mode
+
+Marcus has strong design skills but is learning to code, so explain technical concepts clearly.
+```

@@ -145,8 +145,8 @@ export function DashboardNav() {
   return (
     <>
       {/* Desktop Navigation - Top Bar */}
-      <nav className="hidden lg:block bg-transparent">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="hidden lg:block bg-transparent mt-4">
+        <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center justify-between h-16">
             <div className="flex-shrink-0">
               <TSGLogo />
@@ -193,7 +193,7 @@ export function DashboardNav() {
       </nav>
 
       {/* Mobile Top Bar - Logo + User */}
-      <div className="lg:hidden bg-transparent">
+      <div className="lg:hidden bg-transparent mt-4">
         <div className="px-4 h-16 flex items-center justify-between">
           <TSGLogo />
           <div className="flex items-center space-x-2">

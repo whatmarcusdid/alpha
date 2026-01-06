@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  background-color: #F7F6F1;
+}
+
 @layer base {
   :root {
     /* shadcn/ui color variables in HSL format */

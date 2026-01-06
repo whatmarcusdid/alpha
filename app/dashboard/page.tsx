@@ -14,6 +14,9 @@ import { Meeting } from '@/types/user';
 import { UpcomingMeetingCard } from '@/components/dashboard/UpcomingMeetingCard';
 import { NoMeetingsCard } from '@/components/dashboard/NoMeetingsCard';
 
+// Add a top-level log in the component:
+console.log("Dashboard loaded - testing Cursor!");
+
 function getMetricColor(metricType: string, value: number): string {
   switch (metricType) {
     case 'traffic':
@@ -112,7 +115,7 @@ export default function DashboardPage() {
   const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
+    <main className="bg-transparent max-w-[1440px] mx-auto py-8 pb-24 lg:pb-32">
       <div className="bg-white rounded-lg p-8 min-h-[calc(100vh-theme(spacing.32))]">
         
         <div className="flex items-start justify-between mb-8">
