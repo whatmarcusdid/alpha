@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import PlanSelectionModal from '@/components/upgrade/PlanSelectionModal';
 import UpgradeConfirmation from '@/components/upgrade/UpgradeConfirmation';
-import ManageSubscriptionModal from '@/components/upgrade/ManageSubscriptionModal';
+import ManageSubscriptionModal from '@/components/manage/ManageSubscriptionModal';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 
 type Tier = 'essential' | 'advanced' | 'premium';
