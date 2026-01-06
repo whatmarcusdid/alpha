@@ -14,20 +14,24 @@ import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
 import { SignInForm } from '@/components/auth/SignInForm';
 import { SignUpForm } from '@/components/auth/SignUpForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
+import { Meeting } from '@/types/user';
 
 
 export default function DesignSystemPage() {
   // State for interactive demos
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [isManageSubscriptionOpen, setIsManageSubscriptionOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
   // Mock data for UpcomingMeetingCard
-  const mockMeeting = {
-    title: "Q1 Website Review",
-    date: new Timestamp(1768536000, 0), // Jan 15, 2026, 2:00 PM
-    meetingUrl: "#"
+  const mockMeeting: Meeting = {
+    id: "mock-meeting-1",
+    title: "Strategy Planning Session",
+    date: Timestamp.now(),
+    meetingUrl: "https://meet.google.com/abc-defg-hij",
+    type: "strategy-session",
+    status: "scheduled"
   };
 
   return (
@@ -289,7 +293,7 @@ export default function DesignSystemPage() {
             <h3 className="text-xl font-semibold text-[#232521] mb-4">Manage Subscription Modal</h3>
             <p className="text-gray-600 mb-6">Standard modal with backdrop, focus trap, and ESC key support</p>
             
-            <PrimaryButton onClick={() => setShowModal(true)}>
+            <PrimaryButton onClick={() => setIsManageSubscriptionOpen(true)}>
               Open Modal Demo
             </PrimaryButton>
 
@@ -581,13 +585,15 @@ const mockMeeting: Meeting = {
 
       {/* Modal Demo */}
       <ManageSubscriptionModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        isOpen={isManageSubscriptionOpen}
+        onClose={() => setIsManageSubscriptionOpen(false)}
         onCancelClick={() => {
-          setShowModal(false);
-          alert('Cancel clicked - would open cancellation flow');
+          console.log('Cancel subscription clicked');
         }}
-        currentPaymentMethod="•••• 4242"
+        onUpdatePaymentClick={async () => {
+          console.log('Update payment clicked');
+        }}
+        currentPaymentMethod="Visa •••• 4242"
       />
     </div>
   );

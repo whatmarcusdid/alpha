@@ -8,6 +8,7 @@ interface ManageSubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCancelClick: () => void;
+  onUpdatePaymentClick: () => Promise<void>;
   currentPaymentMethod: string;
 }
 
@@ -15,6 +16,7 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({
   isOpen,
   onClose,
   onCancelClick,
+  onUpdatePaymentClick,
   currentPaymentMethod,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
@@ -96,7 +98,7 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({
         </div>
 
         <div className="flex flex-col gap-3 w-full">
-          <TertiaryButton className="w-full min-h-[40px] px-6 py-2 justify-between">
+          <TertiaryButton onClick={onUpdatePaymentClick} className="w-full min-h-[40px] px-6 py-2 justify-between">
             <span>Update payment method</span>
             <ChevronRight size={20} />
           </TertiaryButton>
