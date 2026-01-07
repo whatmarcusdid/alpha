@@ -64,56 +64,1049 @@ export default function DesignSystemPage() {
         {/* COLORS SECTION */}
         <section>
           <h2 className="text-3xl font-bold text-[#232521] mb-6">Color System</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { name: 'Primary Green', hex: '#1B4332', var: 'primary' },
-              { name: 'Secondary Teal', hex: '#1B4A41', var: 'secondary' },
-              { name: 'Accent Green', hex: '#9be382', var: 'accent' },
-              { name: 'Background', hex: '#F7F6F1', var: 'background' },
-              { name: 'Cream', hex: '#FAF9F5', var: 'cream' },
-              { name: 'Border', hex: '#6F797A', var: 'border' },
-              { name: 'Text', hex: '#232521', var: 'text' },
-              { name: 'White', hex: '#FFFFFF', var: 'white' },
-            ].map((color) => (
-              <div key={color.var} className="bg-white rounded-lg p-4 border border-gray-200">
-                <div 
-                  className="w-full h-24 rounded-md mb-3" 
-                  style={{ backgroundColor: color.hex }}
-                />
-                <p className="font-semibold text-[#232521] text-sm">{color.name}</p>
-                <p className="text-gray-600 text-xs font-mono mt-1">{color.hex}</p>
+          <p className="text-gray-600 mb-8">Complete TradeSiteGenie color tokens for consistent branding and UI design</p>
+          
+          <h3 className="text-2xl font-semibold text-[#232521] mb-6">Component Tokens</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Primary BG */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: '#9BE382' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Primary BG</h3>
+                <p className="text-lg text-[#545552]">#9BE382</p>
+                <p className="text-xs text-gray-600">Brand accent color for buttons, CTAs, and highlights</p>
               </div>
-            ))}
+            </div>
+
+            {/* Primary Text */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: '#1B4A41' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Primary Text</h3>
+                <p className="text-lg text-[#545552]">#1B4A41</p>
+                <p className="text-xs text-gray-600">Main brand color for headings and primary text</p>
+              </div>
+            </div>
+
+            {/* Secondary Text and Stroke */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: '#1B4A41' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Secondary Text and Stroke</h3>
+                <p className="text-lg text-[#545552]">#1B4A41</p>
+                <p className="text-xs text-gray-600">Secondary brand elements and borders</p>
+              </div>
+            </div>
+
+            {/* Tertiary Text */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: '#1B4A41' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Tertiary Text</h3>
+                <p className="text-lg text-[#545552]">#1B4A41</p>
+                <p className="text-xs text-gray-600">Additional text hierarchy level</p>
+              </div>
+            </div>
+
+            {/* Container Primary Text */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: '#232521' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Container Primary Text</h3>
+                <p className="text-lg text-[#545552]">#232521</p>
+                <p className="text-xs text-gray-600">Main text color for body content and paragraphs</p>
+              </div>
+            </div>
+
+            {/* Container Secondary Text */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: '#545552' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Container Secondary Text</h3>
+                <p className="text-lg text-[#545552]">#545552</p>
+                <p className="text-xs text-gray-600">Secondary text and muted content</p>
+              </div>
+            </div>
+
+            {/* Container Tertiary Text */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6 border border-gray-200" 
+                style={{ backgroundColor: '#FFFFFF' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Container Tertiary Text</h3>
+                <p className="text-lg text-[#545552]">#FFFFFF</p>
+                <p className="text-xs text-gray-600">White text for dark backgrounds</p>
+              </div>
+            </div>
+
+            {/* Secondary BG */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6 border border-gray-200" 
+                style={{ backgroundColor: '#FFFFFF' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Secondary BG</h3>
+                <p className="text-lg text-[#545552]">#FFFFFF</p>
+                <p className="text-xs text-gray-600">White background for cards and containers</p>
+              </div>
+            </div>
+
+            {/* Input Default */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6 border border-gray-200" 
+                style={{ backgroundColor: '#FFFFFF' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Input Default</h3>
+                <p className="text-lg text-[#545552]">#FFFFFF</p>
+                <p className="text-xs text-gray-600">Default input field background</p>
+              </div>
+            </div>
+
+            {/* Input Active */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: '#51A2FF' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Input Active</h3>
+                <p className="text-lg text-[#545552]">#51A2FF</p>
+                <p className="text-xs text-gray-600">Active/focused input field state</p>
+              </div>
+            </div>
+
+            {/* Outline */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: 'rgba(111, 121, 122, 0.4)' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Outline</h3>
+                <p className="text-lg text-[#545552]">#6F797A at 40%</p>
+                <p className="text-xs text-gray-600">Border color for inputs, cards, and dividers</p>
+              </div>
+            </div>
+
+            {/* Shadow */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: 'rgba(35, 37, 33, 0.4)' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Shadow</h3>
+                <p className="text-lg text-[#545552]">#232521 at 40%</p>
+                <p className="text-xs text-gray-600">Drop shadow and elevation effects</p>
+              </div>
+            </div>
+
+            {/* Logo Color */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div 
+                className="w-full h-[150px] rounded-lg mb-6" 
+                style={{ backgroundColor: '#4E0009' }}
+              />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#232521]">Logo Color</h3>
+                <p className="text-lg text-[#545552]">#4E0009</p>
+                <p className="text-xs text-gray-600">Official TradeSiteGenie logo brand color</p>
+              </div>
+            </div>
+          </div>
+
+          {/* SEMANTIC TOKENS SUBSECTION */}
+          <div className="mt-12">
+            <h3 className="text-2xl font-semibold text-[#232521] mb-3">
+              Semantic Tokens
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Contextual colors for UI states, feedback, and interactive elements
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Success Status */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#00A63E' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Success Status</h3>
+                  <p className="text-lg text-[#545552]">#00A63E</p>
+                  <p className="text-xs text-gray-600">Used for positive feedback, completed actions, and success confirmations</p>
+                </div>
+              </div>
+
+              {/* Warning Status */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#F0B100' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Warning Status</h3>
+                  <p className="text-lg text-[#545552]">#F0B100</p>
+                  <p className="text-xs text-gray-600">Used for caution messages, important notices, and pending states</p>
+                </div>
+              </div>
+
+              {/* Critical Status */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#E7000B' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Critical Status</h3>
+                  <p className="text-lg text-[#545552]">#E7000B</p>
+                  <p className="text-xs text-gray-600">Used for error states, validation failures, and destructive actions</p>
+                </div>
+              </div>
+
+              {/* Neutral Status */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#B5B6B5' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Neutral Status</h3>
+                  <p className="text-lg text-[#545552]">#B5B6B5</p>
+                  <p className="text-xs text-gray-600">Used for neutral states, disabled elements, and inactive content</p>
+                </div>
+              </div>
+
+              {/* Surface */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#F7F6F1' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface</h3>
+                  <p className="text-lg text-[#545552]">#F7F6F1</p>
+                  <p className="text-xs text-gray-600">Primary background surface for main content areas</p>
+                </div>
+              </div>
+
+              {/* Surface Container */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#F7F6F1' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface Container</h3>
+                  <p className="text-lg text-[#545552]">#F7F6F1</p>
+                  <p className="text-xs text-gray-600">Default container background for cards and sections</p>
+                </div>
+              </div>
+
+              {/* Surface Container Lowest */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6 border border-gray-200" 
+                  style={{ backgroundColor: '#FFFFFF' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface Container Lowest</h3>
+                  <p className="text-lg text-[#545552]">#FFFFFF</p>
+                  <p className="text-xs text-gray-600">Lowest elevation surface for base layer elements</p>
+                </div>
+              </div>
+
+              {/* Surface Container Low */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#FAF9F5' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface Container Low</h3>
+                  <p className="text-lg text-[#545552]">#FAF9F5</p>
+                  <p className="text-xs text-gray-600">Low elevation surface for subtle container hierarchy</p>
+                </div>
+              </div>
+
+              {/* Surface Container High */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#F2F0E7' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface Container High</h3>
+                  <p className="text-lg text-[#545552]">#F2F0E7</p>
+                  <p className="text-xs text-gray-600">High elevation surface for prominent containers</p>
+                </div>
+              </div>
+
+              {/* Surface Container Highest */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: 'rgba(217, 213, 197, 0.4)' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface Container Highest</h3>
+                  <p className="text-lg text-[#545552]">rgba(217, 213, 197, 0.4)</p>
+                  <p className="text-xs text-gray-600">Highest elevation surface for modal overlays and top-layer elements</p>
+                </div>
+              </div>
+
+              {/* Surface Primary Text */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#232521' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface Primary Text</h3>
+                  <p className="text-lg text-[#545552]">#232521</p>
+                  <p className="text-xs text-gray-600">Primary text color on surface backgrounds</p>
+                </div>
+              </div>
+
+              {/* Surface Secondary Text */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6" 
+                  style={{ backgroundColor: '#545552' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface Secondary Text</h3>
+                  <p className="text-lg text-[#545552]">#545552</p>
+                  <p className="text-xs text-gray-600">Secondary text color for supporting content</p>
+                </div>
+              </div>
+
+              {/* Surface Tertiary Text */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200">
+                <div 
+                  className="w-full h-[150px] rounded-lg mb-6 border border-gray-200" 
+                  style={{ backgroundColor: '#FFFFFF' }}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#232521]">Surface Tertiary Text</h3>
+                  <p className="text-lg text-[#545552]">#FFFFFF</p>
+                  <p className="text-xs text-gray-600">White text for use on dark backgrounds and surfaces</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* TYPOGRAPHY SECTION */}
         <section>
           <h2 className="text-3xl font-bold text-[#232521] mb-6">Typography</h2>
-          <div className="bg-white rounded-lg p-8 border border-gray-200 space-y-6">
-            <div>
-              <h1 className="text-5xl font-bold text-[#232521]">Heading 1 - 48px Bold</h1>
-              <code className="text-xs text-gray-500 block mt-2">text-5xl font-bold</code>
+          <p className="text-gray-600 mb-8">Consistent text styles for headings, body text, and UI elements</p>
+          
+          {/* HEADINGS SUBSECTION */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-semibold text-[#232521] mb-6">Headings</h3>
+            <div className="space-y-6">
+              
+              {/* Display Hero Large */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-6xl font-extrabold text-[#232521] leading-tight tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    The quick brown fox jumps
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Display Hero Large</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">64px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">800</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-6xl font-extrabold leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Display Hero Medium */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-5xl font-extrabold text-[#232521] leading-tight tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    The quick brown fox jumps
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Display Hero Medium</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">56px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">800</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-5xl font-extrabold leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Display Hero Small */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-5xl font-extrabold text-[#232521] leading-tight tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    The quick brown fox jumps over
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Display Hero Small</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">48px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">800</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-5xl font-extrabold leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Headline Page Large */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-4xl font-extrabold text-[#232521] leading-tight tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    The quick brown fox jumps over the lazy dog
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Headline Page Large</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">36px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">800</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-4xl font-extrabold leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Headline Section Large */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-3xl font-extrabold text-[#232521] leading-tight tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    The quick brown fox jumps over the lazy dog
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Headline Section Large</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">32px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">800</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-3xl font-extrabold leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Headline Page Medium */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-3xl font-extrabold text-[#232521] leading-tight tracking-tight" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '28px' }}>
+                    The quick brown fox jumps over the lazy dog
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Headline Page Medium</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">28px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">800</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-[28px] font-extrabold leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Headline Section Medium */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-2xl font-extrabold text-[#232521] leading-tight tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    The quick brown fox jumps over the lazy dog
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Headline Section Medium</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">24px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">800</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-2xl font-extrabold leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
             </div>
-            <div>
-              <h2 className="text-4xl font-bold text-[#232521]">Heading 2 - 36px Bold</h2>
-              <code className="text-xs text-gray-500 block mt-2">text-4xl font-bold</code>
+          </div>
+
+          {/* BODY TEXT SUBSECTION */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-semibold text-[#232521] mb-6">Body Text</h3>
+            <div className="space-y-6">
+              
+              {/* Body Large */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-lg text-[#232521] leading-relaxed">
+                    The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Body Large</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">18px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">400</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-lg leading-relaxed
+                  </code>
+                </div>
+              </div>
+
+              {/* Body Large Strong */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-lg font-bold text-[#232521] leading-relaxed">
+                    The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Body Large Strong</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">18px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">700</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-lg font-bold leading-relaxed
+                  </code>
+                </div>
+              </div>
+
+              {/* Body Medium */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-base text-[#232521] leading-relaxed">
+                    The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Body Medium</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">16px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">400</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-base leading-relaxed
+                  </code>
+                </div>
+              </div>
+
+              {/* Body Table */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-xs text-[#232521] leading-relaxed" style={{ fontSize: '13px' }}>
+                    The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Body Table</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">13px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">400</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-[13px] leading-relaxed
+                  </code>
+                </div>
+              </div>
+
+              {/* Body Table Link */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-xs font-bold text-[#232521] leading-relaxed" style={{ fontSize: '13px' }}>
+                    The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Body Table Link</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">13px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">700</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-[13px] font-bold leading-relaxed
+                  </code>
+                </div>
+              </div>
+
             </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-[#232521]">Heading 3 - 24px Semibold</h3>
-              <code className="text-xs text-gray-500 block mt-2">text-2xl font-semibold</code>
-            </div>
-            <div>
-              <p className="text-lg text-gray-700">Body Large - 18px Regular - Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-              <code className="text-xs text-gray-500 block mt-2">text-lg text-gray-700</code>
-            </div>
-            <div>
-              <p className="text-base text-gray-900">Body - 16px Regular - Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-              <code className="text-xs text-gray-500 block mt-2">text-base text-gray-900</code>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Small Text - 14px Regular - Lorem ipsum dolor sit amet.</p>
-              <code className="text-xs text-gray-500 block mt-2">text-sm text-gray-600</code>
+          </div>
+
+          {/* UI TEXT SUBSECTION */}
+          <div>
+            <h3 className="text-2xl font-semibold text-[#232521] mb-6">UI Text</h3>
+            <div className="space-y-6">
+              
+              {/* Title Page Sub */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-lg font-bold text-[#232521] leading-tight tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    Title Page Sub
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Title Page Sub</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">18px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">700</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-lg font-bold leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Label Button */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-base font-bold text-[#232521] leading-relaxed">
+                    Label Button
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Label Button</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">16px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">700</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-base font-bold leading-relaxed
+                  </code>
+                </div>
+              </div>
+
+              {/* Title Card */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="font-bold text-[#232521] leading-relaxed tracking-tight" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '15px' }}>
+                    Title Card
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Title Card</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">15px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">700</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-[15px] font-bold leading-relaxed tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Label Field */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-sm font-semibold text-[#232521] leading-relaxed tracking-tight">
+                    Label Field
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Label Field</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">14px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">600</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-sm font-semibold leading-relaxed tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Label Placeholder */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-sm text-[#232521] leading-relaxed tracking-tight">
+                    Label Placeholder
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Label Placeholder</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">14px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">400</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-sm leading-relaxed tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Title Table Header */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-xs font-semibold text-[#232521] leading-relaxed tracking-tight" style={{ fontSize: '13px' }}>
+                    Title Table Header
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Title Table Header</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">13px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">600</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-[13px] font-semibold leading-relaxed tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Title Card Sub */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-xs font-medium text-[#232521] leading-tight tracking-tight" style={{ fontSize: '13px' }}>
+                    Title Card Sub
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Title Card Sub</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">13px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">500</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">120%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-[13px] font-medium leading-tight tracking-tight
+                  </code>
+                </div>
+              </div>
+
+              {/* Label Badge */}
+              <div className="bg-white rounded-lg p-8 border border-gray-200">
+                <div className="mb-6">
+                  <p className="text-xs font-medium text-[#232521] leading-relaxed" style={{ fontSize: '13px' }}>
+                    Label Badge
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Style Name</p>
+                    <p className="font-semibold">Label Badge</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Size</p>
+                    <p className="font-mono">13px</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Weight</p>
+                    <p className="font-mono">500</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Line Height</p>
+                    <p className="font-mono">150%</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
+                  <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
+                    text-[13px] font-medium leading-relaxed
+                  </code>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>

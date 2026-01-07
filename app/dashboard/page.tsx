@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
-import { Button } from '@/components/ui/button';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
+import { TertiaryButton } from '@/components/ui/TertiaryButton';
 import { getUserMetrics } from '@/lib/firestore';
 import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
 import { getUserSupportTickets } from '@/lib/firestore/supportTickets';
@@ -120,17 +121,14 @@ export default function DashboardPage() {
         
         <div className="flex items-start justify-between mb-8">
           <div>
-            <p className="text-sm text-gray-600 mb-1">{dateStr}</p>
-            <h1 className="text-4xl font-bold text-[#232521]">
+            <p className="text-lg font-bold leading-tight tracking-tight text-[#545552] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{dateStr}</p>
+            <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-[#232521]">
               {greeting} {userName}
             </h1>
           </div>
-          <Button 
-            variant="outline"
-            className="border-2 border-[#1B4A41] text-[#1B4A41] bg-white hover:bg-gray-50 rounded-full px-6"
-          >
+          <SecondaryButton>
             View Site
-          </Button>
+          </SecondaryButton>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -142,8 +140,8 @@ export default function DashboardPage() {
                 className="bg-white rounded-lg p-6 border border-[#6F797A]/40"
                 style={{ borderTopWidth: '4px', borderTopColor: borderColor }}
               >
-                <p className="text-4xl font-bold text-[#232521] mb-2">{metric.value}</p>
-                <p className="text-sm text-gray-600">{metric.label}</p>
+                <p className="text-5xl font-extrabold leading-tight tracking-tight text-[#232521] mb-2">{metric.value}</p>
+                <p className="text-[13px] font-medium leading-tight tracking-tight text-gray-600">{metric.label}</p>
               </div>
             );
           })}
@@ -160,16 +158,16 @@ export default function DashboardPage() {
                 </span>
                 
                 {supportTickets.length > 0 ? (
-                  <h3 className="text-xl font-bold text-[#232521]">
+                  <h3 className="text-[15px] font-bold leading-relaxed tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>
                     You have {supportTickets.length} open support ticket(s)
                   </h3>
                 ) : (
-                  <h3 className="text-xl font-bold text-[#232521]">
+                  <h3 className="text-[15px] font-bold leading-relaxed tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>
                     Your Support Team is Standing By
                   </h3>
                 )}
                 
-                <p className="text-base text-gray-700 leading-relaxed">
+                <p className="text-[13px] font-medium leading-tight tracking-tight text-gray-700">
                   {supportTickets.length > 0 ? (
                     <Link href="/dashboard/support" className="text-[#1b4a41] hover:text-[#0f3830] transition-colors">
                       View your tickets in the Support Hub
@@ -181,12 +179,9 @@ export default function DashboardPage() {
               </div>
               
               <div className="flex-shrink-0">
-                <Link 
-                  href="/dashboard/support"
-                  className="text-[#1b4a41] text-center text-base font-bold leading-[150%] hover:text-[#0f3830] transition-colors whitespace-nowrap"
-                >
+                <TertiaryButton href="/dashboard/support">
                   Contact Support
-                </Link>
+                </TertiaryButton>
               </div>
               
             </div>
@@ -196,7 +191,7 @@ export default function DashboardPage() {
 
           <div className="lg:col-span-1">
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-[#232521]">Upcoming Meetings</h2>
+              <h2 className="text-lg font-bold leading-tight tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>Upcoming Meetings</h2>
               
               {upcomingMeetings.length > 0 ? (
                 <div className="space-y-4">

@@ -26,7 +26,7 @@ export const TertiaryButton = React.forwardRef<HTMLButtonElement, TertiaryButton
     type = 'button' 
   }, ref) => {
     const baseStyles = 
-      'inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full border border-[#6F797A] bg-white text-[#232521] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+      'inline-flex items-center justify-center gap-2 rounded-full text-[#1B4A41] font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
     const combinedStyles = `${baseStyles} ${className}`;
 

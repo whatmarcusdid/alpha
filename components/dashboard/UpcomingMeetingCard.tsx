@@ -33,7 +33,7 @@ export function UpcomingMeetingCard({ meeting }: UpcomingMeetingCardProps) {
   }).format(date);
 
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200 flex items-center justify-between">
+    <div className="bg-white rounded-lg p-6 border border-gray-200 flex flex-col items-start justify-start gap-4">
       <div className="flex items-center gap-4">
         <div className="text-center bg-[#FAF9F5] rounded-md p-3 border border-gray-200">
           <p className="text-xs font-semibold text-gray-600 uppercase">{month}</p>

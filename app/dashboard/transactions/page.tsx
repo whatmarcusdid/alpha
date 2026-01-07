@@ -7,6 +7,8 @@ import PlanSelectionModal from '@/components/upgrade/PlanSelectionModal';
 import UpgradeConfirmation from '@/components/upgrade/UpgradeConfirmation';
 import ManageSubscriptionModal from '@/components/manage/ManageSubscriptionModal';
 import { NotificationToast } from '@/components/ui/NotificationToast';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
 
 type Tier = 'essential' | 'advanced' | 'premium';
 
@@ -144,18 +146,12 @@ export default function TransactionsPage() {
             Ready to level up? Upgrade your plan for more features and support.
           </p>
           <div className="mt-6 flex items-center gap-4">
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-5 py-2.5 text-sm font-semibold bg-[#1B4A41] text-white rounded-full hover:bg-opacity-90"
-            >
+            <PrimaryButton onClick={() => setIsModalOpen(true)}>
               Upgrade Plan
-            </button>
-            <button 
-              onClick={() => setShowManageModal(true)}
-              className="px-5 py-2.5 text-sm font-semibold text-[#1B4A41] border-2 border-[#1B4A41] rounded-full hover:bg-gray-50"
-            >
+            </PrimaryButton>
+            <SecondaryButton onClick={() => setShowManageModal(true)}>
               Manage Subscription
-            </button>
+            </SecondaryButton>
           </div>
         </div>
 

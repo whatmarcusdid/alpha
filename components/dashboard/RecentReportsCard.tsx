@@ -52,7 +52,7 @@ export function RecentReportsCard() {
 
   return (
     <div className="bg-white">
-      <h2 className="text-lg font-bold text-[#232521] mb-4">Recent Reports</h2>
+      <h2 className="text-lg font-bold leading-tight tracking-tight text-[#232521] mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>Recent Reports</h2>
       
       {loading ? (
         <div className="text-center text-gray-500 py-8">Loading reports...</div>
