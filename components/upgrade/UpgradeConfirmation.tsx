@@ -116,7 +116,7 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
       let auth;
       
       if (typeof window !== 'undefined') {
-        const { default: firebase } = await import('@/lib/firebase');
+        await import('@/lib/firebase');
         auth = getAuth();
       }
       

@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-12-15.clover',
 });
 
 export async function POST(request: NextRequest) {
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate the new renewal date
-    const renewalDate = new Date(reactivatedSubscription.current_period_end * 1000);
+    const renewalDate = new Date(((reactivatedSubscription as any).current_period_end as number) * 1000);
 
     // Update Firestore with reactivated subscription
     await adminDb.collection('users').doc(userId).update({

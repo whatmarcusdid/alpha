@@ -33,7 +33,7 @@ import { TSGLogo } from '@/components/ui/logo';
 import { Meeting } from '@/types/user';
 
 // Define Tier type for upgrade flow
-type Tier = 'essential' | 'advanced' | 'premium';
+type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
 
 export default function DesignSystemPage() {
   // State for interactive demos
