@@ -17,7 +17,7 @@ import { TertiaryButton } from '@/components/ui/TertiaryButton';
 import { Input } from '@/components/ui/input';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import ManageSubscriptionModal from '@/components/manage/ManageSubscriptionModal';
-import { UpdatePaymentMethodModal } from '@/components/manage/UpdatePaymentMethodModal';
+// import { UpdatePaymentMethodModal } from '@/components/manage/UpdatePaymentMethodModal'; // Removed - requires Stripe Elements context
 import { UpcomingMeetingCard } from '@/components/dashboard/UpcomingMeetingCard';
 import { NoMeetingsCard } from '@/components/dashboard/NoMeetingsCard';
 import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
@@ -40,7 +40,7 @@ export default function DesignSystemPage() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isManageSubscriptionOpen, setIsManageSubscriptionOpen] = useState(false);
-  const [isUpdatePaymentMethodOpen, setIsUpdatePaymentMethodOpen] = useState(false);
+  // const [isUpdatePaymentMethodOpen, setIsUpdatePaymentMethodOpen] = useState(false); // Removed - modal requires Stripe context
   const [inputValue, setInputValue] = useState('');
 
   // State for auth component modals
@@ -2717,57 +2717,9 @@ export default function DashboardLayout({ children }) {
               </div>
             </div>
 
-            {/* UpdatePaymentMethodModal */}
-            <div className="bg-white rounded-lg p-8 border border-gray-200">
-              <h3 className="text-xl font-semibold text-[#232521] mb-4">Update Payment Method Modal</h3>
-              <p className="text-gray-600 mb-6">Complete payment method update form with billing address, card details, and security code fields. Uses TSG design system styling.</p>
-              
-              {/* Visual Demo */}
-              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-4 font-semibold">Interactive Demo:</p>
-                <div className="flex justify-center">
-                  <PrimaryButton onClick={() => setIsUpdatePaymentMethodOpen(true)}>
-                    Open Update Payment Method Modal
-                  </PrimaryButton>
-                </div>
-              </div>
-              
-              {/* Key Features */}
-              <div className="mb-6">
-                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
-                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Complete billing address form (name, address, address 2, city, state, zip)</li>
-                  <li>Card details collection (card number, expiration date, security code)</li>
-                  <li>All inputs follow TSG design system with min-h-[46px] and white backgrounds</li>
-                  <li>State dropdown with chevron icon and all US states</li>
-                  <li>3-column grid layout for City/State/Zip Code on desktop</li>
-                  <li>Focus ring with TSG green (#9be382) on all inputs</li>
-                  <li>PrimaryButton: "Save Changes" with loading state</li>
-                  <li>SecondaryButton: "Cancel" to close without saving</li>
-                  <li>Modal closes on backdrop click or ESC key</li>
-                  <li>Form resets when modal closes</li>
-                </ul>
-              </div>
-              
-              {/* Code Example */}
-              <div className="bg-gray-50 rounded p-4">
-                <code className="text-xs text-gray-700 block whitespace-pre">
-{`import { UpdatePaymentMethodModal } from '@/components/manage/UpdatePaymentMethodModal';
-
-// Usage
-<UpdatePaymentMethodModal
-  isOpen={isOpen}
-  onClose={() => setIsOpen(false)}
-  onSave={async (paymentData) => {
-    // Handle payment method update
-    console.log('Updating payment method:', paymentData);
-    // Make API call to update payment method
-    await updatePaymentMethod(paymentData);
-  }}
-/>`}
-                </code>
-              </div>
-            </div>
+            {/* UpdatePaymentMethodModal - REMOVED */}
+            {/* This component requires Stripe Elements context and cannot be rendered in the design system */}
+            {/* See the actual implementation in app/dashboard/transactions/page.tsx */}
 
             {/* CancelConfirmModal */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
@@ -3229,17 +3181,9 @@ const [currentUserTier] = useState<Tier>('essential');
         currentPaymentMethod="Visa •••• 4242"
       />
 
-      {/* Update Payment Method Modal Demo */}
-      <UpdatePaymentMethodModal
-        isOpen={isUpdatePaymentMethodOpen}
-        onClose={() => setIsUpdatePaymentMethodOpen(false)}
-        onSave={async (paymentData) => {
-          console.log('Saving payment method:', paymentData);
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          setShowSuccessToast(true);
-        }}
-      />
+      {/* Update Payment Method Modal Demo - REMOVED */}
+      {/* This component requires Stripe Elements context and cannot be rendered without it */}
+      {/* See the actual implementation in app/dashboard/transactions/page.tsx */}
 
       {/* Auth Component Modals */}
       {showSignInModal && (
