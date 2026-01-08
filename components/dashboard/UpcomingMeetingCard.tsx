@@ -1,5 +1,4 @@
 import { Meeting } from '@/types/user';
-import { TertiaryButton } from '@/components/ui/TertiaryButton';
 
 interface UpcomingMeetingCardProps {
   meeting: Meeting;
@@ -33,22 +32,38 @@ export function UpcomingMeetingCard({ meeting }: UpcomingMeetingCardProps) {
   }).format(date);
 
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200 flex flex-col items-start justify-start gap-4">
-      <div className="flex items-center gap-4">
-        <div className="text-center bg-[#FAF9F5] rounded-md p-3 border border-gray-200">
-          <p className="text-xs font-semibold text-gray-600 uppercase">{month}</p>
-          <p className="text-2xl font-bold text-[#232521]">{day}</p>
+    <div className="bg-white rounded border border-[rgba(111,121,122,0.4)] p-4 flex flex-col gap-4 items-start">
+      {/* Calendar Badge */}
+      <div className="bg-[#f2f2f2] flex flex-col h-[66px] w-16 items-center overflow-hidden rounded">
+        {/* Month Label - Red Bar */}
+        <div className="bg-[#e74c3c] flex h-6 items-center justify-center overflow-hidden px-2 py-1 shrink-0 w-full">
+          <p className="font-bold text-[15px] leading-[1.5] tracking-tight text-center text-white uppercase">
+            {month}
+          </p>
         </div>
-        <div>
-          <h4 className="font-semibold text-[#232521]">{meeting.title}</h4>
-          <p className="text-sm text-gray-600">
-            {fullDate} at {time}
+        {/* Day Number */}
+        <div className="flex-grow flex items-center justify-center overflow-hidden w-full min-h-0">
+          <p className="font-bold text-2xl text-[#232521] leading-[1.5] tracking-tight text-center">
+            {day}
           </p>
         </div>
       </div>
-      <TertiaryButton href={meeting.meetingUrl} target="_blank">
-        Join Meeting
-      </TertiaryButton>
+
+      {/* Meeting Info */}
+      <div className="flex flex-col gap-2 items-start w-full">
+        <h4 className="font-bold text-base leading-[1.5] tracking-tight text-[#232521]">
+          {meeting.title}
+        </h4>
+        <p className="font-medium text-[15px] leading-[1.2] tracking-tight text-[#545552]">
+          {fullDate}, {time}
+        </p>
+        <button 
+          onClick={() => window.open(meeting.meetingUrl, '_blank')}
+          className="font-bold text-base leading-[1.5] text-[#1B4A41] hover:underline underline-offset-2 transition-all"
+        >
+          View Details
+        </button>
+      </div>
     </div>
   );
 }

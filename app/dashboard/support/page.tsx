@@ -279,12 +279,12 @@ export default function SupportPage() {
           <form onSubmit={handleSubmit} className="mt-6 space-y-6">
             <div>
               <label htmlFor="requestFromEmail" className="block text-sm font-medium text-gray-700 mb-1">Request From</label>
-              <input type="email" id="requestFromEmail" value={requestFromEmail} onChange={e => setRequestFromEmail(e.target.value)} required className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"/>
+              <input type="email" id="requestFromEmail" value={requestFromEmail} onChange={e => setRequestFromEmail(e.target.value)} required className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"/>
             </div>
 
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Please give us a description of the issue</label>
-              <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={5} className="w-full min-h-[120px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"></textarea>
+              <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={5} className="w-full min-h-[120px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"></textarea>
             </div>
 
             <div>

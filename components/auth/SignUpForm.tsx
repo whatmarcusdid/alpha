@@ -102,7 +102,7 @@ export function SignUpForm() {
             onChange={(e) => setName(e.target.value)}
             required
             disabled={loading}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg min-h-[40px]"
+            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg min-h-[40px]"
           />
         </div>
 
@@ -119,7 +119,7 @@ export function SignUpForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={loading}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg min-h-[40px]"
+            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg min-h-[40px]"
           />
         </div>
 
@@ -136,7 +136,7 @@ export function SignUpForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={loading}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg min-h-[40px]"
+            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg min-h-[40px]"
           />
         </div>
 

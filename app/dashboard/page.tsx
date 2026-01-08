@@ -141,7 +141,7 @@ export default function DashboardPage() {
                 style={{ borderTopWidth: '4px', borderTopColor: borderColor }}
               >
                 <p className="text-5xl font-extrabold leading-tight tracking-tight text-[#232521] mb-2">{metric.value}</p>
-                <p className="text-[13px] font-medium leading-tight tracking-tight text-gray-600">{metric.label}</p>
+                <p className="text-[15px] font-medium leading-tight tracking-tight text-gray-600">{metric.label}</p>
               </div>
             );
           })}
@@ -158,16 +158,16 @@ export default function DashboardPage() {
                 </span>
                 
                 {supportTickets.length > 0 ? (
-                  <h3 className="text-[15px] font-bold leading-relaxed tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <h3 className="text-[16px] font-bold leading-relaxed tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>
                     You have {supportTickets.length} open support ticket(s)
                   </h3>
                 ) : (
-                  <h3 className="text-[15px] font-bold leading-relaxed tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <h3 className="text-[16px] font-bold leading-relaxed tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>
                     Your Support Team is Standing By
                   </h3>
                 )}
                 
-                <p className="text-[13px] font-medium leading-tight tracking-tight text-gray-700">
+                <p className="text-[15px] font-medium leading-tight tracking-tight text-gray-700">
                   {supportTickets.length > 0 ? (
                     <Link href="/dashboard/support" className="text-[#1b4a41] hover:text-[#0f3830] transition-colors">
                       View your tickets in the Support Hub

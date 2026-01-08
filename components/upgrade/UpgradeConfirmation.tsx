@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 
 // --- TYPES AND CONSTANTS ---
-type Tier = 'essential' | 'advanced' | 'premium';
+type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
 
 interface UpgradeConfirmationProps {
   isOpen: boolean;
@@ -16,29 +16,34 @@ interface UpgradeConfirmationProps {
   userId: string;
   onSuccess: () => void;
   onError?: (errorMessage: string) => void;
+  onChangePlan?: () => void;
+  isReactivation?: boolean; // Indicates reactivating a canceled subscription
 }
 
 // Custom check icon for order summary
 const CheckIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <path d="M18.3346 9.23306V9.99972C18.3336 11.7967 17.7517 13.5453 16.6757 14.9846C15.5998 16.4239 14.0874 17.4768 12.3641 17.9863C10.6408 18.4958 8.79902 18.4346 7.11336 17.8119C5.4277 17.1891 3.98851 16.0381 3.01044 14.5306C2.03236 13.0231 1.56779 11.2398 1.68603 9.44665C1.80427 7.65353 2.49897 5.94666 3.66654 4.58062C4.8341 3.21457 6.41196 2.26254 8.16479 1.86651C9.91763 1.47048 11.7515 1.65167 13.393 2.38306" stroke="#232521" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M18.3333 3.3335L10 11.6752L7.5 9.17516" stroke="#232521" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="10" cy="10" r="9" stroke="#232521" strokeWidth="1.5" fill="none"/>
+    <path d="M6 10L8.5 12.5L14 7" stroke="#232521" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const tierPrices: Record<Tier, number> = {
+  'safety-net': 299,
   essential: 679,
   advanced: 1299,
   premium: 2599,
 };
 
 const tierNames: Record<Tier, string> = {
+  'safety-net': 'Safety Net',
   essential: 'Essential',
   advanced: 'Advanced',
   premium: 'Premium',
 };
 
 const tierFeatures: Record<Tier, { support: number; maintenance: number }> = {
+  'safety-net': { support: 0, maintenance: 0 },
   essential: { support: 4, maintenance: 8 },
   advanced: { support: 8, maintenance: 16 },
   premium: { support: 20, maintenance: 40 },
@@ -53,15 +58,15 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
   userId,
   onSuccess,
   onError,
+  onChangePlan,
+  isReactivation = false,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setIsLoading(false);
-      setError(null);
     }
   }, [isOpen]);
 
@@ -76,6 +81,17 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
       document.body.style.overflow = 'auto';
     };
   }, [isOpen]);
+  
+  // Determine if this is an upgrade or downgrade
+  const TIER_HIERARCHY: Record<Tier, number> = {
+    'safety-net': 0,
+    essential: 1,
+    advanced: 2,
+    premium: 3,
+  };
+
+  const isUpgrade = TIER_HIERARCHY[newTier] > TIER_HIERARCHY[currentTier];
+  const isDowngrade = TIER_HIERARCHY[newTier] < TIER_HIERARCHY[currentTier];
   
   // Memoize pricing calculations
   const { subtotal, taxes, totalDue, newPlanPrice } = useMemo(() => {
@@ -93,15 +109,40 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
 
   const handleUpgrade = async () => {
     setIsLoading(true);
-    setError(null);
 
     try {
-      const response = await fetch('/api/stripe/upgrade-subscription', {
+      // Get Firebase auth token
+      const { getAuth } = await import('firebase/auth');
+      let auth;
+      
+      if (typeof window !== 'undefined') {
+        const { default: firebase } = await import('@/lib/firebase');
+        auth = getAuth();
+      }
+      
+      const user = auth?.currentUser;
+      
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      
+      const token = await user.getIdToken();
+      
+      // Choose the correct endpoint based on action type
+      let endpoint = '/api/stripe/upgrade-subscription';
+      if (isReactivation) {
+        endpoint = '/api/stripe/reactivate-subscription';
+      } else if (isDowngrade) {
+        endpoint = '/api/stripe/downgrade-subscription';
+      }
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ userId, newTier }),
+        body: JSON.stringify({ userId, newTier, currentTier }),
       });
 
       const result = await response.json();
@@ -115,8 +156,7 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
       onClose();
 
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to process upgrade. Please try again.';
-      setError(errorMessage);
+      const errorMessage = err.message || 'Failed to process change. Please try again.';
       
       // Call onError callback if provided
       if (onError) {
@@ -151,58 +191,69 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50 sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
       onClick={() => !isLoading && onClose()}
     >
       <div
-        className="relative w-full max-w-2xl bg-white sm:rounded-lg shadow-xl flex flex-col transition-transform duration-300 transform-gpu animate-slide-up sm:animate-fade-in"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+        className="relative w-full max-w-2xl bg-white rounded-lg shadow-[0px_8px_20px_0px_rgba(85,85,85,0.1)] flex flex-col max-h-[90vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white border-b border-gray-200 sm:p-6 rounded-t-lg">
-          <h2 className="text-xl font-bold text-[#232521]">Checkout</h2>
-          <button onClick={() => !isLoading && onClose()} aria-label="Close modal" disabled={isLoading}>
-            <X size={24} className="text-gray-500" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto">
+        {/* Content - Scrollable */}
+        <div className="p-6 overflow-y-auto flex flex-col gap-6">
           
-          {/* Upgrade Summary */}
-          <div className="p-6 mb-6 border-2 border-gray-200 rounded-lg bg-white">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-2">Current Plan</p>
-                <p className="text-base font-semibold text-[#232521]">
-                  Genie Maintenance - {tierNames[currentTier]} Plan
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-600 mb-2">New Plan</p>
-                <p className="text-base font-semibold text-[#232521]">
-                  Genie Maintenance - {tierNames[newTier]} Plan
-                </p>
-              </div>
-            </div>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-extrabold text-[#0a0a0a] leading-[1.2] tracking-tight">
+              {isReactivation ? 'Reactivate Subscription' : isUpgrade ? 'Upgrade' : isDowngrade ? 'Downgrade' : 'Modify'} Checkout
+            </h2>
+            <button 
+              onClick={() => !isLoading && onClose()} 
+              aria-label="Close modal" 
+              disabled={isLoading}
+              className="text-[#545552] hover:text-[#232521] transition-colors"
+            >
+              <X size={24} />
+            </button>
           </div>
 
-          {/* Current payment method */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-[#232521] mb-4">Current payment method</h3>
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 flex items-center justify-center bg-[#DADADA] rounded-full border border-gray-200">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="5" width="20" height="14" rx="2" stroke="#232521" strokeWidth="2" fill="none"/>
-                    <path d="M2 9H22" stroke="#232521" strokeWidth="2"/>
-                  </svg>
-                </div>
-                <p className="text-base font-medium text-[#232521]">Visa •••• 4242</p>
+          {/* Plan Selection Card */}
+          <div className="border-2 border-[#1B4A41] rounded-md p-5 flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-lg font-bold text-[#232521] leading-[1.5]">
+                Genie Maintenance - {tierNames[newTier]} Plan
+              </p>
+            </div>
+            {onChangePlan && (
+              <button
+                onClick={onChangePlan}
+                className="text-base font-bold text-[#1B4A41] hover:underline underline-offset-2 transition-all"
+                disabled={isLoading}
+              >
+                Change
+              </button>
+            )}
+          </div>
+
+          {/* Current Payment Method */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-[#0a0a0a] leading-[1.2] tracking-tight">
+              Current payment method
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="w-[50px] h-[50px] rounded-full bg-[#DADADA] flex items-center justify-center flex-shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="5" width="20" height="14" rx="2" stroke="#232521" strokeWidth="2" fill="none"/>
+                  <path d="M2 9H22" stroke="#232521" strokeWidth="2"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-base font-bold text-[#232521] leading-[1.5] tracking-tight">
+                  Visa •••• 4242
+                </p>
               </div>
               <button
                 onClick={handleUpdatePaymentMethod}
-                className="text-sm font-semibold text-[#1b4a41] hover:underline"
+                className="text-lg font-bold text-white hover:underline underline-offset-2 tracking-tight"
                 disabled={isLoading}
               >
                 Update payment method
@@ -211,78 +262,115 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
           </div>
 
           {/* Order Summary */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-[#232521] mb-4">Order Summary</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckIcon />
-                  <div>
-                    <p className="font-medium text-[#232521]">
-                      Genie Maintenance - {tierNames[newTier]} Plan (Plan renews on 6/15/26)
-                    </p>
-                  </div>
-                </div>
-                <p className="font-semibold text-[#232521]">${newPlanPrice.toFixed(2)}</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckIcon />
-                  <p className="text-gray-700">Ongoing Security Monitoring & Backups</p>
-                </div>
-                <p className="text-gray-600">Included</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckIcon />
-                  <p className="text-gray-700">{tierFeatures[newTier].support} Annual support hours</p>
-                </div>
-                <p className="text-gray-600">Included</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckIcon />
-                  <p className="text-gray-700">{tierFeatures[newTier].maintenance} Annual maintenance hours</p>
-                </div>
-                <p className="text-gray-600">Included</p>
-              </div>
-            </div>
-          </div>
+          <div className="bg-[#FAF9F5] rounded-lg p-4 flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-[#232521] leading-[1.2] tracking-tight">
+              Order Summary
+            </h3>
 
-          {/* Pricing Summary */}
-          <div className="space-y-3 pt-6 border-t border-gray-200">
-            <div className="flex justify-between text-base">
-              <p className="text-gray-700">Subtotal</p>
-              <p className="font-medium text-[#232521]">${newPlanPrice.toFixed(2)}</p>
+            {/* Order Items */}
+            <div className="flex flex-col gap-0">
+              <div className="flex gap-4 items-start">
+                <CheckIcon />
+                <p className="flex-1 text-sm font-normal text-[#232521] leading-[1.5] tracking-tight">
+                  Genie Maintenance - {tierNames[newTier]} Plan (Plan renews on 6/15/26)
+                </p>
+                <p className="text-sm font-normal text-[#232521] leading-[1.5] tracking-tight whitespace-nowrap">
+                  ${newPlanPrice.toFixed(2)}
+                </p>
+              </div>
             </div>
-            <div className="flex justify-between text-base">
-              <p className="text-gray-700">Taxes</p>
-              <p className="font-medium text-[#232521]">${taxes.toFixed(2)}</p>
-            </div>
-            <div className="flex justify-between text-lg font-bold pt-3 border-t border-gray-200">
-              <p className="text-[#232521]">Total Due Today</p>
-              <p className="text-[#232521]">${totalDue.toFixed(2)}</p>
-            </div>
-          </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="p-4 mt-6 text-sm text-red-900 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
-                <div className="flex">
-                    <div className="flex-shrink-0">
-                        <AlertCircle className="w-5 h-5" />
-                    </div>
-                    <div className="ml-3">
-                        <p className="font-bold">Upgrade failed</p>
-                        <p className="mt-1">{error}</p>
-                    </div>
-                </div>
+            <div className="flex gap-4 items-start">
+              <CheckIcon />
+              <p className="flex-1 text-sm font-normal text-[#232521] leading-[1.5] tracking-tight">
+                Ongoing Security Monitoring & Backups
+              </p>
+              <p className="text-sm font-normal text-[#232521] leading-[1.5] tracking-tight whitespace-nowrap">
+                Included
+              </p>
             </div>
-          )}
+
+            {tierFeatures[newTier].support > 0 && (
+              <div className="flex gap-4 items-start">
+                <CheckIcon />
+                <p className="flex-1 text-sm font-normal text-[#232521] leading-[1.5] tracking-tight">
+                  {tierFeatures[newTier].support} Annual support hours
+                </p>
+                <p className="text-sm font-normal text-[#232521] leading-[1.5] tracking-tight whitespace-nowrap">
+                  Included
+                </p>
+              </div>
+            )}
+
+            {tierFeatures[newTier].maintenance > 0 && (
+              <div className="flex gap-4 items-start">
+                <CheckIcon />
+                <p className="flex-1 text-sm font-normal text-[#232521] leading-[1.5] tracking-tight">
+                  {tierFeatures[newTier].maintenance} Annual maintenance hours
+                </p>
+                <p className="text-sm font-normal text-[#232521] leading-[1.5] tracking-tight whitespace-nowrap">
+                  Included
+                </p>
+              </div>
+            )}
+
+            {newTier === 'safety-net' && (
+              <div className="flex gap-4 items-start">
+                <CheckIcon />
+                <p className="flex-1 text-sm font-normal text-[#232521] leading-[1.5] tracking-tight">
+                  Emergency support (limited hours)
+                </p>
+                <p className="text-sm font-normal text-[#232521] leading-[1.5] tracking-tight whitespace-nowrap">
+                  Included
+                </p>
+              </div>
+            )}
+
+            {/* Divider */}
+            <div className="h-px bg-gray-300 w-full" />
+
+            {/* Pricing Summary */}
+            <div className="flex justify-between items-center">
+              <p className="text-lg font-bold text-[#232521] leading-[1.2] tracking-tight">
+                Subtotal
+              </p>
+              <p className="text-base font-bold text-[#232521] leading-[1.2] tracking-tight">
+                ${newPlanPrice.toFixed(2)}
+              </p>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <p className="text-lg font-bold text-[#232521] leading-[1.2] tracking-tight">
+                Taxes
+              </p>
+              <p className="text-base font-bold text-[#232521] leading-[1.2] tracking-tight">
+                ${taxes.toFixed(2)}
+              </p>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-gray-300 w-full" />
+
+            <div className="flex justify-between items-center">
+              <p className="text-lg font-bold text-[#232521] leading-[1.2] tracking-tight">
+                {isDowngrade ? 'Prorated Credit Applied' : 'Total Due Today'}
+              </p>
+              <p className="text-lg font-bold text-[#232521] leading-[1.2] tracking-tight">
+                {isDowngrade ? '-$' : '$'}{Math.abs(totalDue).toFixed(2)}
+              </p>
+            </div>
+
+            {isDowngrade && (
+              <p className="text-sm text-[#545552] leading-[1.5] mt-2">
+                Your unused time on the {tierNames[currentTier]} plan will be credited toward your {tierNames[newTier]} plan. 
+                The credit will be applied to your next billing cycle on 6/15/26.
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col-reverse w-full gap-3 p-4 border-t border-gray-200 sm:flex-row sm:justify-end sm:p-6">
+        {/* Actions - Fixed at bottom */}
+        <div className="flex justify-end gap-6 p-6 border-t border-gray-200">
           <SecondaryButton
             onClick={() => !isLoading && onClose()}
             disabled={isLoading}
@@ -300,7 +388,7 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
                 Processing...
               </>
             ) : (
-              'Place Order'
+              isReactivation ? 'Confirm Subscription' : isDowngrade ? 'Confirm Downgrade' : 'Place Order'
             )}
           </PrimaryButton>
         </div>

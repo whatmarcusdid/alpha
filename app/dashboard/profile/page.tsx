@@ -179,7 +179,7 @@ export default function ProfilePage() {
                       value={formData?.fullName || ''}
                       onChange={(e) => setFormData({ ...formData!, fullName: e.target.value })}
                       disabled={!isEditMode}
-                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                   />
               </div>
               <div>
@@ -191,7 +191,7 @@ export default function ProfilePage() {
                     value={formData?.email || ''}
                     onChange={(e) => setFormData({ ...formData!, email: e.target.value })}
                     disabled={!isEditMode}
-                    className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                    className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                 />
                 {!isEditMode && (
                     <p className="text-sm text-gray-500 mt-1">Click Edit to update your email.</p>
@@ -205,7 +205,7 @@ export default function ProfilePage() {
                       onChange={(e) => setFormData({ ...formData!, phone: e.target.value })}
                       disabled={!isEditMode}
                       placeholder="(240) 521-4763"
-                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                   />
               </div>
               <div>
@@ -216,7 +216,7 @@ export default function ProfilePage() {
                       onChange={(e) => setFormData({ ...formData!, role: e.target.value })}
                       disabled={!isEditMode}
                       placeholder="e.g., Owner, Manager"
-                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                   />
               </div>
             </div>
@@ -235,7 +235,7 @@ export default function ProfilePage() {
                       value={passwordData.current}
                       onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
                       disabled={isEditMode}
-                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                   />
               </div>
               <div>
@@ -245,7 +245,7 @@ export default function ProfilePage() {
                       value={passwordData.new}
                       onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
                       disabled={isEditMode}
-                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                   />
               </div>
               <div>
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                       value={passwordData.confirm}
                       onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
                       disabled={isEditMode}
-                      className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
+                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
                   />
               </div>
             </div>

@@ -33,8 +33,11 @@ export function NotificationToast({
 
   return (
     <div 
-      className="fixed top-[118px] right-9 z-50 animate-fade-in"
+      className="fixed z-50 animate-fade-in"
       style={{
+        position: 'fixed',
+        right: '36px',
+        top: '36px',
         width: '459px',
         borderRadius: '8px',
         borderTop: '1px solid rgba(111, 121, 122, 0.40)',
@@ -89,29 +92,11 @@ export function NotificationToast({
         
         {/* Content */}
         <div className="flex-1">
-          <p 
-            className="text-[#232521]"
-            style={{
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontWeight: 600,
-              lineHeight: '150%',
-              letterSpacing: '-0.14px',
-            }}
-          >
+          <p className="text-sm font-semibold leading-relaxed tracking-tight text-[#232521]">
             {message}
           </p>
           {subtitle && (
-            <p 
-              className="text-[#545552] mt-1"
-              style={{
-                fontFamily: 'Inter',
-                fontSize: '14px',
-                fontWeight: 400,
-                lineHeight: '150%',
-                letterSpacing: '-0.14px',
-              }}
-            >
+            <p className="text-sm leading-relaxed tracking-tight text-[#545552] mt-1">
               {subtitle}
             </p>
           )}

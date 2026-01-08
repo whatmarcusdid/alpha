@@ -9,10 +9,12 @@ import ManageSubscriptionModal from '@/components/manage/ManageSubscriptionModal
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
+import { TransactionsTable, Transaction } from '@/components/transactions/TransactionsTable';
 
-type Tier = 'essential' | 'advanced' | 'premium';
+type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
 
 const tierNames: Record<Tier, string> = {
+  'safety-net': 'Safety Net',
   essential: 'Essential',
   advanced: 'Advanced',
   premium: 'Premium',
@@ -23,10 +25,14 @@ export default function TransactionsPage() {
   const router = useRouter();
   
   const [currentTier, setCurrentTier] = useState<Tier>('essential'); // Default tier
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [renewalDate, setRenewalDate] = useState<string>('6/15/26');
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled'>('active');
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedUpgradeTier, setSelectedUpgradeTier] = useState<Tier | null>(null);
   const [showManageModal, setShowManageModal] = useState(false);
+  const [transactionSortOrder, setTransactionSortOrder] = useState<'asc' | 'desc'>('desc');
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     show: boolean;
@@ -39,6 +45,47 @@ export default function TransactionsPage() {
     subtitle: undefined 
   });
 
+  // Mock transaction data - In production, this would be fetched from Firestore/Stripe
+  const mockTransactions: Transaction[] = [
+    {
+      id: "txn-001",
+      orderId: "#BCC-001205",
+      description: `Genie Maintenance - ${tierNames[currentTier]} Plan`,
+      date: "06-15-2024",
+      amount: "$679.00",
+      status: "completed",
+      paymentMethod: "•••• 4242",
+      invoiceUrl: "https://example.com/invoice-001205.pdf"
+    },
+    {
+      id: "txn-002",
+      orderId: "#BCC-001189",
+      description: `Genie Maintenance - ${tierNames[currentTier]} Plan`,
+      date: "06-15-2023",
+      amount: "$679.00",
+      status: "completed",
+      paymentMethod: "•••• 4242",
+      invoiceUrl: "https://example.com/invoice-001189.pdf"
+    },
+    {
+      id: "txn-003",
+      orderId: "#BCC-001173",
+      description: `Genie Maintenance - ${tierNames[currentTier]} Plan`,
+      date: "06-15-2022",
+      amount: "$679.00",
+      status: "completed",
+      paymentMethod: "•••• 4242",
+      invoiceUrl: "https://example.com/invoice-001173.pdf"
+    }
+  ];
+
+  // Sort transactions based on sortOrder
+  const sortedTransactions = [...mockTransactions].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    return transactionSortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+  });
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
@@ -46,9 +93,48 @@ export default function TransactionsPage() {
     }
   }, [authLoading, user, router]);
 
+  // Fetch user's subscription data from Firestore
+  useEffect(() => {
+    const fetchSubscriptionData = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const { getUserSubscription } = await import('@/lib/firestore');
+        const subscription = await getUserSubscription(user.uid);
+        
+        if (subscription) {
+          // Map Firestore tier to component tier type
+          const tier = subscription.tier as Tier;
+          setCurrentTier(tier);
+          setSubscriptionStatus(subscription.status as 'active' | 'canceled');
+          
+          // Format renewal or expiration date based on status
+          const dateToFormat = subscription.status === 'canceled' 
+            ? subscription.expiresAt 
+            : subscription.renewalDate;
+          
+          if (dateToFormat) {
+            const date = new Date(dateToFormat);
+            setRenewalDate(date.toLocaleDateString('en-US', { 
+              month: 'numeric', 
+              day: 'numeric', 
+              year: '2-digit' 
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      } finally {
+        setIsLoadingSubscription(false);
+      }
+    };
+
+    fetchSubscriptionData();
+  }, [user?.uid]);
+
   const handleSelectPlan = (tier: Tier) => {
     setSelectedUpgradeTier(tier);
-    setIsModalOpen(false);
+    setShowUpgradeModal(false);
     setShowConfirmation(true);
   };
 
@@ -100,6 +186,25 @@ export default function TransactionsPage() {
     }
   };
 
+  const handleDownloadInvoice = (transaction: Transaction) => {
+    if (transaction.invoiceUrl) {
+      window.open(transaction.invoiceUrl, '_blank');
+    } else {
+      // In production, you might fetch the invoice from Stripe
+      console.log('Downloading invoice for:', transaction.orderId);
+      setNotification({ 
+        type: 'error', 
+        show: true,
+        message: 'Invoice not available',
+        subtitle: 'Please contact support to request your invoice.'
+      });
+    }
+  };
+
+  const handleToggleSort = () => {
+    setTransactionSortOrder(transactionSortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
   if (authLoading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -124,62 +229,73 @@ export default function TransactionsPage() {
         duration={5000}
       />
 
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 h-full">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-[#232521]">Transactions</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Review your billing history and manage your subscription.
-            </p>
           </div>
           <div className="mt-4 sm:mt-0">
-            <span className="inline-block bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium">
-              Current Plan: <span className="font-bold text-[#232521]">{tierNames[currentTier]}</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-          <h2 className="text-lg font-semibold text-[#232521]">Subscription Management</h2>
-          <p className="text-sm text-gray-600 mt-2">
-            Your current subscription is the <span className="font-semibold">{tierNames[currentTier]} Plan</span>.
-            Ready to level up? Upgrade your plan for more features and support.
-          </p>
-          <div className="mt-6 flex items-center gap-4">
-            <PrimaryButton onClick={() => setIsModalOpen(true)}>
-              Upgrade Plan
+            <PrimaryButton onClick={() => setShowUpgradeModal(true)}>
+              Upgrade My Subscription
             </PrimaryButton>
-            <SecondaryButton onClick={() => setShowManageModal(true)}>
-              Manage Subscription
-            </SecondaryButton>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-[#232521] mb-4">Billing History</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-200 text-sm text-gray-600">
-                  <th className="font-medium p-3">Date</th>
-                  <th className="font-medium p-3">Description</th>
-                  <th className="font-medium p-3 text-right">Amount</th>
-                  <th className="font-medium p-3 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-gray-100 text-sm">
-                  <td className="p-3">June 15, 2024</td>
-                  <td className="p-3">Genie Maintenance - {tierNames[currentTier]} Plan</td>
-                  <td className="p-3 text-right">$679.00</td>
-                  <td className="p-3 text-right">
-                    <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                      Paid
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        {/* My Active Subscription Section */}
+        <div className="flex flex-col gap-6 mb-8">
+          <h2 className="text-2xl font-extrabold text-[#0a0a0a] leading-[1.2] tracking-tight">
+            My Active Subscription
+          </h2>
+          
+          <div className="bg-white border border-[rgba(111,121,122,0.4)] rounded p-4 flex gap-6 items-center">
+            {/* Left Content */}
+            <div className="flex-1 flex flex-col gap-3">
+              <h3 className="text-base font-bold text-[#232521] leading-[1.5] tracking-tight">
+                Genie Maintenance - {tierNames[currentTier]} Plan
+              </h3>
+              
+              <div className="flex items-center gap-2">
+                <p className="text-[13px] font-medium text-[#545552] leading-[1.5]">
+                  Current Status
+                </p>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium leading-[1.2] tracking-tight ${
+                  subscriptionStatus === 'active' 
+                    ? 'bg-[#dcfce7] text-[#14532d]' 
+                    : 'bg-[#fee2e2] text-[#991b1b]'
+                }`}>
+                  {subscriptionStatus === 'active' ? 'Active' : 'Canceled'}
+                </span>
+              </div>
+              
+              <p className="text-[15px] font-medium text-[#232521] leading-[1.2] tracking-tight">
+                {subscriptionStatus === 'active' 
+                  ? `Plan renews on ${renewalDate}` 
+                  : `Plan expires on ${renewalDate}`}
+              </p>
+            </div>
+            
+            {/* Right Button */}
+            <div>
+              <SecondaryButton onClick={() => setShowManageModal(true)}>
+                Manage Subscription
+              </SecondaryButton>
+            </div>
+          </div>
+        </div>
+
+        {/* Billing History Section */}
+        <div className="flex flex-col gap-6 mb-8 p-5 rounded bg-white h-full border border-[#DADADA]">
+          <h2 className="text-[15px] font-bold leading-relaxed tracking-tight text-[#232521]">
+            Billing History
+          </h2>
+          
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <TransactionsTable 
+              transactions={sortedTransactions}
+              sortOrder={transactionSortOrder}
+              onSortChange={handleToggleSort}
+              onDownload={handleDownloadInvoice}
+            />
           </div>
         </div>
 
@@ -189,33 +305,39 @@ export default function TransactionsPage() {
         currentTier && (
             <>
                 <PlanSelectionModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    currentTier={currentTier}
-                    onSelectPlan={handleSelectPlan}
+                    isOpen={showUpgradeModal}
+                    onClose={() => setShowUpgradeModal(false)}
+                    currentTier={currentTier === 'safety-net' ? 'essential' : currentTier as 'essential' | 'advanced' | 'premium'}
+                    onSelectPlan={(tier) => handleSelectPlan(tier as Tier)}
+                    isCanceled={subscriptionStatus === 'canceled'}
                 />
 
-                {selectedUpgradeTier && (
+                {selectedUpgradeTier && selectedUpgradeTier !== 'safety-net' && (
                     <UpgradeConfirmation
                         isOpen={showConfirmation}
                         onClose={() => {
                             setShowConfirmation(false);
                             setSelectedUpgradeTier(null);
                         }}
-                        currentTier={currentTier}
-                        newTier={selectedUpgradeTier}
+                        currentTier={currentTier === 'safety-net' ? 'essential' : currentTier as 'essential' | 'advanced' | 'premium'}
+                        newTier={selectedUpgradeTier as 'essential' | 'advanced' | 'premium'}
                         userId={user?.uid || ''}
                         onSuccess={handleUpgradeSuccess}
                         onError={handleUpgradeError}
+                        onChangePlan={() => {
+                            setShowConfirmation(false);
+                            setShowUpgradeModal(true);
+                        }}
+                        isReactivation={subscriptionStatus === 'canceled'}
                     />
                 )}
 
                 <ManageSubscriptionModal
                     isOpen={showManageModal}
                     onClose={() => setShowManageModal(false)}
-                    onCancelClick={() => {
+                    onCancelClick={(reason) => {
                         setShowManageModal(false);
-                        console.log('Cancel subscription clicked');
+                        console.log('Cancel subscription clicked with reason:', reason);
                     }}
                     onUpdatePaymentClick={handleUpdatePaymentMethod}
                     currentPaymentMethod="Visa •••• 4242"

@@ -69,3 +69,34 @@ export async function getUserCompany(userId: string) {
     return null;
   }
 }
+
+// User Subscription Data Function
+export async function getUserSubscription(userId: string) {
+  if (!db) {
+    console.error('Firestore is not initialized. This function must be called on the client side.');
+    return null;
+  }
+  
+  try {
+    const userRef = doc(collection(db, 'users'), userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      return {
+        tier: data.subscription?.tier || 'essential',
+        renewalDate: data.subscription?.renewalDate || null,
+        status: data.subscription?.status || 'active',
+        price: data.subscription?.price || null,
+        billingCycle: data.subscription?.billingCycle || 'yearly',
+        expiresAt: data.subscription?.expiresAt || null,
+        canceledAt: data.subscription?.canceledAt || null,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting user subscription:', error);
+    return null;
+  }
+}

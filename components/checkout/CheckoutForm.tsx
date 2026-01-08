@@ -127,7 +127,7 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
               id="nameOnCard"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
+              className={`w-full min-h-[40px] px-4 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
               placeholder="Marcus Johnson"
             />
           </div>
@@ -142,7 +142,7 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
+              className={`w-full min-h-[40px] px-4 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
               placeholder="8049 Old Alexandria Ferry Rd"
             />
           </div>
@@ -157,7 +157,7 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
               id="address2"
               value={address2}
               onChange={(e) => setAddress2(e.target.value)}
-              className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
+              className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
             />
           </div>
 
@@ -172,7 +172,7 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
                 id="city"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
+                className={`w-full min-h-[40px] px-4 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
                 placeholder="Clinton"
               />
             </div>
@@ -185,7 +185,7 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
                 id="state"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
+                className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
               >
                 {states.map((state) => (
                   <option key={state} value={state}>
@@ -204,7 +204,7 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
                 id="zipCode"
                 value={zipCode}
                 onChange={(e) => setZipCode(e.target.value)}
-                className={`w-full min-h-[40px] px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
+                className={`w-full min-h-[40px] px-4 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent border-gray-300`}
                 placeholder="20735"
               />
             </div>

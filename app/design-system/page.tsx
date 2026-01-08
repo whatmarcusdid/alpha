@@ -2,20 +2,34 @@
 
 import { useState } from 'react';
 import { Timestamp } from 'firebase/firestore';
+import { 
+  Home, 
+  Building, 
+  MonitorSmartphone, 
+  BarChart3, 
+  Menu, 
+  Settings, 
+  ChevronDown 
+} from 'lucide-react';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { TertiaryButton } from '@/components/ui/TertiaryButton';
 import { Input } from '@/components/ui/input';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import ManageSubscriptionModal from '@/components/manage/ManageSubscriptionModal';
+import { UpdatePaymentMethodModal } from '@/components/manage/UpdatePaymentMethodModal';
 import { UpcomingMeetingCard } from '@/components/dashboard/UpcomingMeetingCard';
 import { NoMeetingsCard } from '@/components/dashboard/NoMeetingsCard';
 import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
+import { ReportsTable, Report } from '@/components/reports/ReportsTable';
+import { TransactionsTable, Transaction } from '@/components/transactions/TransactionsTable';
 import { SignInForm } from '@/components/auth/SignInForm';
 import { SignUpForm } from '@/components/auth/SignUpForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import PlanSelectionModal from '@/components/upgrade/PlanSelectionModal';
 import UpgradeConfirmation from '@/components/upgrade/UpgradeConfirmation';
+import { PricingCard } from '@/components/upgrade/PricingCard';
+import { TSGLogo } from '@/components/ui/logo';
 import { Meeting } from '@/types/user';
 
 // Define Tier type for upgrade flow
@@ -26,6 +40,7 @@ export default function DesignSystemPage() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isManageSubscriptionOpen, setIsManageSubscriptionOpen] = useState(false);
+  const [isUpdatePaymentMethodOpen, setIsUpdatePaymentMethodOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
   // State for auth component modals
@@ -48,6 +63,71 @@ export default function DesignSystemPage() {
     type: "strategy-session",
     status: "scheduled"
   };
+
+  // Mock data for ReportsTable
+  const mockReports: Report[] = [
+    {
+      id: "report-1",
+      title: "TSG Performance Report - Jan 2025",
+      subtitle: "Performance Checkup",
+      createdDate: "01-02-2025",
+      updatedDate: "12-25-2025",
+      fileUrl: "https://example.com/report-jan-2025.pdf"
+    },
+    {
+      id: "report-2",
+      title: "TSG Performance Report - Feb 2025",
+      subtitle: "Performance Checkup",
+      createdDate: "02-02-2025",
+      updatedDate: "12-25-2025",
+      fileUrl: "https://example.com/report-feb-2025.pdf"
+    },
+    {
+      id: "report-3",
+      title: "TSG Performance Report - Mar 2025",
+      subtitle: "Performance Checkup",
+      createdDate: "03-02-2025",
+      updatedDate: "12-25-2025",
+      fileUrl: "https://example.com/report-mar-2025.pdf"
+    }
+  ];
+
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [transactionSortOrder, setTransactionSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Mock data for TransactionsTable
+  const mockTransactions: Transaction[] = [
+    {
+      id: "txn-1",
+      orderId: "#BCC-001205",
+      description: "Genie Maintenance - Essential Plan",
+      date: "06-01-2025",
+      amount: "$209.00",
+      status: "completed",
+      paymentMethod: "•••• 3245",
+      invoiceUrl: "https://example.com/invoice-001205.pdf"
+    },
+    {
+      id: "txn-2",
+      orderId: "#BCC-001202",
+      description: "Genie Maintenance - Essential Plan",
+      date: "05-01-2025",
+      amount: "$209.00",
+      status: "failed",
+      paymentMethod: "•••• 3245",
+      invoiceUrl: "https://example.com/invoice-001202.pdf"
+    },
+    {
+      id: "txn-3",
+      orderId: "#BCC-001198",
+      description: "Genie Maintenance - Essential Plan",
+      date: "04-01-2025",
+      amount: "$209.00",
+      status: "completed",
+      paymentMethod: "•••• 3245",
+      invoiceUrl: "https://example.com/invoice-001198.pdf"
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-[#F7F6F1]">
@@ -783,7 +863,7 @@ export default function DesignSystemPage() {
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Size</p>
-                    <p className="font-mono">13px</p>
+                    <p className="font-mono">15px</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Weight</p>
@@ -797,7 +877,7 @@ export default function DesignSystemPage() {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
                   <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
-                    text-[13px] leading-relaxed
+                    text-[15px] leading-relaxed
                   </code>
                 </div>
               </div>
@@ -816,7 +896,7 @@ export default function DesignSystemPage() {
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Size</p>
-                    <p className="font-mono">13px</p>
+                    <p className="font-mono">15px</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Weight</p>
@@ -830,7 +910,7 @@ export default function DesignSystemPage() {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
                   <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
-                    text-[13px] font-bold leading-relaxed
+                    text-[15px] font-bold leading-relaxed
                   </code>
                 </div>
               </div>
@@ -923,7 +1003,7 @@ export default function DesignSystemPage() {
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Size</p>
-                    <p className="font-mono">15px</p>
+                    <p className="font-mono">16px</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Weight</p>
@@ -1022,7 +1102,7 @@ export default function DesignSystemPage() {
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Size</p>
-                    <p className="font-mono">13px</p>
+                    <p className="font-mono">15px</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Weight</p>
@@ -1036,7 +1116,7 @@ export default function DesignSystemPage() {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
                   <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
-                    text-[13px] font-semibold leading-relaxed tracking-tight
+                    text-[15px] font-semibold leading-relaxed tracking-tight
                   </code>
                 </div>
               </div>
@@ -1055,7 +1135,7 @@ export default function DesignSystemPage() {
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Size</p>
-                    <p className="font-mono">13px</p>
+                    <p className="font-mono">15px</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Weight</p>
@@ -1069,7 +1149,7 @@ export default function DesignSystemPage() {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
                   <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
-                    text-[13px] font-medium leading-tight tracking-tight
+                    text-[15px] font-medium leading-tight tracking-tight
                   </code>
                 </div>
               </div>
@@ -1088,7 +1168,7 @@ export default function DesignSystemPage() {
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Size</p>
-                    <p className="font-mono">13px</p>
+                    <p className="font-mono">15px</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs mb-1">Weight</p>
@@ -1102,7 +1182,7 @@ export default function DesignSystemPage() {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-2">Tailwind Classes:</p>
                   <code className="text-xs bg-gray-50 px-3 py-2 rounded block">
-                    text-[13px] font-medium leading-relaxed
+                    text-[15px] font-medium leading-relaxed
                   </code>
                 </div>
               </div>
@@ -1503,27 +1583,39 @@ export default function DesignSystemPage() {
 
             <div>
               <h3 className="text-lg font-semibold text-[#232521] mb-4">Checkbox</h3>
-              <p className="text-gray-600 mb-4">Checkbox component with checked indicator using Radix UI</p>
+              <p className="text-gray-600 mb-4">Checkbox component with checked indicator using Radix UI. Checked state uses blue (#51A2FF) for visual clarity.</p>
               
               <div className="space-y-4 mb-6">
                 <div className="flex items-center space-x-2">
-                  <div className="h-4 w-4 rounded-sm border border-gray-400 flex items-center justify-center bg-white"></div>
-                  <label className="text-sm font-medium text-gray-700">Unchecked state</label>
+                  <div className="h-4 w-4 rounded-sm border border-gray-300 flex items-center justify-center bg-white"></div>
+                  <label className="text-sm font-medium text-gray-700">Unchecked state (border-gray-300)</label>
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <div className="h-4 w-4 rounded-sm border border-[#1B4A41] bg-[#1B4A41] flex items-center justify-center text-white">
+                  <div className="h-4 w-4 rounded-sm border border-[#51A2FF] bg-[#51A2FF] flex items-center justify-center text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                   </div>
-                  <label className="text-sm font-medium text-gray-700">Checked state</label>
+                  <label className="text-sm font-medium text-gray-700">Checked state (#51A2FF)</label>
                 </div>
                 
                 <div className="flex items-center space-x-2 opacity-50">
                   <div className="h-4 w-4 rounded-sm border border-gray-400 flex items-center justify-center bg-gray-100 cursor-not-allowed"></div>
                   <label className="text-sm font-medium text-gray-700">Disabled state</label>
                 </div>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Unchecked: border-gray-300 with white background</li>
+                  <li>Checked: bg-[#51A2FF] border-[#51A2FF] with white checkmark</li>
+                  <li>Uses lucide-react Check icon</li>
+                  <li>Built with @radix-ui/react-checkbox for accessibility</li>
+                  <li>Focus ring for keyboard navigation</li>
+                  <li>Disabled state with reduced opacity</li>
+                </ul>
               </div>
               
               <div className="mt-4 bg-gray-50 rounded p-4">
@@ -1534,6 +1626,61 @@ export default function DesignSystemPage() {
   <Checkbox id="terms" />
   <label htmlFor="terms">Accept terms and conditions</label>
 </div>`}
+                </code>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-[#232521] mb-4">Radio Input</h3>
+              <p className="text-gray-600 mb-4">Radio input component with selected indicator using Radix UI. Selected state uses blue (#51A2FF) for visual clarity, matching checkbox style.</p>
+              
+              <div className="space-y-4 mb-6">
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 rounded-full border border-gray-300 flex items-center justify-center bg-white"></div>
+                  <label className="text-sm font-medium text-gray-700">Unselected state (border-gray-300)</label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-[#51A2FF] flex items-center justify-center bg-white">
+                    <div className="h-2 w-2 rounded-full bg-[#51A2FF]"></div>
+                  </div>
+                  <label className="text-sm font-medium text-gray-700">Selected state (#51A2FF)</label>
+                </div>
+                
+                <div className="flex items-center space-x-2 opacity-50">
+                  <div className="h-4 w-4 rounded-full border border-gray-400 flex items-center justify-center bg-gray-100 cursor-not-allowed"></div>
+                  <label className="text-sm font-medium text-gray-700">Disabled state</label>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Unselected: border-gray-300 with white background</li>
+                  <li>Selected: text-[#51A2FF] for inner dot (matches checkbox blue)</li>
+                  <li>Circular shape with rounded-full</li>
+                  <li>Uses lucide-react Circle icon for selected state</li>
+                  <li>Built with @radix-ui/react-radio-group for accessibility</li>
+                  <li>Focus ring for keyboard navigation</li>
+                  <li>Disabled state with reduced opacity</li>
+                </ul>
+              </div>
+              
+              <div className="mt-4 bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { RadioGroup, RadioGroupItem } from '@/components/ui/radio';
+
+<RadioGroup value={selectedValue} onValueChange={setSelectedValue}>
+  <div className="flex items-start gap-3">
+    <RadioGroupItem value="option-1" id="option-1" />
+    <div>
+      <label htmlFor="option-1" className="font-medium text-[#232521]">
+        Option Label
+      </label>
+      <p className="text-sm text-gray-600">Optional description text</p>
+    </div>
+  </div>
+</RadioGroup>`}
                 </code>
               </div>
             </div>
@@ -1594,10 +1741,24 @@ export default function DesignSystemPage() {
             {/* UpcomingMeetingCard */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
               <h3 className="text-xl font-semibold text-[#232521] mb-4">Upcoming Meeting Card</h3>
-              <p className="text-gray-600 mb-6">Used for displaying scheduled meetings with calendar icon, date, time, and action button</p>
+              <p className="text-gray-600 mb-6">Displays scheduled meetings with a distinctive calendar badge featuring a red month bar. Shows meeting title, date/time, and "View Details" action button.</p>
               
               <div className="mb-6">
                 <UpcomingMeetingCard meeting={mockMeeting} />
+              </div>
+
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Calendar badge: 64x64px with red (#e74c3c) month bar and gray background (#f2f2f2)</li>
+                  <li>Meeting title: Manrope Bold 16px, line-height 1.5, color #232521</li>
+                  <li>Date/time: Inter Medium 15px, line-height 1.2, color #545552</li>
+                  <li>Action button: "View Details" in dark green (#1B4A41) with hover underline</li>
+                  <li>4px border radius with subtle border (rgba(111,121,122,0.4))</li>
+                  <li>16px padding and 16px gap between elements</li>
+                  <li>Auto-formats date to Eastern Time (America/New_York)</li>
+                </ul>
               </div>
               
               <div className="bg-gray-50 rounded p-4">
@@ -1606,15 +1767,21 @@ export default function DesignSystemPage() {
 import { Timestamp } from 'firebase/firestore';
 
 interface Meeting {
+  id: string;
   title: string;
   date: Timestamp;
   meetingUrl: string;
+  type: string;
+  status: string;
 }
 
 const mockMeeting: Meeting = {
-  title: "Q1 Website Review",
-  date: new Timestamp(1768536000, 0), // Jan 15, 2026, 2:00 PM
-  meetingUrl: "#"
+  id: "meeting-123",
+  title: "Welcome Session",
+  date: Timestamp.fromDate(new Date('2025-08-24T14:00:00')),
+  meetingUrl: "https://meet.google.com/abc-defg-hij",
+  type: "welcome-session",
+  status: "scheduled"
 };
 
 <UpcomingMeetingCard meeting={mockMeeting} />`}
@@ -1655,6 +1822,251 @@ const mockMeeting: Meeting = {
 
 // Fetches data from Firestore on mount
 <RecentReportsCard />`}
+                </code>
+              </div>
+            </div>
+
+            {/* ReportsTable */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Reports Table</h3>
+              <p className="text-gray-600 mb-6">Fully responsive reports table with 4 breakpoint variants. Displays document title, created date, updated date, and download action. Includes sortable columns and hover states.</p>
+              
+              {/* Live Preview */}
+              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+                <ReportsTable 
+                  reports={mockReports}
+                  sortOrder={sortOrder}
+                  onSortChange={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  onDownload={(report) => alert(`Downloading: ${report.title}`)}
+                />
+              </div>
+
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Fully responsive with 4 breakpoints (Desktop 1360px, Tablet 1024px, Tablet 744px, Mobile 430px)</li>
+                  <li>Column visibility adapts to screen size:</li>
+                  <li className="ml-6">- Desktop: All columns visible (Document Title, Created Date, Updated Date, Action)</li>
+                  <li className="ml-6">- Tablet 1024px: All columns visible</li>
+                  <li className="ml-6">- Tablet 744px: Hides "Updated Date" column</li>
+                  <li className="ml-6">- Mobile 430px: Shows only "Document Title" and "Action"</li>
+                  <li>Sortable "Created Date" column with chevron indicator</li>
+                  <li>Hover state: Background changes to #F2F0E7</li>
+                  <li>Empty state: Displays "No reports available" message</li>
+                  <li>Typography: Inter Semi Bold 15px for headers, Manrope Bold 16px for titles, Inter Medium 15px for dates</li>
+                  <li>Uses TertiaryButton component for "Download" action</li>
+                  <li>Border styling: rgba(111,121,122,0.4)</li>
+                  <li>Background colors: #F7F6F1 for header, white for rows</li>
+                </ul>
+              </div>
+
+              {/* Responsive Behavior */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Responsive Breakpoints:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li><strong>Desktop (default):</strong> All columns shown with full width layout</li>
+                  <li><strong>Tablet (lg: 1024px):</strong> All columns visible, optimized spacing</li>
+                  <li><strong>Tablet (sm: 744px):</strong> "Updated Date" column hidden, 3 columns visible</li>
+                  <li><strong>Mobile (430px):</strong> Only "Document Title" and "Action" visible</li>
+                </ul>
+              </div>
+
+              {/* Props */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Props:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <ul className="text-xs text-gray-700 space-y-2 font-mono">
+                    <li><strong>reports</strong>: Report[] - Array of report objects to display</li>
+                    <li><strong>onDownload?</strong>: (report: Report) =&gt; void - Callback when download is clicked</li>
+                    <li><strong>sortOrder?</strong>: 'asc' | 'desc' - Current sort order (default: 'desc')</li>
+                    <li><strong>onSortChange?</strong>: () =&gt; void - Callback when sort is toggled</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Report Interface */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Report Interface:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <code className="text-xs text-gray-700 block whitespace-pre">
+{`export interface Report {
+  id: string;
+  title: string;
+  subtitle: string;
+  createdDate: string;
+  updatedDate: string;
+  fileUrl?: string;
+}`}
+                  </code>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { ReportsTable, Report } from '@/components/reports/ReportsTable';
+import { useState } from 'react';
+
+const mockReports: Report[] = [
+  {
+    id: "report-1",
+    title: "TSG Performance Report - Jan 2025",
+    subtitle: "Performance Checkup",
+    createdDate: "01-02-2025",
+    updatedDate: "12-25-2025",
+    fileUrl: "https://example.com/report-jan-2025.pdf"
+  },
+  // ... more reports
+];
+
+function MyPage() {
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  return (
+    <ReportsTable 
+      reports={mockReports}
+      sortOrder={sortOrder}
+      onSortChange={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+      onDownload={(report) => {
+        console.log('Downloading:', report.title);
+        window.open(report.fileUrl, '_blank');
+      }}
+    />
+  );
+}`}
+                </code>
+              </div>
+            </div>
+
+            {/* TransactionsTable */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Transactions Table</h3>
+              <p className="text-gray-600 mb-6">Fully responsive billing history table with 4 breakpoint variants. Displays order ID, description, date, amount, status badges, payment method, and download action. Perfect for transaction history and billing pages.</p>
+              
+              {/* Live Preview */}
+              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+                <TransactionsTable 
+                  transactions={mockTransactions}
+                  sortOrder={transactionSortOrder}
+                  onSortChange={() => setTransactionSortOrder(transactionSortOrder === 'asc' ? 'desc' : 'asc')}
+                  onDownload={(transaction) => alert(`Downloading invoice: ${transaction.orderId}`)}
+                />
+              </div>
+
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Fully responsive with 4 breakpoints (Desktop 1360px, Tablet 1024px, Tablet 744px, Mobile 430px)</li>
+                  <li>Column visibility adapts to screen size:</li>
+                  <li className="ml-6">- Desktop: All columns (Order ID, Description, Date, Amount, Status, Payment Method, Action)</li>
+                  <li className="ml-6">- Tablet 1024px: Hides Status and Payment Method columns</li>
+                  <li className="ml-6">- Tablet 744px: Shows Order ID, Description, Amount, Action</li>
+                  <li className="ml-6">- Mobile 430px: Shows only Order ID and Action</li>
+                  <li>Sortable "Order ID" column with chevron indicator</li>
+                  <li>Status badges with color coding:</li>
+                  <li className="ml-6">- Completed: Green background (#dcfce7) with dark green text (#14532d)</li>
+                  <li className="ml-6">- Failed: Red background (#feebeb) with dark red text (#e10e0e)</li>
+                  <li className="ml-6">- Pending: Yellow background (#fef3c7) with dark yellow text (#92400e)</li>
+                  <li>Hover state: Background changes to #F2F0E7</li>
+                  <li>Empty state: Displays "No transactions available" message</li>
+                  <li>Typography: Inter Semi Bold 15px for headers, Inter Regular 15px for data, Inter Medium 13px for badges</li>
+                  <li>Uses TertiaryButton component for "Download" action</li>
+                  <li>Border styling: #dadada for row dividers</li>
+                  <li>Background colors: #F7F6F1 for header, white for rows</li>
+                </ul>
+              </div>
+
+              {/* Responsive Behavior */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Responsive Breakpoints:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li><strong>Desktop (xl: 1280px+):</strong> All 7 columns visible</li>
+                  <li><strong>Tablet Large (lg: 1024px):</strong> Hides Status and Payment Method (5 columns)</li>
+                  <li><strong>Tablet (sm: 640px):</strong> Shows Order ID, Description, Amount, Action (4 columns)</li>
+                  <li><strong>Mobile (default):</strong> Shows only Order ID and Action (2 columns)</li>
+                </ul>
+              </div>
+
+              {/* Props */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Props:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <ul className="text-xs text-gray-700 space-y-2 font-mono">
+                    <li><strong>transactions</strong>: Transaction[] - Array of transaction objects to display</li>
+                    <li><strong>onDownload?</strong>: (transaction: Transaction) =&gt; void - Callback when download is clicked</li>
+                    <li><strong>sortOrder?</strong>: 'asc' | 'desc' - Current sort order (default: 'desc')</li>
+                    <li><strong>onSortChange?</strong>: () =&gt; void - Callback when sort is toggled</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Transaction Interface */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Transaction Interface:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <code className="text-xs text-gray-700 block whitespace-pre">
+{`export type TransactionStatus = 'completed' | 'failed' | 'pending';
+
+export interface Transaction {
+  id: string;
+  orderId: string;
+  description: string;
+  date: string;
+  amount: string;
+  status: TransactionStatus;
+  paymentMethod: string;
+  invoiceUrl?: string;
+}`}
+                  </code>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { TransactionsTable, Transaction } from '@/components/transactions/TransactionsTable';
+import { useState } from 'react';
+
+const mockTransactions: Transaction[] = [
+  {
+    id: "txn-1",
+    orderId: "#BCC-001205",
+    description: "Genie Maintenance - Essential Plan",
+    date: "06-01-2025",
+    amount: "$209.00",
+    status: "completed",
+    paymentMethod: "•••• 3245",
+    invoiceUrl: "https://example.com/invoice-001205.pdf"
+  },
+  {
+    id: "txn-2",
+    orderId: "#BCC-001202",
+    description: "Genie Maintenance - Essential Plan",
+    date: "05-01-2025",
+    amount: "$209.00",
+    status: "failed",
+    paymentMethod: "•••• 3245",
+    invoiceUrl: "https://example.com/invoice-001202.pdf"
+  }
+];
+
+function MyPage() {
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  return (
+    <TransactionsTable 
+      transactions={mockTransactions}
+      sortOrder={sortOrder}
+      onSortChange={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+      onDownload={(transaction) => {
+        console.log('Downloading invoice:', transaction.orderId);
+        window.open(transaction.invoiceUrl, '_blank');
+      }}
+    />
+  );
+}`}
                 </code>
               </div>
             </div>
@@ -1865,12 +2277,10 @@ const mockMeeting: Meeting = {
                 <div className="max-w-2xl mx-auto">
                   <div className="rounded-lg border-2 border-[#1B4A41] p-4 flex items-center justify-between bg-white">
                     <div>
-                      <h4 className="font-semibold text-[#232521]">Genie Maintenance - Monthly Plan</h4>
+                      <h4 className="text-lg font-bold leading-relaxed text-[#232521]">Genie Maintenance - Monthly Plan</h4>
                     </div>
-                    <button className="text-gray-600 hover:text-gray-800">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="23" viewBox="0 0 17 23" fill="none" className="w-5 h-5">
-                        <path d="M14.7 2.6625H11.8125V2.025C11.8125 0.9 10.9125 0 9.7875 0H6.9C5.775 0 4.875 0.9 4.875 2.025V2.6625H1.9875C0.9 2.6625 0 3.5625 0 4.65V5.775C0 6.6 0.4875 7.275 1.2 7.575L1.8 20.55C1.875 21.7875 2.85 22.725 4.0875 22.725H12.525C13.7625 22.725 14.775 21.75 14.8125 20.55L15.4875 7.5375C16.2 7.2375 16.6875 6.525 16.6875 5.7375V4.6125C16.6875 3.5625 15.7875 2.6625 14.7 2.6625Z" fill="currentColor"/>
-                      </svg>
+                    <button className="px-4 py-2 text-sm font-semibold text-[#1B4A41] hover:underline underline-offset-2 transition-all min-h-[40px]">
+                      Remove
                     </button>
                   </div>
                 </div>
@@ -1881,10 +2291,10 @@ const mockMeeting: Meeting = {
                 <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
                 <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                   <li>Plan name display with TSG branding</li>
-                  <li>Remove button with trash icon</li>
+                  <li>TertiaryButton component for remove action</li>
                   <li>Border styling in TSG secondary color (#1B4A41)</li>
                   <li>Optional onRemove callback</li>
-                  <li>Defaults to routing back to /pricing</li>
+                  <li>Defaults to routing back to /pricing if no callback provided</li>
                 </ul>
               </div>
               
@@ -2044,16 +2454,14 @@ import { Elements } from '@stripe/react-stripe-js';
             {/* Header */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
               <h3 className="text-xl font-semibold text-[#232521] mb-4">Header</h3>
-              <p className="text-gray-600 mb-6">Simple header component with TSG logo and bottom border. Used on authentication and standalone pages.</p>
+              <p className="text-gray-600 mb-6">Simple header component with TSG logo and bottom border. Uses the TSGLogo component for consistent branding. Used on authentication and standalone pages.</p>
               
               {/* Visual Demo */}
               <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
                 <p className="text-sm text-gray-600 mb-4 font-semibold">Preview:</p>
-                <div className="bg-white border-b border-gray-300">
-                  <div className="flex items-center px-6 py-5">
-                    <div className="w-32 h-8 bg-[#1B4A41] rounded flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">TSG LOGO</span>
-                    </div>
+                <div className="bg-white border-b border-[rgba(111,121,122,0.4)]">
+                  <div className="flex items-center px-6 py-5 md:px-10">
+                    <TSGLogo />
                   </div>
                 </div>
               </div>
@@ -2062,11 +2470,11 @@ import { Elements } from '@stripe/react-stripe-js';
               <div className="mb-6">
                 <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
                 <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li>TSGLogo component centered left</li>
-                  <li>Bottom border with opacity</li>
-                  <li>Responsive padding (px-6 on mobile, px-10 on desktop)</li>
+                  <li>TSGLogo component from @/components/ui/logo</li>
+                  <li>Bottom border: border-[rgba(111,121,122,0.4)]</li>
+                  <li>Responsive padding: px-6 py-5 on mobile, md:px-10 on desktop</li>
                   <li>Full width layout</li>
-                  <li>Used on auth pages, booking flows</li>
+                  <li>Used on auth pages, booking flows, checkout</li>
                 </ul>
               </div>
               
@@ -2144,40 +2552,70 @@ export default function BookingPage() {
             {/* DashboardNav */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
               <h3 className="text-xl font-semibold text-[#232521] mb-4">Dashboard Nav</h3>
-              <p className="text-gray-600 mb-6">Comprehensive navigation component with desktop top bar and mobile bottom navigation. Includes user dropdown, settings access, and responsive layout.</p>
+              <p className="text-gray-600 mb-6">Comprehensive navigation component with desktop top bar and mobile bottom navigation. Uses TSGLogo component for branding consistency. Includes user dropdown, settings access, and responsive layout with lucide-react icons.</p>
               
               {/* Visual Demo */}
               <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
                 <p className="text-sm text-gray-600 mb-4 font-semibold">Preview (Desktop):</p>
                 {/* Desktop Nav */}
-                <div className="bg-white rounded-lg border border-gray-200 mb-4">
-                  <div className="flex items-center justify-between px-4 h-16">
-                    <div className="w-24 h-6 bg-[#1B4A41] rounded"></div>
-                    <div className="flex items-center gap-1">
-                      {['Home', 'Company', 'Sites', 'Reports', 'Support', 'Transactions'].map((item) => (
-                        <div key={item} className="flex flex-col items-center justify-center min-w-[112px] min-h-[71px] rounded-lg hover:bg-gray-100">
-                          <div className="w-5 h-5 bg-gray-400 rounded mb-1"></div>
-                          <span className="text-xs text-gray-600">{item}</span>
+                <div className="bg-transparent rounded-lg mb-4 mt-4">
+                  <div className="max-w-[1440px] mx-auto">
+                    <div className="flex items-center justify-between h-16">
+                      <div className="flex-shrink-0">
+                        <TSGLogo />
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        {['Home', 'My Company', 'Sites', 'Reports', 'Support', 'Transactions'].map((item, idx) => (
+                          <div 
+                            key={item} 
+                            className={`flex flex-col items-center min-w-[112px] min-h-[71px] justify-center rounded-lg text-sm font-medium transition-colors ${
+                              idx === 0 ? 'bg-[#D9D5C5]/40 text-[#1B4A41]' : 'text-gray-600 hover:bg-[#D9D5C5]/40'
+                            }`}
+                          >
+                            <Home className="h-5 w-5 mb-1" />
+                            <span>{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2 min-w-[112px] min-h-[71px] justify-center hover:bg-[#D9D5C5]/40 rounded-lg transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-[#1b4a41] flex items-center justify-center">
+                            <span className="text-white text-sm font-semibold">M</span>
+                          </div>
+                          <ChevronDown className="h-4 w-4 text-gray-600" />
                         </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 bg-[#1B4A41] rounded-full"></div>
-                      <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                        <div className="flex items-center justify-center min-w-[112px] min-h-[71px] rounded-lg text-gray-600 hover:bg-[#D9D5C5]/40 transition-colors">
+                          <Settings className="h-5 w-5" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
                 
-                <p className="text-sm text-gray-600 mb-4 font-semibold mt-6">Preview (Mobile):</p>
+                <p className="text-sm text-gray-600 mb-4 font-semibold mt-6">Preview (Mobile Bottom Nav):</p>
                 {/* Mobile Nav */}
                 <div className="max-w-md mx-auto">
-                  <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex justify-center gap-3">
-                    {['Home', 'Company', 'Sites', 'Reports', 'More'].map((item) => (
-                      <div key={item} className="flex flex-col items-center p-4 rounded-lg">
-                        <div className="w-6 h-6 bg-gray-400 rounded mb-1"></div>
-                        <span className="text-xs text-gray-600">{item}</span>
-                      </div>
-                    ))}
+                  <div className="bg-white rounded-lg shadow-[0_8px_20px_0_rgba(85,85,85,0.10)] p-2 flex justify-center gap-3">
+                    {[
+                      { name: 'Home', icon: Home },
+                      { name: 'My Company', icon: Building },
+                      { name: 'Sites', icon: MonitorSmartphone },
+                      { name: 'Reports', icon: BarChart3 },
+                      { name: 'More', icon: Menu }
+                    ].map((item, idx) => {
+                      const Icon = item.icon;
+                      return (
+                        <div 
+                          key={item.name} 
+                          className={`flex flex-col items-center justify-center p-5 rounded-lg transition-colors ${
+                            idx === 0 ? 'text-[#1B4A41] bg-[#D9D5C5]/40' : 'text-gray-600 hover:bg-[#D9D5C5]/40'
+                          }`}
+                        >
+                          <Icon className="w-6 h-6 mb-1" />
+                          <span className="text-base font-medium whitespace-nowrap">{item.name}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -2186,15 +2624,17 @@ export default function BookingPage() {
               <div className="mb-6">
                 <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
                 <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Responsive: desktop top bar, mobile bottom nav</li>
-                  <li>Main nav items: Home, Company, Sites, Reports</li>
-                  <li>"More" menu with Support and Transactions</li>
-                  <li>User dropdown with profile link and sign out</li>
-                  <li>Settings icon button</li>
-                  <li>Active state highlighting with TSG colors</li>
-                  <li>Hover/active states with beige background</li>
-                  <li>Sign out functionality integrated</li>
-                  <li>Mobile: fixed bottom positioning</li>
+                  <li>TSGLogo component from @/components/ui/logo</li>
+                  <li>Responsive: desktop top bar (hidden lg:block), mobile bottom nav (lg:hidden)</li>
+                  <li>Main nav items: Home, My Company, Sites, Reports</li>
+                  <li>"More" menu dropdown with Support and Transactions</li>
+                  <li>User dropdown with profile info and sign out</li>
+                  <li>Settings icon button (linked to /dashboard/settings)</li>
+                  <li>Active state: bg-[#D9D5C5]/40 text-[#1B4A41]</li>
+                  <li>Hover states: hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40</li>
+                  <li>Uses lucide-react icons for all navigation items</li>
+                  <li>Mobile: fixed bottom positioning with shadow</li>
+                  <li>Min dimensions: min-w-[112px] min-h-[71px] for consistent sizing</li>
                 </ul>
               </div>
               
@@ -2223,7 +2663,7 @@ export default function DashboardLayout({ children }) {
         {/* MANAGE SUBSCRIPTION COMPONENTS SECTION */}
         <section>
           <h2 className="text-3xl font-bold text-[#232521] mb-6">Manage Subscription</h2>
-          <p className="text-gray-600 mb-6">Complete subscription management flow including cancellation with reason collection and downsell offer</p>
+          <p className="text-gray-600 mb-6">Complete subscription management flow with three-step cancellation process: ManageSubscriptionModal → CancelConfirmModal (reason collection with PrimaryButton hierarchy) → SafetyNetDownsellModal (last-chance downsell offer)</p>
           
           <div className="space-y-8">
             {/* ManageSubscriptionModal */}
@@ -2245,12 +2685,13 @@ export default function DashboardLayout({ children }) {
               <div className="mb-6">
                 <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
                 <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Displays current plan tier and billing cycle</li>
-                  <li>Shows current payment method</li>
-                  <li>"Update payment method" button</li>
-                  <li>"Cancel subscription" button (opens CancelConfirmModal)</li>
+                  <li>Displays current payment method with icon</li>
+                  <li>TertiaryButton: "Update payment method" (closes modal, opens payment portal)</li>
+                  <li>TertiaryButton: "Cancel subscription" (closes modal, opens CancelConfirmModal)</li>
+                  <li>Modal closes automatically when action buttons are clicked</li>
+                  <li>Child modals (CancelConfirm, SafetyNet) render independently after closure</li>
                   <li>ESC key and backdrop click to close</li>
-                  <li>Body scroll lock when open</li>
+                  <li>Focus trap for accessibility</li>
                 </ul>
               </div>
               
@@ -2263,9 +2704,9 @@ export default function DashboardLayout({ children }) {
 <ManageSubscriptionModal
   isOpen={isOpen}
   onClose={() => setIsOpen(false)}
-  onCancelClick={() => {
-    setIsOpen(false);
-    setShowCancelModal(true);
+  onCancelClick={(reason) => {
+    // Handle cancellation with reason
+    console.log('Cancellation reason:', reason);
   }}
   onUpdatePaymentClick={async () => {
     // Handle payment update
@@ -2276,49 +2717,18 @@ export default function DashboardLayout({ children }) {
               </div>
             </div>
 
-            {/* CancelConfirmModal */}
+            {/* UpdatePaymentMethodModal */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
-              <h3 className="text-xl font-semibold text-[#232521] mb-4">Cancel Confirmation Modal</h3>
-              <p className="text-gray-600 mb-6">First step in cancellation flow. Collects user's reason for canceling with radio button selection.</p>
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Update Payment Method Modal</h3>
+              <p className="text-gray-600 mb-6">Complete payment method update form with billing address, card details, and security code fields. Uses TSG design system styling.</p>
               
               {/* Visual Demo */}
               <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-4 font-semibold">Preview:</p>
-                <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg border border-gray-200">
-                  {/* Header */}
-                  <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-start justify-between">
-                      <h4 className="text-xl font-bold text-[#232521]">Are you sure you want to cancel?</h4>
-                      <button className="text-gray-500 hover:text-gray-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                    </div>
-                    <p className="text-gray-600 mt-3 text-sm">We'd hate to see you go. Care to share why you're canceling?</p>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="p-6 space-y-2">
-                    {['Too expensive for my budget', "I'm not seeing enough value", 'I no longer need website maintenance', "I'm switching to another provider"].map((reason, idx) => (
-                      <div key={idx} className="flex items-center p-3 bg-white border border-gray-200 rounded">
-                        <div className="w-4 h-4 rounded-full border-2 border-gray-400 mr-3"></div>
-                        <span className="text-sm font-medium text-gray-700">{reason}</span>
-                      </div>
-                    ))}
-                    <div className="text-center text-xs text-gray-500 py-2">+ 4 more reasons...</div>
-                  </div>
-                  
-                  {/* Footer */}
-                  <div className="p-6 border-t border-gray-200 flex gap-4">
-                    <button className="flex-1 px-6 py-2 border-2 border-[#1B4A41] text-[#1B4A41] rounded-full font-semibold text-sm">
-                      Keep subscription
-                    </button>
-                    <button className="flex-1 px-6 py-2 bg-red-600 text-white rounded-full font-semibold text-sm opacity-50">
-                      Continue with cancellation
-                    </button>
-                  </div>
+                <p className="text-sm text-gray-600 mb-4 font-semibold">Interactive Demo:</p>
+                <div className="flex justify-center">
+                  <PrimaryButton onClick={() => setIsUpdatePaymentMethodOpen(true)}>
+                    Open Update Payment Method Modal
+                  </PrimaryButton>
                 </div>
               </div>
               
@@ -2326,10 +2736,54 @@ export default function DashboardLayout({ children }) {
               <div className="mb-6">
                 <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
                 <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Complete billing address form (name, address, address 2, city, state, zip)</li>
+                  <li>Card details collection (card number, expiration date, security code)</li>
+                  <li>All inputs follow TSG design system with min-h-[46px] and white backgrounds</li>
+                  <li>State dropdown with chevron icon and all US states</li>
+                  <li>3-column grid layout for City/State/Zip Code on desktop</li>
+                  <li>Focus ring with TSG green (#9be382) on all inputs</li>
+                  <li>PrimaryButton: "Save Changes" with loading state</li>
+                  <li>SecondaryButton: "Cancel" to close without saving</li>
+                  <li>Modal closes on backdrop click or ESC key</li>
+                  <li>Form resets when modal closes</li>
+                </ul>
+              </div>
+              
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { UpdatePaymentMethodModal } from '@/components/manage/UpdatePaymentMethodModal';
+
+// Usage
+<UpdatePaymentMethodModal
+  isOpen={isOpen}
+  onClose={() => setIsOpen(false)}
+  onSave={async (paymentData) => {
+    // Handle payment method update
+    console.log('Updating payment method:', paymentData);
+    // Make API call to update payment method
+    await updatePaymentMethod(paymentData);
+  }}
+/>`}
+                </code>
+              </div>
+            </div>
+
+            {/* CancelConfirmModal */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Cancel Confirmation Modal</h3>
+              <p className="text-gray-600 mb-6">First step in cancellation flow. Collects user's reason for canceling with radio button selection.</p>
+              
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                   <li>8 cancellation reason options with radio selection</li>
-                  <li>Selected state with light green background (#F0F5F0)</li>
+                  <li>Selected state with light green background (#F0F5F0) and 6px border radius</li>
                   <li>Continue button disabled until reason selected</li>
-                  <li>"Keep subscription" and "Continue with cancellation" actions</li>
+                  <li>"Keep subscription" uses PrimaryButton (bright green #9be382)</li>
+                  <li>"Continue with cancellation" uses SecondaryButton (dark green border #1B4A41)</li>
+                  <li>Opens SafetyNetDownsellModal after continuing</li>
                   <li>ESC key and backdrop click to close</li>
                   <li>Resets selection when closed</li>
                   <li>Passes selected reason to parent via onContinue callback</li>
@@ -2362,95 +2816,7 @@ export default function DashboardLayout({ children }) {
             {/* SafetyNetDownsellModal */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
               <h3 className="text-xl font-semibold text-[#232521] mb-4">Safety Net Downsell Modal</h3>
-              <p className="text-gray-600 mb-6">Second step in cancellation flow. Offers reduced-price "Safety Net Plan" ($299/year) before full cancellation.</p>
-              
-              {/* Visual Demo */}
-              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-4 font-semibold">Preview:</p>
-                <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg border border-gray-200">
-                  {/* Header */}
-                  <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-start justify-between">
-                      <h4 className="text-xl font-bold text-[#232521]">Before you cancel... want a lighter plan?</h4>
-                      <button className="text-gray-500 hover:text-gray-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                    </div>
-                    <p className="text-gray-600 mt-2 text-sm">Keep the essentials that prevent 'site down' disasters, without paying for full maintenance.</p>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="p-6 space-y-6">
-                    {/* Offer Banner */}
-                    <div className="bg-[#F7F6F1] rounded-lg p-4 text-center">
-                      <h5 className="text-lg font-bold text-[#232521]">Switch to the Safety Net Plan for $299/year</h5>
-                    </div>
-                    
-                    <p className="text-sm font-semibold text-gray-700">Renew on Jan 6, 2027 at $299, instead of $679</p>
-                    
-                    {/* Feature Comparison */}
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <h6 className="font-semibold text-base mb-3 flex items-center text-green-700">
-                          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                          You'll still get
-                        </h6>
-                        <ul className="space-y-2 text-sm text-gray-700">
-                          <li className="flex items-start">
-                            <svg className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                            Daily cloud backups (50-day retention)
-                          </li>
-                          <li className="flex items-start">
-                            <svg className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                            Security monitoring with alerts
-                          </li>
-                          <li className="flex items-start">
-                            <svg className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                            Emergency restore coverage
-                          </li>
-                        </ul>
-                      </div>
-                      <div>
-                        <h6 className="font-semibold text-base mb-3 flex items-center text-red-700">
-                          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg>
-                          You won't get
-                        </h6>
-                        <ul className="space-y-2 text-sm text-gray-700">
-                          <li className="flex items-start">
-                            <svg className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg>
-                            Monthly WordPress updates
-                          </li>
-                          <li className="flex items-start">
-                            <svg className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg>
-                            Included support hours
-                          </li>
-                          <li className="flex items-start">
-                            <svg className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg>
-                            Monthly analytics reports
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    
-                    <p className="text-xs text-gray-600 leading-relaxed">
-                      By canceling, you'll lose backup retention, security monitoring, and emergency restore coverage.
-                    </p>
-                  </div>
-                  
-                  {/* Footer */}
-                  <div className="p-6 border-t border-gray-200 flex gap-4">
-                    <button className="flex-1 px-6 py-2 border-2 border-[#1B4A41] text-[#1B4A41] rounded-full font-semibold text-sm">
-                      Claim Offer and Switch
-                    </button>
-                    <button className="flex-1 px-6 py-2 bg-red-600 text-white rounded-full font-semibold text-sm">
-                      Cancel My Subscription
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <p className="text-gray-600 mb-6">Final step in cancellation flow. Appears after CancelConfirmModal and offers reduced-price "Safety Net Plan" ($299/year) as last-chance downsell before full cancellation.</p>
               
               {/* Key Features */}
               <div className="mb-6">
@@ -2461,7 +2827,9 @@ export default function DashboardLayout({ children }) {
                   <li>Check icons (green) for included features</li>
                   <li>X icons (red) for removed features</li>
                   <li>Renewal date and price comparison display</li>
-                  <li>Two CTAs: "Claim Offer" or "Cancel Subscription"</li>
+                  <li>"Claim Offer and Switch" uses SecondaryButton (dark green border)</li>
+                  <li>"Cancel My Subscription" uses DestructiveButton (red)</li>
+                  <li>Opens after CancelConfirmModal in cancellation flow</li>
                   <li>Warning about losing coverage after cancellation</li>
                   <li>ESC key and backdrop click to close</li>
                 </ul>
@@ -2598,6 +2966,126 @@ const [currentUserTier] = useState<Tier>('essential');
   onError={(error) => {
     console.error('Upgrade failed:', error);
   }}
+  onChangePlan={() => {
+    setIsUpgradeConfirmationOpen(false);
+    setIsPlanSelectionOpen(true);
+  }}
+/>`}
+              </code>
+            </div>
+          </div>
+
+          {/* PricingCard Component */}
+          <div className="bg-white rounded-lg p-8 border border-gray-200 mt-8">
+            <h3 className="text-xl font-semibold text-[#232521] mb-4">Pricing Card Component</h3>
+            <p className="text-gray-600 mb-6">Reusable pricing card component used in the PlanSelectionModal with different variants for plan states.</p>
+            
+            {/* Visual Demo */}
+            <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600 mb-4 font-semibold">Variants Preview:</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <PricingCard
+                  tierName="Essential"
+                  price="679"
+                  features={[
+                    '4 Annual support hours',
+                    '8 Annual maintenance hours',
+                    'Monthly Traffic Reports'
+                  ]}
+                  variant="current"
+                />
+                <PricingCard
+                  tierName="Advanced"
+                  price="1,299"
+                  features={[
+                    '8 Annual support hours',
+                    '16 Annual maintenance hours',
+                    'Bi-Weekly Traffic Reports'
+                  ]}
+                  variant="upgradeable"
+                />
+                <PricingCard
+                  tierName="Premium"
+                  price="2,599"
+                  features={[
+                    '20 Annual support hours',
+                    '40 Annual maintenance hours',
+                    'Weekly Traffic Reports'
+                  ]}
+                  variant="selected"
+                />
+                <PricingCard
+                  tierName="Enterprise"
+                  price="5,000"
+                  features={[
+                    'Unlimited support hours',
+                    'Custom maintenance',
+                    'Dedicated account manager'
+                  ]}
+                  variant="disabled"
+                />
+              </div>
+            </div>
+            
+            {/* Key Features */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-[#232521] mb-2">Variants:</p>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li><strong>current</strong>: Gray "Your Current Plan" button, non-clickable</li>
+                <li><strong>upgradeable</strong>: Green "Upgrade" button (#9be382), clickable with hover state</li>
+                <li><strong>selected</strong>: Dark border "Selected" button, green card border (#9be382)</li>
+                <li><strong>disabled</strong>: Gray "Not Available" button, non-clickable</li>
+              </ul>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-[#232521] mb-2">Props:</p>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li><strong>tierName</strong>: string - Plan name (e.g., "Essential", "Advanced")</li>
+                <li><strong>price</strong>: string - Annual price without $ symbol (e.g., "679", "1,299")</li>
+                <li><strong>features</strong>: string[] - Array of feature descriptions</li>
+                <li><strong>variant</strong>: PricingCardVariant - Card state ('current' | 'upgradeable' | 'selected' | 'disabled')</li>
+                <li><strong>onClick</strong>: () =&gt; void - Optional click handler (only works for upgradeable/selected variants)</li>
+                <li><strong>className</strong>: string - Optional additional CSS classes</li>
+              </ul>
+            </div>
+            
+            {/* Code Example */}
+            <div className="bg-gray-50 rounded p-4">
+              <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { PricingCard } from '@/components/upgrade/PricingCard';
+
+// Basic usage
+<PricingCard
+  tierName="Advanced"
+  price="1,299"
+  features={[
+    '8 Annual support hours',
+    '16 Annual maintenance hours',
+    'Bi-Weekly Traffic Analytics Reports',
+    'Bi-Weekly Performance Checkups',
+    'Bi-Weekly Security Monitoring & Backups',
+    'Bi-Weekly Plugin & Theme Updates'
+  ]}
+  variant="upgradeable"
+  onClick={() => handleSelectPlan('advanced')}
+/>
+
+// Current plan (non-clickable)
+<PricingCard
+  tierName="Essential"
+  price="679"
+  features={['Feature 1', 'Feature 2']}
+  variant="current"
+/>
+
+// Selected state
+<PricingCard
+  tierName="Premium"
+  price="2,599"
+  features={['Feature 1', 'Feature 2']}
+  variant="selected"
+  onClick={() => console.log('Already selected')}
 />`}
               </code>
             </div>
@@ -2732,13 +3220,25 @@ const [currentUserTier] = useState<Tier>('essential');
       <ManageSubscriptionModal
         isOpen={isManageSubscriptionOpen}
         onClose={() => setIsManageSubscriptionOpen(false)}
-        onCancelClick={() => {
-          console.log('Cancel subscription clicked');
+        onCancelClick={(reason) => {
+          console.log('Cancel subscription clicked with reason:', reason);
         }}
         onUpdatePaymentClick={async () => {
           console.log('Update payment clicked');
         }}
         currentPaymentMethod="Visa •••• 4242"
+      />
+
+      {/* Update Payment Method Modal Demo */}
+      <UpdatePaymentMethodModal
+        isOpen={isUpdatePaymentMethodOpen}
+        onClose={() => setIsUpdatePaymentMethodOpen(false)}
+        onSave={async (paymentData) => {
+          console.log('Saving payment method:', paymentData);
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          setShowSuccessToast(true);
+        }}
       />
 
       {/* Auth Component Modals */}
@@ -2811,6 +3311,10 @@ const [currentUserTier] = useState<Tier>('essential');
           }}
           onError={(errorMessage) => {
             console.error('Upgrade failed:', errorMessage);
+          }}
+          onChangePlan={() => {
+            setIsUpgradeConfirmationOpen(false);
+            setIsPlanSelectionOpen(true);
           }}
         />
       )}

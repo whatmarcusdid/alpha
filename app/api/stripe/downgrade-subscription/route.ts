@@ -31,8 +31,15 @@ export async function POST(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Get cancellation reason from request body
-    const { reason } = await request.json();
+    // Get request body
+    const { newTier, currentTier } = await request.json();
+
+    if (!newTier || !currentTier) {
+      return NextResponse.json(
+        { error: 'Missing required fields: newTier and currentTier' },
+        { status: 400 }
+      );
+    }
 
     // Get user's subscription data from Firestore
     if (!adminDb) {
@@ -61,34 +68,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Cancel the subscription in Stripe (at period end)
-    const canceledSubscription = await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true,
-      metadata: {
-        cancellation_reason: reason || 'No reason provided',
-      },
+    // Map tiers to Stripe price IDs from Stripe Dashboard
+    const tierPriceIds: Record<string, string> = {
+      'essential': 'price_1SlRWtPTDVjQnuCna5gO5flD',
+      'advanced': 'price_1SlRXePTDVjQnuCnoZ3hUSSU',
+      'premium': 'price_1SlRXePTDVjQnuCn0TzxnI4Z',
+    };
+
+    const newPriceId = tierPriceIds[newTier];
+
+    if (!newPriceId) {
+      return NextResponse.json(
+        { error: `Invalid tier: ${newTier}` },
+        { status: 400 }
+      );
+    }
+
+    // Get the current subscription from Stripe
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    // Update the subscription with the new price (proration is automatic)
+    const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+      items: [{
+        id: subscription.items.data[0].id,
+        price: newPriceId,
+      }],
+      proration_behavior: 'create_prorations', // This creates a credit for unused time
     });
 
-    // Calculate expiration date (current period end)
-    const expirationDate = new Date(canceledSubscription.current_period_end * 1000);
+    // Calculate the new renewal date
+    const renewalDate = new Date(updatedSubscription.current_period_end * 1000);
 
-    // Update Firestore with canceled status
+    // Update Firestore with new tier
     await adminDb.collection('users').doc(userId).update({
-      'subscription.status': 'canceled',
-      'subscription.canceledAt': new Date().toISOString(),
-      'subscription.expiresAt': expirationDate.toISOString(),
-      'subscription.cancellationReason': reason || 'No reason provided',
+      'subscription.tier': newTier,
+      'subscription.renewalDate': renewalDate.toISOString(),
       'subscription.updatedAt': new Date().toISOString(),
     });
 
     return NextResponse.json({ 
       success: true,
-      message: 'Subscription canceled successfully',
-      expiresAt: expirationDate.toISOString(),
+      message: 'Subscription downgraded successfully',
+      newTier,
+      renewalDate: renewalDate.toISOString(),
     });
     
   } catch (error: any) {
-    console.error('Error canceling subscription:', error);
+    console.error('Error downgrading subscription:', error);
     
     if (error.code === 'auth/argument-error' || error.code === 'auth/id-token-expired') {
       return NextResponse.json(
@@ -98,8 +124,9 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
 }
+

@@ -57,7 +57,7 @@ const SafetyNetDownsellModal: React.FC<SafetyNetDownsellModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         tabIndex={-1}
       >
-        <div className="flex items-start justify-between w-full mb-2">
+        <div className="flex items-start justify-between w-full">
           <h2 className="text-left text-[#0A0A0A] text-2xl font-bold leading-[120%] tracking-[-0.24px]">Before you cancel... want a lighter plan?</h2>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 flex-shrink-0">
             <X size={24} />
@@ -94,7 +94,7 @@ const SafetyNetDownsellModal: React.FC<SafetyNetDownsellModalProps> = ({
             </ul>
           </div>
         </div>
-        <p className="text-left text-[13px] leading-relaxed text-[#545552] w-full mb-6">
+        <p className="text-left text-[15px] leading-relaxed text-[#545552] w-full mb-6">
           By canceling, you'll lose backup retention, security monitoring, and emergency restore coverage. If your site goes down or gets compromised after cancellation, TradeSiteGenie won't be able to restore it.
         </p>
 

@@ -9,6 +9,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { DestructiveButton } from '@/components/ui/DestructiveButton';
 import { GoogleIcon, AppleIcon } from '@/components/ui/icons';
 import { Edit2 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -91,7 +92,7 @@ export default function SettingsPage() {
             name="time-zone"
             value={timeZone}
             onChange={(e) => setTimeZone(e.target.value)}
-            className="w-full min-h-[40px] px-4 py-2 border border-[#6F797A] rounded-lg"
+            className="w-full min-h-[40px] px-4 py-2 bg-white border border-[#6F797A] rounded-lg"
           >
             <option>Eastern Standard Time (EST)</option>
             <option>Central Standard Time (CST)</option>
@@ -126,39 +127,39 @@ export default function SettingsPage() {
         <div className="max-w-[600px] mx-auto">
           <p className="text-sm text-gray-600 mb-4">Choose how often you receive email updates. Critical alerts (like failed payments or new leads) will always be sent in real time.</p>
 
-          <div className="space-y-4">
+          <RadioGroup value={emailFrequency} onValueChange={setEmailFrequency} className="space-y-4">
             <div className="flex items-start gap-3">
-              <input id="real-time" name="emailFrequency" type="radio" value="real-time" checked={emailFrequency === 'real-time'} onChange={(e) => setEmailFrequency(e.target.value)} className="w-4 h-4 text-[#1B4A41] border-gray-300" />
+              <RadioGroupItem value="real-time" id="real-time" />
               <div>
-                <label htmlFor="real-time" className="font-medium text-[#232521]">Real-Time Notifications</label>
+                <label htmlFor="real-time" className="font-medium text-[#232521] cursor-pointer">Real-Time Notifications</label>
                 <p className="text-sm text-gray-600">Receive alerts as events happen</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <input id="daily" name="emailFrequency" type="radio" value="daily" checked={emailFrequency === 'daily'} onChange={(e) => setEmailFrequency(e.target.value)} className="w-4 h-4 text-[#1B4A41] border-gray-300" />
+              <RadioGroupItem value="daily" id="daily" />
               <div>
-                <label htmlFor="daily" className="font-medium text-[#232521]">Daily Digest</label>
+                <label htmlFor="daily" className="font-medium text-[#232521] cursor-pointer">Daily Digest</label>
                 <p className="text-sm text-gray-600">One email summary per day with grouped notifications</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <input id="weekly" name="emailFrequency" type="radio" value="weekly" checked={emailFrequency === 'weekly'} onChange={(e) => setEmailFrequency(e.target.value)} className="w-4 h-4 text-[#1B4A41] border-gray-300" />
+              <RadioGroupItem value="weekly" id="weekly" />
               <div>
-                <label htmlFor="weekly" className="font-medium text-[#232521]">Weekly Summary</label>
+                <label htmlFor="weekly" className="font-medium text-[#232521] cursor-pointer">Weekly Summary</label>
                 <p className="text-sm text-gray-600">One weekly email with an overview of your account activity</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <input id="critical" name="emailFrequency" type="radio" value="critical" checked={emailFrequency === 'critical'} onChange={(e) => setEmailFrequency(e.target.value)} className="w-4 h-4 text-[#1B4A41] border-gray-300" />
+              <RadioGroupItem value="critical" id="critical" />
               <div>
-                <label htmlFor="critical" className="font-medium text-[#232521]">Only Critical Alerts</label>
+                <label htmlFor="critical" className="font-medium text-[#232521] cursor-pointer">Only Critical Alerts</label>
                 <p className="text-sm text-gray-600">Only urgent issues like billing failures or incoming leads</p>
               </div>
             </div>
-          </div>
+          </RadioGroup>
         </div>
       </div>
 

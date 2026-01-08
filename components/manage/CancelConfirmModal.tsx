@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
-import { DestructiveButton } from '@/components/ui/DestructiveButton';
 
 interface CancelConfirmModalProps {
   isOpen: boolean;
@@ -71,7 +71,7 @@ const CancelConfirmModal: React.FC<CancelConfirmModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         tabIndex={-1}
       >
-        <div className="flex items-start justify-between w-full mb-4">
+        <div className="flex items-start justify-between w-full">
           <h2 className="text-[#0A0A0A] text-2xl font-bold leading-[120%] tracking-[-0.24px]">Are you sure you want to cancel?</h2>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200">
             <X size={24} />
@@ -86,14 +86,14 @@ const CancelConfirmModal: React.FC<CancelConfirmModalProps> = ({
           {cancellationReasons.map((reason) => (
             <label
               key={reason}
-              className={`flex items-center p-3 min-h-[40px] cursor-pointer transition-all ${selectedReason === reason ? 'bg-[#F0F5F0]' : 'bg-white'}`}>
+              className={`flex items-center p-3 min-h-[40px] cursor-pointer transition-all ${selectedReason === reason ? 'bg-[#F0F5F0] rounded-md' : 'bg-white'}`}>
               <input
                 type="radio"
                 name="cancellationReason"
                 value={reason}
                 checked={selectedReason === reason}
                 onChange={() => setSelectedReason(reason)}
-                className="h-4 w-4 text-[#9be382] border-gray-300 focus:ring-[#8dd370] mr-3"
+                className="h-4 w-4 bg-[#FFFFFF] text-[#9be382] border-gray-300 focus:ring-[#8dd370] mr-3"
               />
               <span className="font-medium">{reason}</span>
             </label>
@@ -101,19 +101,19 @@ const CancelConfirmModal: React.FC<CancelConfirmModalProps> = ({
         </div>
 
         <div className="flex w-full gap-4">
-          <SecondaryButton
+          <PrimaryButton
             onClick={onKeepSubscription}
             className="flex-1"
           >
             Keep subscription
-          </SecondaryButton>
-          <DestructiveButton
+          </PrimaryButton>
+          <SecondaryButton
             onClick={() => selectedReason && onContinue(selectedReason)}
             disabled={!selectedReason}
             className="flex-1"
           >
             Continue with cancellation
-          </DestructiveButton>
+          </SecondaryButton>
         </div>
       </div>
     </div>

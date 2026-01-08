@@ -211,7 +211,7 @@ function CheckoutContent() {
                     <input
                       type="text"
                       placeholder="Enter code here"
-                      className="w-full min-h-[40px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
+                      className="w-full min-h-[40px] px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
                     />
                   </div>
 

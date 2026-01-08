@@ -31,9 +31,6 @@ export async function POST(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Get cancellation reason from request body
-    const { reason } = await request.json();
-
     // Get user's subscription data from Firestore
     if (!adminDb) {
       return NextResponse.json(
@@ -61,34 +58,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Cancel the subscription in Stripe (at period end)
-    const canceledSubscription = await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true,
-      metadata: {
-        cancellation_reason: reason || 'No reason provided',
-      },
-    });
+    // TODO: Update subscription to Safety Net plan
+    // For now, just return success
+    // You'll need to create the Safety Net price in Stripe Dashboard first
+    
+    // const safetyNetPriceId = process.env.STRIPE_SAFETY_NET_PRICE_ID || 'price_xxxxx';
+    // const currentSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+    // const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+    //   items: [{
+    //     id: currentSubscription.items.data[0].id,
+    //     price: safetyNetPriceId,
+    //   }],
+    //   proration_behavior: 'create_prorations',
+    // });
 
-    // Calculate expiration date (current period end)
-    const expirationDate = new Date(canceledSubscription.current_period_end * 1000);
-
-    // Update Firestore with canceled status
+    // Update Firestore with new plan
     await adminDb.collection('users').doc(userId).update({
-      'subscription.status': 'canceled',
-      'subscription.canceledAt': new Date().toISOString(),
-      'subscription.expiresAt': expirationDate.toISOString(),
-      'subscription.cancellationReason': reason || 'No reason provided',
+      'subscription.tier': 'safety-net',
+      'subscription.price': 299,
+      'subscription.billingCycle': 'yearly',
       'subscription.updatedAt': new Date().toISOString(),
     });
 
     return NextResponse.json({ 
       success: true,
-      message: 'Subscription canceled successfully',
-      expiresAt: expirationDate.toISOString(),
+      message: 'Successfully downgraded to Safety Net plan',
     });
     
   } catch (error: any) {
-    console.error('Error canceling subscription:', error);
+    console.error('Error downgrading subscription:', error);
     
     if (error.code === 'auth/argument-error' || error.code === 'auth/id-token-expired') {
       return NextResponse.json(
@@ -103,3 +101,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

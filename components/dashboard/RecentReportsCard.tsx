@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { onAuthStateChange } from '@/lib/auth';
 import { getRecentReportsForUser, Report } from '@/lib/firestore/reports';
 import { DocumentTextIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { TertiaryButton } from '@/components/ui/TertiaryButton';
 
 interface ReportWithDate extends Omit<Report, 'createdDate' | 'updatedDate'> {
   createdDate: Date;
@@ -82,16 +83,13 @@ export function RecentReportsCard() {
                   <DocumentTextIcon className="w-6 h-6 text-gray-500" />
                 </div>
                 <div>
-                  <p className="font-semibold text-[#232521]">{report.title}</p>
-                  <p className="text-sm text-gray-500">{formatDate(report.createdDate)}</p>
+                  <h3 className="text-[15px] font-bold leading-relaxed tracking-tight text-[#232521]">{report.title}</h3>
+                  <p className="text-[15px] font-medium leading-tight tracking-tight text-[#545552]">{formatDate(report.createdDate)}</p>
                 </div>
               </div>
-              <button 
-                onClick={() => handleDownload(report.fileUrl)}
-                className="text-[#1b4a41] font-semibold hover:text-[#0f3830] transition-colors text-sm"
-              >
+              <TertiaryButton onClick={() => handleDownload(report.fileUrl)}>
                 Download
-              </button>
+              </TertiaryButton>
             </div>
           ))}
         </div>

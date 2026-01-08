@@ -2,15 +2,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { PricingCard, PricingCardVariant } from './PricingCard';
 
 // Define types for props and plans
-type Tier = 'essential' | 'advanced' | 'premium';
+type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
 
 interface PlanSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentTier: Tier;
   onSelectPlan: (tier: Tier) => void;
+  isCanceled?: boolean; // Indicates if subscription is canceled
 }
 
 interface Plan {
@@ -29,6 +31,7 @@ const CheckmarkIcon = () => (
 
 // Define plan details and hierarchy
 const TIER_HIERARCHY: Record<Tier, number> = {
+  'safety-net': 0,
   essential: 1,
   advanced: 2,
   premium: 3,
@@ -81,6 +84,7 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
   onClose,
   currentTier,
   onSelectPlan,
+  isCanceled = false,
 }) => {
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -134,10 +138,10 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
         className="relative flex flex-col w-full h-full max-w-5xl bg-white rounded-lg shadow-xl md:h-auto"
       >
         {/* Sticky Header */}
-        <div className="sticky top-0 z-10 px-6 py-4 bg-white border-b border-gray-200 rounded-t-lg md:px-8">
+        <div className="sticky top-0 z-10 px-6 py-4 bg-white rounded-t-lg md:px-8">
           <h2 className="text-2xl font-bold text-[#232521]">Choose your plan</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Select the plan that best fits your business, then submit your payment to upgrade your subscription.
+            Select the plan that best fits your business. You can upgrade or downgrade your subscription at any time.
           </p>
           <button
             onClick={onClose}
@@ -152,74 +156,71 @@ const PlanSelectionModal: React.FC<PlanSelectionModalProps> = ({
         <div className="flex-grow p-6 overflow-y-auto md:p-8">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {PLANS.map((plan) => {
+              // If subscription is canceled, ALL plans are selectable
+              if (isCanceled) {
+                const isSelected = plan.tier === selectedTier;
+                
+                const handleSelect = () => {
+                  setSelectedTier(plan.tier);
+                  onSelectPlan(plan.tier);
+                };
+
+                return (
+                  <PricingCard
+                    key={plan.tier}
+                    tierName={plan.name}
+                    price={plan.price}
+                    features={plan.features}
+                    variant={isSelected ? 'selected' : 'upgradeable'}
+                    onClick={handleSelect}
+                    buttonLabel="Get Started"
+                  />
+                );
+              }
+
+              // EXISTING LOGIC for active subscriptions
               const isCurrent = plan.tier === currentTier;
               const isSelected = plan.tier === selectedTier;
               const isUpgradeable = TIER_HIERARCHY[plan.tier] > TIER_HIERARCHY[currentTier];
+              const isDowngradeable = TIER_HIERARCHY[plan.tier] < TIER_HIERARCHY[currentTier];
+              const isSelectable = isUpgradeable || isDowngradeable;
               
+              let variant: PricingCardVariant = 'disabled';
+              if (isCurrent) {
+                variant = 'current';
+              } else if (isSelected) {
+                variant = 'selected';
+              } else if (isSelectable) {
+                variant = 'upgradeable';
+              }
+
               const handleSelect = () => {
-                if(isUpgradeable) {
+                if (isSelectable) {
                   setSelectedTier(plan.tier);
                   onSelectPlan(plan.tier);
+                }
+              };
+
+              // Determine the button label based on tier relationship
+              let buttonLabel: string | undefined = undefined;
+              if (!isCurrent) {
+                if (isUpgradeable) {
+                  buttonLabel = 'Upgrade';
+                } else if (isDowngradeable) {
+                  buttonLabel = 'Downgrade';
                 }
               }
 
               return (
-                <div
+                <PricingCard
                   key={plan.tier}
+                  tierName={plan.name}
+                  price={plan.price}
+                  features={plan.features}
+                  variant={variant}
                   onClick={handleSelect}
-                  className={`flex flex-col rounded-lg border-2 p-6 transition-all ${
-                    isSelected
-                      ? 'bg-white border-[#9be382] shadow-md'
-                      : isUpgradeable
-                      ? 'bg-white border-gray-200 cursor-pointer hover:border-gray-300'
-                      : 'bg-white border-gray-200'
-                  }`}
-                >
-                  {/* Header Section: Title + Price */}
-                  <div>
-                    <h3 className="text-xl font-bold text-[#232521]">{plan.name}</h3>
-                    <p className="mt-2 text-4xl font-extrabold text-[#232521]">
-                      ${plan.price}
-                      <span className="text-base font-normal text-gray-500"> / Per Year</span>
-                    </p>
-                  </div>
-
-                  {/* Button Section */}
-                  <div className="mt-6">
-                    {isCurrent ? (
-                      <button disabled className="w-full px-6 py-2 font-semibold text-gray-600 bg-gray-200 rounded-full min-h-[40px]">
-                        Your Current Plan
-                      </button>
-                    ) : isUpgradeable ? (
-                        <button
-                          onClick={handleSelect}
-                          className={`w-full px-6 py-2 font-semibold rounded-full min-h-[40px] transition-colors ${
-                            isSelected
-                              ? 'border-2 border-[#232521] text-[#232521] bg-white'
-                              : 'bg-[#9be382] hover:bg-[#8dd370] text-[#232521]'
-                          }`}
-                        >
-                          {isSelected ? 'Selected' : 'Upgrade'}
-                        </button>
-                    ) : (
-                      <button disabled className="w-full px-6 py-2 font-semibold text-gray-500 bg-gray-200 rounded-full min-h-[40px]">
-                        Not Available
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Features List */}
-                  <ul className="mt-6 space-y-3">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <div className="mr-3 flex-shrink-0 mt-0.5">
-                          <CheckmarkIcon />
-                        </div>
-                        <span className="text-gray-600">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                  buttonLabel={buttonLabel}
+                />
               );
             })}
           </div>
