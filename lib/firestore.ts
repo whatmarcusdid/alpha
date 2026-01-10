@@ -1,5 +1,5 @@
 'use client';
-import { doc, getDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, collection, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 // User Metrics Function
@@ -20,16 +20,18 @@ export async function getUserMetrics(userId: string) {
 
     if (userDoc.exists()) {
       const data = userDoc.data();
-      const metrics = data.metrics || {};
+      // Access stats object instead of metrics
+      const stats = data.stats || {};
       
       return {
-        websiteTraffic: metrics.websiteTraffic || 0,
-        averageSiteSpeed: metrics.siteSpeedSeconds || 0,
-        supportHoursRemaining: metrics.supportHoursRemaining || 0,
-        maintenanceHoursRemaining: metrics.maintenanceHoursRemaining || 0,
+        websiteTraffic: stats.websiteTraffic || 0,
+        averageSiteSpeed: stats.siteSpeedSeconds || 0,
+        supportHoursRemaining: stats.supportHoursRemaining || 0,
+        maintenanceHoursRemaining: stats.maintenanceHoursRemaining || 0,
       };
     }
 
+    // Return default values if document doesn't exist
     return {
       websiteTraffic: 0,
       averageSiteSpeed: 0,
@@ -38,6 +40,7 @@ export async function getUserMetrics(userId: string) {
     };
   } catch (error) {
     console.error('Error fetching user metrics:', error);
+    // Return default values on error
     return {
       websiteTraffic: 0,
       averageSiteSpeed: 0,
@@ -98,5 +101,37 @@ export async function getUserSubscription(userId: string) {
   } catch (error) {
     console.error('Error getting user subscription:', error);
     return null;
+  }
+}
+
+// WordPress Credentials Function
+export async function updateWordPressCredentials(
+  userId: string,
+  credentials: {
+    dashboardUrl: string;
+    adminEmail: string;
+    adminPassword: string;
+  }
+) {
+  if (!db) {
+    console.error('Firestore is not initialized. This function must be called on the client side.');
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const userRef = doc(collection(db, 'users'), userId);
+    
+    // TODO: Encrypt adminPassword before storing in production
+    await updateDoc(userRef, {
+      wordpressCredentials: {
+        dashboardUrl: credentials.dashboardUrl,
+        adminEmail: credentials.adminEmail,
+        adminPassword: credentials.adminPassword, // TODO: Encrypt this in production
+        lastUpdated: serverTimestamp(),
+      },
+    });
+  } catch (error) {
+    console.error('Error updating WordPress credentials:', error);
+    throw error;
   }
 }

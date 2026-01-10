@@ -2,29 +2,44 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 export default function WordPressCredentialsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   
   const [dashboardUrl, setDashboardUrl] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
-    // TODO: Send credentials to backend/Firestore
-    console.log('WordPress credentials submitted:', { dashboardUrl, adminEmail, adminPassword });
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      if (!user?.uid) {
+        throw new Error('User not authenticated');
+      }
+
+      const { updateWordPressCredentials } = await import('@/lib/firestore');
+      await updateWordPressCredentials(user.uid, {
+        dashboardUrl,
+        adminEmail,
+        adminPassword,
+      });
+
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error saving WordPress credentials:', error);
+      setError('Failed to save credentials. Please try again.');
+    } finally {
       setLoading(false);
-      router.push('/dashboard'); 
-    }, 1500);
+    }
   };
 
   return (
@@ -34,13 +49,25 @@ export default function WordPressCredentialsPage() {
       <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <h1 className="text-3xl font-bold text-[#232521] mb-2">
-            Enter Your WordPress Login Details
+            Final Step: Enter Your WordPress Login Details
           </h1>
           <p className="text-gray-600 mb-8">
-            This helps us connect to your WordPress dashboard so we can complete your setup quickly and correctly. Your credentials are used only to access your site for configuration and support.
+            Almost done! This helps us connect to your WordPress dashboard so we can complete your setup quickly and correctly. Your credentials are used only to access your site for configuration and support.
           </p>
 
           <form onSubmit={handleSubmit}>
+            {/* Error Alert */}
+            {error && (
+              <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+                <svg className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-red-900">{error}</p>
+                </div>
+              </div>
+            )}
+
             {/* WordPress Dashboard URL */}
             <div className="mb-6">
               <label htmlFor="dashboardUrl" className="block text-sm font-semibold text-[#232521] mb-2">

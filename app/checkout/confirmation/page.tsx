@@ -109,10 +109,10 @@ function ConfirmationContent() {
           </div>
 
           <PrimaryButton
-            onClick={() => router.push('/checkout/wordpress-credentials')}
+            onClick={() => router.push(`/signup?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`)}
             className="w-full"
           >
-            Continue
+            Create Your Account
           </PrimaryButton>
         </div>
       </div>

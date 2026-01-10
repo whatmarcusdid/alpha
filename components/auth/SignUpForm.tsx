@@ -43,7 +43,13 @@ export function SignUpForm() {
           maintenanceHoursRemaining: 10
         }
       });
-      router.push('/dashboard');
+      
+      // Get query params and redirect to WordPress credentials
+      const searchParams = new URLSearchParams(window.location.search);
+      const tier = searchParams.get('tier') || 'essential';
+      const amount = searchParams.get('amount') || '0';
+      const billingCycle = searchParams.get('billingCycle') || 'annual';
+      router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -56,7 +62,13 @@ export function SignUpForm() {
     setError(null);
     try {
       await signInWithGoogle();
-      router.push('/dashboard');
+      
+      // Get query params and redirect to WordPress credentials
+      const searchParams = new URLSearchParams(window.location.search);
+      const tier = searchParams.get('tier') || 'essential';
+      const amount = searchParams.get('amount') || '0';
+      const billingCycle = searchParams.get('billingCycle') || 'annual';
+      router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -69,7 +81,13 @@ export function SignUpForm() {
     setError(null);
     try {
       await signInWithApple();
-      router.push('/dashboard');
+      
+      // Get query params and redirect to WordPress credentials
+      const searchParams = new URLSearchParams(window.location.search);
+      const tier = searchParams.get('tier') || 'essential';
+      const amount = searchParams.get('amount') || '0';
+      const billingCycle = searchParams.get('billingCycle') || 'annual';
+      router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);
     } finally {

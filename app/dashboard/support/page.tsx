@@ -239,7 +239,7 @@ export default function SupportPage() {
         {/* Contact Card */}
         <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 mb-6">
             <h2 className="text-xl font-semibold text-[#232521]">Many ways to reach out</h2>
-            <p className="text-sm text-gray-600 mt-1">Report an issue, request a change, or ask a quick question.</p>
+            <p className="text-sm text-gray-600 mt-1">We're here when you need us. Whether you need to report an issue, request a change, or just have a quick question about your website, we've made it easy to reach our team.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 {/* Call Us */}
                 <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
@@ -254,7 +254,7 @@ export default function SupportPage() {
                 <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                     <p className="font-semibold">(555) 123-4567</p>
-                    <p className="text-xs text-gray-500">Anytime</p>
+                    <p className="text-xs text-gray-500">Text Anytime</p>
                     <SecondaryButton onClick={handleCopyPhone} className="mt-2">
                       Copy Number
                     </SecondaryButton>
@@ -263,7 +263,7 @@ export default function SupportPage() {
                 <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                     <p className="font-semibold">support@tradesitegenie.com</p>
-                    <p className="text-xs text-gray-500">Anytime</p>
+                    <p className="text-xs text-gray-500">Email Anytime</p>
                     <SecondaryButton onClick={handleCopyEmail} className="mt-2">
                       Copy Email
                     </SecondaryButton>
