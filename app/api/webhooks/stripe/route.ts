@@ -30,15 +30,35 @@ async function handleSubscriptionEvent(event: Stripe.Event) {
   const userId = userSnapshot.docs[0].id;
   const userDocRef = adminDb.collection('users').doc(userId);
 
-  const subscriptionData = {
+  // Extract coupon information if discount is applied
+  let discountInfo = null;
+  if ((subscription as any).discount && (subscription as any).discount.coupon) {
+    const coupon = (subscription as any).discount.coupon;
+    discountInfo = {
+      couponCode: coupon.id,
+      percentOff: coupon.percent_off || null,
+      amountOff: coupon.amount_off ? coupon.amount_off / 100 : null,
+      duration: coupon.duration,
+      durationInMonths: coupon.duration_in_months || null,
+    };
+  }
+
+  const subscriptionData: any = {
     subscription: {
       status: subscription.status,
       tier: subscription.items.data[0]?.price.lookup_key,
       startDate: admin.firestore.Timestamp.fromDate(new Date((subscription as any).current_period_start * 1000)),
       endDate: admin.firestore.Timestamp.fromDate(new Date((subscription as any).current_period_end * 1000)),
       stripeSubscriptionId: subscription.id,
+      updatedAt: admin.firestore.Timestamp.now(),
     }
   };
+
+  // Add discount info if available
+  if (discountInfo) {
+    subscriptionData.subscription.couponApplied = discountInfo.couponCode;
+    subscriptionData.subscription.discount = discountInfo;
+  }
 
   await userDocRef.set(subscriptionData, { merge: true });
 }
