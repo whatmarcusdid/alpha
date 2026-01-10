@@ -30,9 +30,9 @@ const CheckIcon = () => (
 
 const tierPrices: Record<Tier, number> = {
   'safety-net': 299,
-  essential: 679,
-  advanced: 1299,
-  premium: 2599,
+  essential: 899,
+  advanced: 1799,
+  premium: 2999,
 };
 
 const tierNames: Record<Tier, string> = {

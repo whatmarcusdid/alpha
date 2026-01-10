@@ -41,7 +41,7 @@ const PLANS: Plan[] = [
   {
     tier: 'essential',
     name: 'Essential',
-    price: '679',
+    price: '899',
     features: [
       '4 Annual support hours',
       '8 Annual maintenance hours',
@@ -54,7 +54,7 @@ const PLANS: Plan[] = [
   {
     tier: 'advanced',
     name: 'Advanced',
-    price: '1,299',
+    price: '1,799',
     features: [
       '8 Annual support hours',
       '16 Annual maintenance hours',
@@ -67,7 +67,7 @@ const PLANS: Plan[] = [
   {
     tier: 'premium',
     name: 'Premium',
-    price: '2,599',
+    price: '2,999',
     features: [
       '20 Annual support hours',
       '40 Annual maintenance hours',

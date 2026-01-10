@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
 
     // Map tiers to Stripe price IDs from Stripe Dashboard
     const tierPriceIds: Record<string, string> = {
-      'essential': 'price_1SlRWtPTDVjQnuCna5gO5flD',
-      'advanced': 'price_1SlRXePTDVjQnuCnoZ3hUSSU',
-      'premium': 'price_1SlRXePTDVjQnuCn0TzxnI4Z',
+      'essential': 'price_1So9MuPTDVjQnuCnpaIYQQtA',
+      'advanced': 'price_1So9NMPTDVjQnuCnLeL0VrEW',
+      'premium': 'price_1So9NkPTDVjQnuCn8f6PywGQ',
     };
 
     const newPriceId = tierPriceIds[newTier];

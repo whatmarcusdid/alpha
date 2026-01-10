@@ -58,25 +58,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Update subscription to Safety Net plan
-    // For now, just return success
-    // You'll need to create the Safety Net price in Stripe Dashboard first
+    // Safety Net Price ID from Stripe Dashboard
+    const safetyNetPriceId = 'price_1SlRYNPTDVjQnuCnm9lCoiQT';
     
-    // const safetyNetPriceId = process.env.STRIPE_SAFETY_NET_PRICE_ID || 'price_xxxxx';
-    // const currentSubscription = await stripe.subscriptions.retrieve(subscriptionId);
-    // const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
-    //   items: [{
-    //     id: currentSubscription.items.data[0].id,
-    //     price: safetyNetPriceId,
-    //   }],
-    //   proration_behavior: 'create_prorations',
-    // });
+    // Get current subscription from Stripe
+    const currentSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // Update subscription to Safety Net plan with proration
+    const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+      items: [{
+        id: currentSubscription.items.data[0].id,
+        price: safetyNetPriceId,
+      }],
+      proration_behavior: 'create_prorations',
+    });
+
+    // Calculate the new renewal date
+    const renewalDate = new Date(((updatedSubscription as any).current_period_end as number) * 1000);
 
     // Update Firestore with new plan
     await adminDb.collection('users').doc(userId).update({
       'subscription.tier': 'safety-net',
       'subscription.price': 299,
       'subscription.billingCycle': 'yearly',
+      'subscription.renewalDate': renewalDate.toISOString(),
       'subscription.updatedAt': new Date().toISOString(),
     });
 

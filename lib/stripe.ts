@@ -7,9 +7,8 @@ export const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHAB
 export const PRICING = {
   essential: {
     name: 'Essential',
-    annual: 679,
-    quarterly: 207,
-    monthly: 69,
+    annual: 899,
+    stripePriceId: 'price_1So9MuPTDVjQnuCnpaIYQQtA',
     features: [
       'Ongoing Security Monitoring & Backups',
       '4 Annual support hours',
@@ -23,10 +22,8 @@ export const PRICING = {
   },
   advanced: {
     name: 'Advanced',
-    annual: 1299,
-    discountedAnnual: 260,
-    quarterly: 399,
-    monthly: 119,
+    annual: 1799,
+    stripePriceId: 'price_1So9NMPTDVjQnuCnLeL0VrEW',
     features: [
       'Ongoing Security Monitoring & Backups',
       '8 Annual support hours',
@@ -40,9 +37,8 @@ export const PRICING = {
   },
   premium: {
     name: 'Premium',
-    annual: 2599,
-    quarterly: 799,
-    monthly: 239,
+    annual: 2999,
+    stripePriceId: 'price_1So9NkPTDVjQnuCn8f6PywGQ',
     features: [
       'Ongoing Security Monitoring & Backups',
       '20 Annual support hours',
@@ -53,34 +49,33 @@ export const PRICING = {
       'Weekly Performance Checkups',
       'Weekly Plugin & Theme Updates'
     ]
+  },
+  'safety-net': {
+    name: 'Safety Net',
+    annual: 299,
+    stripePriceId: 'price_1SlRYNPTDVjQnuCnm9lCoiQT',
+    features: [
+      'Ongoing Security Monitoring & Backups',
+      'Emergency support (limited hours)'
+    ],
+    deliverables: [
+      'Basic site monitoring'
+    ]
   }
 } as const;
 
 export type PricingTier = keyof typeof PRICING;
-export type BillingCycle = 'annual' | 'quarterly' | 'monthly';
+export type BillingCycle = 'annual';
 
 // Helper function to get price
-export function getPrice(tier: PricingTier, cycle: BillingCycle): number {
-  const plan = PRICING[tier];
-  
-  if (tier === 'advanced' && cycle === 'annual') {
-    return PRICING.advanced.discountedAnnual!;
-  }
-  
-  return plan[cycle] as number;
+export function getPrice(tier: PricingTier): number {
+  return PRICING[tier].annual;
 }
 
-// Helper to calculate renewal date
-export function getRenewalDate(cycle: BillingCycle): string {
+// Helper to calculate renewal date (annual only)
+export function getRenewalDate(cycle: BillingCycle = 'annual'): string {
   const date = new Date();
-  
-  if (cycle === 'annual') {
-    date.setFullYear(date.getFullYear() + 1);
-  } else if (cycle === 'quarterly') {
-    date.setMonth(date.getMonth() + 3);
-  } else {
-    date.setMonth(date.getMonth() + 1);
-  }
+  date.setFullYear(date.getFullYear() + 1);
   
   return date.toLocaleDateString('en-US', { 
     month: 'numeric', 

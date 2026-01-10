@@ -28,9 +28,9 @@ const TIER_HIERARCHY = {
 type Tier = keyof typeof TIER_HIERARCHY;
 
 const YEARLY_PRICE_IDS: Record<Tier, string> = {
-  essential: 'price_1SlRWtPTDVjQnuCna5gO5flD',
-  advanced: 'price_1SlRXePTDVjQnuCnoZ3hUSSU',
-  premium: 'price_1SlRXePTDVjQnuCn0TzxnI4Z',
+  essential: 'price_1So9MuPTDVjQnuCnpaIYQQtA',
+  advanced: 'price_1So9NMPTDVjQnuCnLeL0VrEW',
+  premium: 'price_1So9NkPTDVjQnuCn8f6PywGQ',
 };
 
 export async function POST(req: NextRequest) {

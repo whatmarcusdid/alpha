@@ -23,15 +23,15 @@ function CheckoutContent() {
 
   const planData = PRICING[tier];
   
-  const subtotal = getPrice(tier, billingCycle);
+  const subtotal = getPrice(tier);
   const taxRate = 0.06;
   const taxes = subtotal * taxRate;
   const total = subtotal + taxes;
 
-  // ADD THIS useEffect
+  // Set renewal date (annual only)
   useEffect(() => {
-    setRenewalDate(getRenewalDate(billingCycle));
-  }, [billingCycle]);
+    setRenewalDate(getRenewalDate('annual'));
+  }, []); // Empty dependency array - renewal date set once on mount
 
   useEffect(() => {
     const createPaymentIntent = async () => {
