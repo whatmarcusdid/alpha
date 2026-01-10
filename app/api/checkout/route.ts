@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const { amount, tier, billingCycle } = await request.json();
+    const { amount, tier, billingCycle, couponCode } = await request.json();
 
     // Validate required fields
     if (!amount || !tier || !billingCycle) {
@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Build payment intent parameters
+    const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: Math.round(amount * 100), // Convert to cents
       currency: 'usd',
       automatic_payment_methods: {
@@ -29,7 +29,26 @@ export async function POST(request: NextRequest) {
         tier,
         billingCycle,
       },
-    });
+    };
+
+    // Add coupon if provided
+    if (couponCode) {
+      // Validate the coupon exists before applying
+      try {
+        const coupon = await stripe.coupons.retrieve(couponCode);
+        if (coupon && coupon.valid !== false) {
+          if (paymentIntentParams.metadata) {
+            paymentIntentParams.metadata.couponCode = couponCode;
+          }
+        }
+      } catch (error) {
+        console.error('Error validating coupon:', error);
+        // Continue without coupon if validation fails
+      }
+    }
+
+    // Create PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
 
     return NextResponse.json({
       success: true,

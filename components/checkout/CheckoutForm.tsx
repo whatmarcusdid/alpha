@@ -15,9 +15,10 @@ interface CheckoutFormProps {
   amount: number;
   tier: PricingTier;
   billingCycle: BillingCycle;
+  couponCode: string | null;
 }
 
-export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFormProps) {
+export default function CheckoutForm({ amount, tier, billingCycle, couponCode }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -67,7 +68,7 @@ export default function CheckoutForm({ amount, tier, billingCycle }: CheckoutFor
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/checkout/confirmation?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`,
+          return_url: `${window.location.origin}/checkout/confirmation?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}${couponCode ? `&couponCode=${couponCode}` : ''}`,
           payment_method_data: {
             billing_details: {
               name: name,

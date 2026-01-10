@@ -11,6 +11,17 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SelectedProductCard } from '@/components/checkout/SelectedProductCard';
 import { TertiaryButton } from '@/components/ui/TertiaryButton';
 
+// Define types for applied coupon
+interface AppliedCoupon {
+  valid: boolean;
+  id: string;
+  percentOff: number | null;
+  amountOff: number | null;
+  duration: string;
+  durationInMonths: number | null;
+  name: string | null;
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -19,19 +30,61 @@ function CheckoutContent() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('annual');
   const [clientSecret, setClientSecret] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [renewalDate, setRenewalDate] = useState<string>(''); // ADD THIS
+  const [renewalDate, setRenewalDate] = useState<string>('');
+  
+  // Promo code states
+  const [promoCode, setPromoCode] = useState<string>('');
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [promoError, setPromoError] = useState<string>('');
+  const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false);
 
   const planData = PRICING[tier];
   
+  // Calculate pricing with discount
   const subtotal = getPrice(tier);
+  const discount = appliedCoupon?.percentOff 
+    ? (subtotal * appliedCoupon.percentOff / 100) 
+    : (appliedCoupon?.amountOff || 0) / 100; // Stripe amount is in cents
+  const discountedSubtotal = subtotal - discount;
   const taxRate = 0.06;
-  const taxes = subtotal * taxRate;
-  const total = subtotal + taxes;
+  const taxes = discountedSubtotal * taxRate;
+  const total = discountedSubtotal + taxes;
 
   // Set renewal date (annual only)
   useEffect(() => {
     setRenewalDate(getRenewalDate('annual'));
   }, []); // Empty dependency array - renewal date set once on mount
+
+  // Handle promo code application
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    
+    setIsApplyingPromo(true);
+    setPromoError('');
+    
+    try {
+      const response = await fetch('/api/stripe/validate-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ couponCode: promoCode.trim().toUpperCase() })
+      });
+      
+      const data = await response.json();
+      
+      if (data.valid) {
+        setAppliedCoupon(data);
+        setPromoError('');
+      } else {
+        setPromoError(data.error || 'Invalid promo code');
+        setAppliedCoupon(null);
+      }
+    } catch (error) {
+      setPromoError('Failed to apply promo code');
+      setAppliedCoupon(null);
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
 
   useEffect(() => {
     const createPaymentIntent = async () => {
@@ -44,6 +97,7 @@ function CheckoutContent() {
             amount: total,
             tier,
             billingCycle,
+            couponCode: appliedCoupon?.id || null,
           }),
         });
 
@@ -75,7 +129,7 @@ function CheckoutContent() {
     };
 
     createPaymentIntent();
-  }, [total, tier, billingCycle]);
+  }, [total, tier, billingCycle, appliedCoupon]);
 
   return (
     <div className="min-h-screen bg-[#F7F6F1]">
@@ -118,6 +172,7 @@ function CheckoutContent() {
                     amount={total}
                     tier={tier}
                     billingCycle={billingCycle}
+                    couponCode={appliedCoupon?.id || null}
                   />
                 </Elements>
               ) : (
@@ -199,6 +254,14 @@ function CheckoutContent() {
                     <span className="text-gray-600">Subtotal</span>
                     <span className="font-medium text-[#232521]">${subtotal.toFixed(2)}</span>
                   </div>
+                  
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Discount ({appliedCoupon.percentOff}% off)</span>
+                      <span className="font-medium">-${discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Taxes</span>
                     <span className="font-medium text-[#232521]">${taxes.toFixed(2)}</span>
@@ -208,11 +271,45 @@ function CheckoutContent() {
                     <label className="block text-sm font-medium text-[#232521] mb-2">
                       Promo Code
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Enter code here"
-                      className="w-full min-h-[40px] px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                        placeholder="Enter code"
+                        disabled={!!appliedCoupon}
+                        className="flex-1 min-h-[40px] px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9be382] focus:border-transparent disabled:bg-gray-100"
+                      />
+                      {!appliedCoupon ? (
+                        <button
+                          onClick={handleApplyPromo}
+                          disabled={!promoCode.trim() || isApplyingPromo}
+                          className="px-4 py-2 bg-[#9be382] hover:bg-[#8dd370] text-[#232521] font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px]"
+                        >
+                          {isApplyingPromo ? 'Applying...' : 'Apply'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setAppliedCoupon(null);
+                            setPromoCode('');
+                          }}
+                          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg min-h-[40px]"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    
+                    {promoError && (
+                      <p className="text-sm text-red-600 mt-1">{promoError}</p>
+                    )}
+                    
+                    {appliedCoupon && (
+                      <p className="text-sm text-green-600 mt-1">
+                        ✓ {appliedCoupon.percentOff}% off applied!
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex justify-between text-lg font-bold pt-3 border-t border-gray-200">
