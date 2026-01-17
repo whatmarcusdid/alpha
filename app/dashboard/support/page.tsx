@@ -17,19 +17,36 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
+import { PageCard } from '@/components/layout/PageCard';
+import HorizontalTabs, { TabItem } from '@/components/ui/HorizontalTabs';
+import SupportTicketCard from '@/components/support/SupportTicketCard';
+import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
+import { getActiveTickets, getPastTickets } from '@/lib/firestore/support';
+import type { SupportTicket } from '@/types/support';
 
 export default function SupportPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState<'request' | 'tickets'>('request');
   const [requestFromEmail, setRequestFromEmail] = useState('');
   const [description, setDescription] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTickets, setActiveTickets] = useState<SupportTicket[]>([]);
+  const [pastTickets, setPastTickets] = useState<SupportTicket[]>([]);
+  const [loadingActive, setLoadingActive] = useState(false);
+  const [loadingPast, setLoadingPast] = useState(false);
   const [notification, setNotification] = useState<{
     show: boolean;
     type: 'success' | 'error';
     message: string;
     subtitle?: string;
   }>({ show: false, type: 'success', message: '' });
+
+  // Define tabs configuration
+  const tabs: TabItem[] = [
+    { id: 'request', label: 'Support Request' },
+    { id: 'tickets', label: 'Past Support Tickets' },
+  ];
 
   useEffect(() => {
     if (notification.show) {
@@ -49,6 +66,73 @@ export default function SupportPage() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Fetch functions
+  const fetchActiveTickets = useCallback(async () => {
+    if (!user) {
+      console.log('❌ No user, skipping fetch');
+      return;
+    }
+    
+    console.log('🔍 Fetching active tickets for user:', user.uid);
+    
+    setLoadingActive(true);
+    try {
+      const result = await getActiveTickets(user.uid);
+      console.log('📋 Result:', result);
+      
+      if (result.success && result.tickets) {
+        console.log('✅ Found', result.tickets.length, 'tickets:', result.tickets);
+        setActiveTickets(result.tickets);
+      } else {
+        console.error('❌ Failed:', result.error);
+      }
+    } catch (error) {
+      console.error('💥 Exception:', error);
+    } finally {
+      setLoadingActive(false);
+    }
+  }, [user]);
+
+  const fetchPastTickets = useCallback(async () => {
+    if (!user) {
+      console.log('❌ No user, skipping fetch');
+      return;
+    }
+    
+    console.log('🔍 Fetching past tickets for user:', user.uid);
+    
+    setLoadingPast(true);
+    try {
+      const result = await getPastTickets(user.uid);
+      console.log('📋 Result:', result);
+      
+      if (result.success && result.tickets) {
+        console.log('✅ Found', result.tickets.length, 'tickets:', result.tickets);
+        setPastTickets(result.tickets);
+      } else {
+        console.error('❌ Failed:', result.error);
+      }
+    } catch (error) {
+      console.error('💥 Exception:', error);
+    } finally {
+      setLoadingPast(false);
+    }
+  }, [user]);
+
+  // Fetch active tickets when on request tab
+  useEffect(() => {
+    if (activeTab === 'request' && user) {
+      fetchActiveTickets();
+    }
+  }, [activeTab, user, fetchActiveTickets]);
+
+  // Fetch past tickets when on tickets tab
+  useEffect(() => {
+    if (activeTab === 'tickets' && user) {
+      fetchPastTickets();
+    }
+  }, [activeTab, user, fetchPastTickets]);
 
   const handleCopyPhone = () => {
     navigator.clipboard.writeText('(555) 123-4567');
@@ -233,98 +317,187 @@ export default function SupportPage() {
         onDismiss={() => setNotification({ show: false, type: 'success', message: '' })}
       />
 
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-[#232521] mb-6">Support Hub</h1>
+      <main className="min-h-screen bg-[#F7F6F1] px-4 sm:px-6 lg:px-8 py-8">
+        <PageCard>
+          <h1 className="text-2xl font-bold text-[#232521] mb-6">Support Hub</h1>
 
-        {/* Contact Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 mb-6">
-            <h2 className="text-xl font-semibold text-[#232521]">Many ways to reach out</h2>
-            <p className="text-sm text-gray-600 mt-1">We're here when you need us. Whether you need to report an issue, request a change, or just have a quick question about your website, we've made it easy to reach our team.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                {/* Call Us */}
-                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
+          {/* Tab Navigation */}
+          <div className="mb-8">
+            <HorizontalTabs
+              tabs={tabs}
+              activeTabId={activeTab}
+              onChange={(tabId) => setActiveTab(tabId as 'request' | 'tickets')}
+            />
+          </div>
+
+          {activeTab === 'request' && (
+            <>
+              {/* Active Tickets Section */}
+              <div className="mb-8 flex flex-col gap-2">
+                <h2 className="text-2xl font-bold text-[#232521]">Active Tickets</h2>
+                <p className="text-sm leading-relaxed tracking-tight text-gray-600">
+                  All communication within an active ticket will happen within your email thread. 
+                  Search for the subject title of the ticket within your inbox.
+                </p>
+                {/* Active Tickets Cards */}
+                <div className="flex flex-col gap-4 w-full justify-center items-center">
+                  {loadingActive ? (
+                    // Loading skeleton - 3 placeholder cards
+                    <>
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-[#FAF9F5] rounded border border-gray-200 p-4 animate-pulse">
+                          <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                          <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                        </div>
+                      ))}
+                    </>
+                  ) : activeTickets.length > 0 ? (
+                    // Show active tickets
+                    activeTickets.map((ticket) => (
+                      <SupportTicketCard
+                        key={ticket.ticketId}
+                        ticket={ticket}
+                        onClick={() => {
+                          console.log('Ticket clicked:', ticket.ticketId);
+                          // TODO: Open ticket detail modal
+                        }}
+                      />
+                    ))
+                  ) : (
+                    // Empty state
+                    <SupportTicketCard variant="empty" />
+                  )}
+                </div>
+              </div>
+
+              {/* Contact Card */}
+              <div className="mb-6 flex flex-col gap-2">
+                <h2 className="text-xl font-semibold text-[#232521]">Many ways to reach out</h2>
+                <p className="text-sm leading-relaxed tracking-tight text-gray-600">We're here when you need us. Whether you need to report an issue, request a change, or just have a quick question about your website, we've made it easy to reach our team.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                  {/* Call Us */}
+                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><PhoneIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                     <p className="font-semibold">(555) 123-4567</p>
                     <p className="text-xs text-gray-500">Mon–Fri, 9 AM–5 PM EST</p>
                     <SecondaryButton href="tel:+15551234567" className="mt-2">
                       Call Number
                     </SecondaryButton>
-                </div>
-                {/* Text Us */}
-                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
+                  </div>
+                  {/* Text Us */}
+                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                     <p className="font-semibold">(555) 123-4567</p>
                     <p className="text-xs text-gray-500">Text Anytime</p>
                     <SecondaryButton onClick={handleCopyPhone} className="mt-2">
                       Copy Number
                     </SecondaryButton>
-                </div>
-                {/* Email Us */}
-                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
+                  </div>
+                  {/* Email Us */}
+                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/></div>
                     <p className="font-semibold">support@tradesitegenie.com</p>
                     <p className="text-xs text-gray-500">Email Anytime</p>
                     <SecondaryButton onClick={handleCopyEmail} className="mt-2">
                       Copy Email
                     </SecondaryButton>
+                  </div>
                 </div>
-            </div>
-        </div>
-
-        {/* Form Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-[#232521]">Your Support Team is Standing By</h2>
-          <p className="text-sm text-gray-600 mt-1">Please give us a description of the issue and attach screenshots or screen recordings if helpful.</p>
-          
-          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-            <div>
-              <label htmlFor="requestFromEmail" className="block text-sm font-medium text-gray-700 mb-1">Request From</label>
-              <input type="email" id="requestFromEmail" value={requestFromEmail} onChange={e => setRequestFromEmail(e.target.value)} required className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"/>
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Please give us a description of the issue</label>
-              <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={5} className="w-full min-h-[120px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"></textarea>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Attachments (optional)</label>
-              <div 
-                  onDrop={handleDrop} 
-                  onDragOver={e => e.preventDefault()} 
-                  className="relative flex flex-col items-center justify-center w-full min-h-[120px] px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-gray-400 transition"
-              >
-                  <PaperClipIcon className="h-8 w-8 text-gray-400 mb-2"/>
-                  <p className="text-sm text-gray-600">Click or drag files to upload</p>
-                  <p className="text-xs text-gray-500 mt-1">PDF, PNG, JPG up to 50MB</p>
-                  <input type="file" multiple onChange={handleFileChange} accept=".pdf,.png,.jpg,.jpeg" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
               </div>
-            </div>
 
-            {attachments.length > 0 && (
-              <div className="space-y-2">
-                  {attachments.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+              {/* Form Card */}
+              <div className="">
+                <h2 className="text-xl font-semibold text-[#232521]">Your Support Team is Standing By</h2>
+                <p className="text-sm leading-relaxed tracking-tight text-gray-600 mt-1">Please give us a description of the issue and attach screenshots or screen recordings if helpful.</p>
+                
+                <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+                  <div>
+                    <label htmlFor="requestFromEmail" className="block text-sm font-medium text-gray-700 mb-1">Request From</label>
+                    <input type="email" id="requestFromEmail" value={requestFromEmail} onChange={e => setRequestFromEmail(e.target.value)} required className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"/>
+                  </div>
+
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Please give us a description of the issue</label>
+                    <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={5} className="w-full min-h-[120px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"></textarea>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Attachments (optional)</label>
+                    <div 
+                      onDrop={handleDrop} 
+                      onDragOver={e => e.preventDefault()} 
+                      className="relative flex flex-col items-center justify-center w-full min-h-[120px] px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-gray-400 transition"
+                    >
+                      <PaperClipIcon className="h-8 w-8 text-gray-400 mb-2"/>
+                      <p className="text-sm text-gray-600">Click or drag files to upload</p>
+                      <p className="text-xs text-gray-500 mt-1">PDF, PNG, JPG up to 50MB</p>
+                      <input type="file" multiple onChange={handleFileChange} accept=".pdf,.png,.jpg,.jpeg" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
+                    </div>
+                  </div>
+
+                  {attachments.length > 0 && (
+                    <div className="space-y-2">
+                      {attachments.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                           <div className="flex items-center space-x-2">
-                              <DocumentTextIcon className="h-5 w-5 text-gray-500" />
-                              <span className="text-sm text-gray-800">{file.name}</span>
-                              <span className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                            <DocumentTextIcon className="h-5 w-5 text-gray-500" />
+                            <span className="text-sm text-gray-800">{file.name}</span>
+                            <span className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                           </div>
                           <button type="button" onClick={() => handleRemoveFile(index)} className="p-1 rounded-full hover:bg-gray-200">
-                              <XMarkIcon className="h-4 w-4 text-gray-600"/>
+                            <XMarkIcon className="h-4 w-4 text-gray-600"/>
                           </button>
-                      </div>
-                  ))}
-              </div>
-            )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-            <div className="flex justify-end">
-                <PrimaryButton type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Sending...' : 'Send Request'}
-                </PrimaryButton>
+                  <div className="flex justify-end">
+                    <PrimaryButton type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? 'Sending...' : 'Send Request'}
+                    </PrimaryButton>
+                  </div>
+                </form>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'tickets' && (
+            <div>
+              <h2 className="text-2xl font-bold text-[#232521] mb-6">Past Support Tickets</h2>
+              
+              {loadingPast ? (
+                // Loading state - show table skeleton
+                <div className="bg-white border border-gray-200 rounded p-6">
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="animate-pulse flex gap-4">
+                        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                        <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <PastSupportTicketsTable
+                  tickets={pastTickets}
+                  onDownload={(ticket) => {
+                    console.log('Download ticket:', ticket.ticketId);
+                    // TODO: Generate and download PDF report
+                    setNotification({
+                      show: true,
+                      type: 'success',
+                      message: 'Download started',
+                      subtitle: `Downloading report for ticket ${ticket.ticketId}`
+                    });
+                  }}
+                />
+              )}
             </div>
-          </form>
-        </div>
+          )}
+        </PageCard>
       </main>
     </>
   );

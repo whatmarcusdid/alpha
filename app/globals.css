@@ -72,4 +72,9 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
       Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
   }
+  
+  /* PageCard paragraph text color - persisted from browser preview */
+  p.font-semibold {
+    color: rgba(35, 37, 33, 1);
+  }
 }

@@ -1,12 +1,50 @@
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, sendPasswordResetEmail, getRedirectResult, OAuthProvider, signInWithRedirect, signInWithEmailAndPassword, onAuthStateChanged, User, updateEmail, reauthenticateWithCredential, EmailAuthProvider, createUserWithEmailAndPassword } from 'firebase/auth';
-import { app } from './firebase';
+import { auth } from './firebase';
+import type { User } from 'firebase/auth';
 
-export const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+let authFunctions: any = {};
+let googleProvider: any = null;
+
+if (typeof window !== 'undefined') {
+  const {
+    GoogleAuthProvider,
+    OAuthProvider,
+    EmailAuthProvider,
+    signInWithPopup,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut: firebaseSignOut,
+    sendPasswordResetEmail,
+    onAuthStateChanged,
+    updateProfile,
+    updateEmail,
+    reauthenticateWithCredential,
+    getRedirectResult,
+    signInWithRedirect,
+  } = require('firebase/auth');
+
+  authFunctions = {
+    GoogleAuthProvider,
+    OAuthProvider,
+    EmailAuthProvider,
+    signInWithPopup,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut: firebaseSignOut,
+    sendPasswordResetEmail,
+    onAuthStateChanged,
+    updateProfile,
+    updateEmail,
+    reauthenticateWithCredential,
+    getRedirectResult,
+    signInWithRedirect,
+  };
+
+  googleProvider = new GoogleAuthProvider();
+}
 
 export async function signInWithGoogle(): Promise<{ success: boolean; error?: string }> {
   try {
-    await signInWithPopup(auth, googleProvider);
+    await authFunctions.signInWithPopup(auth, googleProvider);
     return { success: true };
   } catch (error: any) {
     console.error('Google sign-in error:', error);
@@ -15,12 +53,12 @@ export async function signInWithGoogle(): Promise<{ success: boolean; error?: st
 }
 
 export async function signInWithApple() {
-  const provider = new OAuthProvider('apple.com');
+  const provider = new authFunctions.OAuthProvider('apple.com');
   provider.addScope('email');
   provider.addScope('name');
   
   try {
-    await signInWithRedirect(auth, provider);
+    await authFunctions.signInWithRedirect(auth, provider);
   } catch (error: any) {
     console.error('Apple sign-in error:', error);
     throw new Error(error.message || 'Failed to sign in with Apple');
@@ -29,7 +67,7 @@ export async function signInWithApple() {
 
 export async function signInWithEmail(email: string, password: string): Promise<User> {
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await authFunctions.signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error: any) {
     console.error('Email sign-in error:', error);
@@ -52,12 +90,11 @@ export async function signUpWithEmail(
   displayName?: string
 ): Promise<User> {
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await authFunctions.createUserWithEmailAndPassword(auth, email, password);
     
     // Optionally update display name if provided
     if (displayName && userCredential.user) {
-      const { updateProfile } = await import('firebase/auth');
-      await updateProfile(userCredential.user, { displayName });
+      await authFunctions.updateProfile(userCredential.user, { displayName });
     }
     
     return userCredential.user;
@@ -79,11 +116,11 @@ export async function signUpWithEmail(
 }
 
 export function onAuthStateChange(callback: (user: User | null) => void): () => void {
-  return onAuthStateChanged(auth, callback);
+  return authFunctions.onAuthStateChanged(auth, callback);
 }
 
 export function getCurrentUser(): User | null {
-  return auth.currentUser;
+  return auth?.currentUser || null;
 }
 
 export async function updateUserEmail(
@@ -91,18 +128,18 @@ export async function updateUserEmail(
   currentPassword: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const user = auth.currentUser;
+    const user = auth?.currentUser;
 
     if (!user || !user.email) {
       return { success: false, error: 'No user is currently logged in' };
     }
 
     // Re-authenticate user before sensitive operation
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential);
+    const credential = authFunctions.EmailAuthProvider.credential(user.email, currentPassword);
+    await authFunctions.reauthenticateWithCredential(user, credential);
 
     // Update email
-    await updateEmail(user, newEmail);
+    await authFunctions.updateEmail(user, newEmail);
 
     return { success: true };
   } catch (error: any) {
@@ -124,7 +161,7 @@ export async function updateUserEmail(
 
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   try {
-    await firebaseSignOut(auth);
+    await authFunctions.signOut(auth);
     return { success: true };
   } catch (error: any) {
     console.error('Sign-out error:', error);
@@ -134,7 +171,7 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
 
 export async function sendPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
   try {
-    await sendPasswordResetEmail(auth, email);
+    await authFunctions.sendPasswordResetEmail(auth, email);
     return { success: true };
   } catch (error: any) {
     console.error('Password reset error:', error);
@@ -151,7 +188,7 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
 
 export async function handleRedirectResult() {
   try {
-    const result = await getRedirectResult(auth);
+    const result = await authFunctions.getRedirectResult(auth);
     return result?.user || null;
   } catch (error: any) {
     console.error('Redirect result error:', error);

@@ -31,6 +31,10 @@ import UpgradeConfirmation from '@/components/upgrade/UpgradeConfirmation';
 import { PricingCard } from '@/components/upgrade/PricingCard';
 import { TSGLogo } from '@/components/ui/logo';
 import { Meeting } from '@/types/user';
+import SupportTicketCard from '@/components/support/SupportTicketCard';
+import type { SupportTicket } from '@/types/support';
+import HorizontalTabs from '@/components/ui/HorizontalTabs';
+import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
 
 // Define Tier type for upgrade flow
 type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
@@ -53,6 +57,9 @@ export default function DesignSystemPage() {
   const [isUpgradeConfirmationOpen, setIsUpgradeConfirmationOpen] = useState(false);
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const [currentUserTier] = useState<Tier>('essential');
+
+  // State for Horizontal Tabs demo
+  const [activeTab, setActiveTab] = useState('active');
 
   // Mock data for UpcomingMeetingCard
   const mockMeeting: Meeting = {
@@ -127,6 +134,82 @@ export default function DesignSystemPage() {
       paymentMethod: "•••• 3245",
       invoiceUrl: "https://example.com/invoice-001198.pdf"
     }
+  ];
+
+  // Mock data for SupportTicketCard
+  const mockSupportTickets: SupportTicket[] = [
+    {
+      ticketId: "#TSG-1046",
+      customerId: "user-123",
+      createdByUserId: "user-123",
+      title: "Cannot update billing address",
+      description: "I'm trying to update my billing address but the save button is not working.",
+      status: "Open",
+      priority: "Medium",
+      category: "Bug Report",
+      channel: "Support Hub",
+      assignedAgentName: "Sarah M.",
+      createdAt: Timestamp.fromDate(new Date('2026-01-15T10:00:00')),
+      lastUpdatedAt: Timestamp.fromDate(new Date(Date.now() - 2 * 60 * 60 * 1000)), // 2 hours ago
+    },
+    {
+      ticketId: "#TSG-1047",
+      customerId: "user-123",
+      createdByUserId: "user-123",
+      title: "Need help with SEO optimization",
+      description: "Can someone help me optimize my site for search engines?",
+      status: "In Progress",
+      priority: "High",
+      category: "Question",
+      channel: "Email",
+      assignedAgentName: "Marcus W.",
+      createdAt: Timestamp.fromDate(new Date('2026-01-14T14:30:00')),
+      lastUpdatedAt: Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 60 * 1000)), // 5 hours ago
+    },
+    {
+      ticketId: "#TSG-1048",
+      customerId: "user-123",
+      createdByUserId: "user-123",
+      title: "Request for custom feature",
+      description: "Would love to see a booking system integration.",
+      status: "Awaiting Customer",
+      priority: "Low",
+      category: "Feature Request",
+      channel: "Support Hub",
+      assignedAgentName: "John D.",
+      createdAt: Timestamp.fromDate(new Date('2026-01-13T09:00:00')),
+      lastUpdatedAt: Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000)), // 1 day ago
+    },
+    {
+      ticketId: "#TSG-1049",
+      customerId: "user-123",
+      createdByUserId: "user-123",
+      title: "Site is loading slowly",
+      description: "My homepage takes over 10 seconds to load.",
+      status: "Resolved",
+      priority: "Critical",
+      category: "Bug Report",
+      channel: "Phone",
+      assignedAgentName: "Sarah M.",
+      createdAt: Timestamp.fromDate(new Date('2026-01-10T11:00:00')),
+      lastUpdatedAt: Timestamp.fromDate(new Date('2026-01-12T15:00:00')),
+      resolvedAt: Timestamp.fromDate(new Date('2026-01-12T15:00:00')),
+    },
+    {
+      ticketId: "#TSG-1050",
+      customerId: "user-123",
+      createdByUserId: "user-123",
+      title: "Form submission issue fixed",
+      description: "Contact form wasn't sending emails.",
+      status: "Closed",
+      priority: "High",
+      category: "Bug Report",
+      channel: "Support Hub",
+      assignedAgentName: "Marcus W.",
+      createdAt: Timestamp.fromDate(new Date('2026-01-08T08:00:00')),
+      lastUpdatedAt: Timestamp.fromDate(new Date('2026-01-09T16:00:00')),
+      closedAt: Timestamp.fromDate(new Date('2026-01-09T16:00:00')),
+    },
   ];
 
   return (
@@ -1517,6 +1600,186 @@ export default function DesignSystemPage() {
                 </code>
               </div>
             </div>
+
+            {/* Horizontal Tabs */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Horizontal Tabs</h3>
+              <p className="text-gray-600 mb-6">Navigation tabs component for switching between different content views. Features Default, Hover, Active, and Disabled states with smooth transitions and accessibility support.</p>
+              
+              {/* Live Preview */}
+              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600 font-semibold mb-4">Interactive Demo:</p>
+                <HorizontalTabs
+                  tabs={[
+                    { id: 'active', label: 'Active Tickets' },
+                    { id: 'pending', label: 'Pending Review' },
+                    { id: 'resolved', label: 'Resolved' },
+                    { id: 'disabled', label: 'Archived', disabled: true },
+                  ]}
+                  activeTabId={activeTab}
+                  onChange={setActiveTab}
+                />
+                <div className="mt-4 p-4 bg-white rounded border border-gray-200">
+                  <p className="text-sm text-gray-600">
+                    Selected tab: <span className="font-semibold text-[#1B4A41]">{activeTab}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* States Showcase */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-4">All States:</p>
+                <div className="space-y-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+                  {/* Default State */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Default:</p>
+                    <button
+                      className="
+                        flex items-center justify-center 
+                        px-4 py-2 
+                        rounded-tl-md rounded-tr-md
+                        border-b-[3px] border-solid
+                        border-[#dadada]
+                        text-[#262626]
+                        font-semibold text-[14px] leading-[1.5] tracking-[-0.14px] text-center
+                      "
+                    >
+                      Support Request
+                    </button>
+                  </div>
+
+                  {/* Hover State */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Hover:</p>
+                    <button
+                      className="
+                        flex items-center justify-center 
+                        px-4 py-2 
+                        rounded-tl-md rounded-tr-md
+                        border-b-[3px] border-solid
+                        bg-[#FAF9F5]
+                        border-[#dadada]
+                        text-[#262626]
+                        font-semibold text-[14px] leading-[1.5] tracking-[-0.14px] text-center
+                      "
+                    >
+                      Support Request
+                    </button>
+                  </div>
+
+                  {/* Active State */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Active:</p>
+                    <button
+                      className="
+                        flex items-center justify-center 
+                        px-4 py-2 
+                        rounded-tl-md rounded-tr-md
+                        border-b-[3px] border-solid
+                        bg-[#FAF9F5]
+                        border-[#1B4A41]
+                        text-[#1B4A41]
+                        font-semibold text-[14px] leading-[1.5] tracking-[-0.14px] text-center
+                      "
+                    >
+                      Support Request
+                    </button>
+                  </div>
+
+                  {/* Disabled State */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Disabled:</p>
+                    <button
+                      className="
+                        flex items-center justify-center 
+                        px-4 py-2 
+                        rounded-tl-md rounded-tr-md
+                        border-b-[3px] border-solid
+                        border-[#dadada]
+                        text-[#737373]
+                        font-semibold text-[14px] leading-[1.5] tracking-[-0.14px] text-center
+                        opacity-60 cursor-not-allowed
+                      "
+                      disabled
+                    >
+                      Support Request
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Four distinct states: Default, Hover, Active, Disabled</li>
+                  <li>Typography: Inter Semi Bold 14px, line-height 1.5, tracking -0.14px</li>
+                  <li>Active state: Background #FAF9F5, border #1B4A41 (3px bottom), text #1B4A41</li>
+                  <li>Hover state: Background #FAF9F5, border #DADADA (3px bottom), text #262626</li>
+                  <li>Default state: No background, border #DADADA (3px bottom), text #262626</li>
+                  <li>Disabled state: Border #DADADA, text #737373, opacity 60%, cursor not-allowed</li>
+                  <li>Border radius: 6px on top-left and top-right corners only</li>
+                  <li>Padding: 16px horizontal, 8px vertical</li>
+                  <li>Smooth color transitions on state change</li>
+                  <li>Keyboard accessible: Tab navigation with focus indicators</li>
+                  <li>ARIA attributes: role="tab", aria-selected, aria-disabled</li>
+                  <li>Prevents clicks on disabled tabs</li>
+                  <li>Flexible: Accepts custom tab labels and IDs</li>
+                </ul>
+              </div>
+
+              {/* Props */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Props:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <ul className="text-xs text-gray-700 space-y-2 font-mono">
+                    <li><strong>tabs</strong>: TabItem[] - Array of tab items</li>
+                    <li><strong>activeTabId</strong>: string - ID of currently active tab</li>
+                    <li><strong>onChange</strong>: (tabId: string) =&gt; void - Callback when tab changes</li>
+                    <li><strong>className?</strong>: string - Optional additional CSS classes</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* TabItem Interface */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">TabItem Interface:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <code className="text-xs text-gray-700 block whitespace-pre">
+{`export interface TabItem {
+  id: string;          // Unique identifier
+  label: string;       // Display text
+  disabled?: boolean;  // Optional disabled state
+}`}
+                  </code>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import HorizontalTabs from '@/components/ui/HorizontalTabs';
+import { useState } from 'react';
+
+function MyPage() {
+  const [activeTab, setActiveTab] = useState('active');
+
+  return (
+    <HorizontalTabs
+      tabs={[
+        { id: 'active', label: 'Active Tickets' },
+        { id: 'pending', label: 'Pending Review' },
+        { id: 'resolved', label: 'Resolved' },
+        { id: 'archived', label: 'Archived', disabled: true },
+      ]}
+      activeTabId={activeTab}
+      onChange={setActiveTab}
+    />
+  );
+}`}
+                </code>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -2067,6 +2330,288 @@ function MyPage() {
     />
   );
 }`}
+                </code>
+              </div>
+            </div>
+
+            {/* SupportTicketCard */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Support Ticket Card</h3>
+              <p className="text-gray-600 mb-6">Displays support tickets with dynamic status badges, assignment information, and timestamps. Used in the Support Hub to show active and past tickets with proper status color coding.</p>
+              
+              {/* Live Preview - All States */}
+              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200 space-y-4">
+                <p className="text-sm text-gray-600 font-semibold mb-2">All Status States:</p>
+                
+                {/* Open */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Open / New:</p>
+                  <SupportTicketCard ticket={mockSupportTickets[0]} />
+                </div>
+
+                {/* In Progress */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">In Progress:</p>
+                  <SupportTicketCard ticket={mockSupportTickets[1]} />
+                </div>
+
+                {/* Awaiting Customer */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Awaiting Customer:</p>
+                  <SupportTicketCard ticket={mockSupportTickets[2]} />
+                </div>
+
+                {/* Resolved */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Resolved:</p>
+                  <SupportTicketCard ticket={mockSupportTickets[3]} />
+                </div>
+
+                {/* Closed */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Closed:</p>
+                  <SupportTicketCard ticket={mockSupportTickets[4]} />
+                </div>
+
+                {/* Empty State */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Empty State:</p>
+                  <SupportTicketCard variant="empty" />
+                </div>
+              </div>
+
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Dynamic status badges with color-coded backgrounds and text (from @/types/support STATUS_COLORS)</li>
+                  <li>Status colors: Open/Closed (gray), In Progress/Resolved (green), Awaiting Customer (yellow), Cancelled (red)</li>
+                  <li>Title: Manrope Bold 16px (#232521) with line-height 1.5, tracking -0.16px</li>
+                  <li>Metadata: Inter Medium 15px (#545552) with line-height 1.2, tracking -0.15px</li>
+                  <li>Status badge: Inter Medium 13px with dynamic bg/text colors, rounded-full, px-2 py-1</li>
+                  <li>Displays ticket ID, assigned agent, last updated time, and creation date</li>
+                  <li>Smart time formatting: "X minutes/hours ago" for recent updates, "X days ago" for older</li>
+                  <li>Empty state with centered text: "All clear!" heading and helpful message</li>
+                  <li>Optional onClick handler for ticket navigation (cursor-pointer, hover effect)</li>
+                  <li>Keyboard accessible: Tab navigation and Enter/Space activation</li>
+                  <li>Border: rgba(111,121,122,0.4) with hover state rgba(111,121,122,0.6)</li>
+                  <li>Background: #FAF9F5 (Surface Container Low)</li>
+                  <li>Max width: 800px for optimal readability</li>
+                  <li>Gap: 8px (gap-2) between elements</li>
+                </ul>
+              </div>
+
+              {/* Status Badge Colors */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Status Badge Colors:</p>
+                <div className="bg-gray-50 rounded p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 rounded-full bg-[#E5E7EB] text-[#374151] text-xs font-medium">Open</div>
+                    <span className="text-xs text-gray-600">bg: #E5E7EB, text: #374151</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 rounded-full bg-[#D1FAE5] text-[#065F46] text-xs font-medium">In Progress</div>
+                    <span className="text-xs text-gray-600">bg: #D1FAE5, text: #065F46</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-xs font-medium">Awaiting Customer</div>
+                    <span className="text-xs text-gray-600">bg: #FEF3C7, text: #92400E</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 rounded-full bg-[#D1FAE5] text-[#065F46] text-xs font-medium">Resolved</div>
+                    <span className="text-xs text-gray-600">bg: #D1FAE5, text: #065F46</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 rounded-full bg-[#E5E7EB] text-[#374151] text-xs font-medium">Closed</div>
+                    <span className="text-xs text-gray-600">bg: #E5E7EB, text: #374151</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="px-2 py-1 rounded-full bg-[#FEE2E2] text-[#991B1B] text-xs font-medium">Cancelled</div>
+                    <span className="text-xs text-gray-600">bg: #FEE2E2, text: #991B1B</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Props */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Props:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <ul className="text-xs text-gray-700 space-y-2 font-mono">
+                    <li><strong>ticket?</strong>: SupportTicket - Ticket data from Firestore (from @/types/support)</li>
+                    <li><strong>variant?</strong>: 'default' | 'empty' - Display mode (default: 'default')</li>
+                    <li><strong>onClick?</strong>: () =&gt; void - Optional click handler for navigation</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* SupportTicket Interface Reference */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">SupportTicket Interface (from @/types/support):</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <code className="text-xs text-gray-700 block whitespace-pre">
+{`interface SupportTicket {
+  ticketId: string;
+  customerId: string;
+  createdByUserId: string;
+  title: string;
+  description: string;
+  status: TicketStatus; // 'Open' | 'In Progress' | 'Awaiting Customer' | 'Resolved' | 'Closed' | 'Cancelled'
+  priority: TicketPriority;
+  category: TicketCategory;
+  channel: TicketChannel;
+  assignedAgentId?: string;
+  assignedAgentName?: string;
+  createdAt: Timestamp;
+  lastUpdatedAt: Timestamp;
+  resolvedAt?: Timestamp;
+  closedAt?: Timestamp;
+  cancelledAt?: Timestamp;
+  // ... other optional fields
+}`}
+                  </code>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import SupportTicketCard from '@/components/support/SupportTicketCard';
+import type { SupportTicket } from '@/types/support';
+import { Timestamp } from 'firebase/firestore';
+
+const ticket: SupportTicket = {
+  ticketId: "#TSG-1046",
+  customerId: "user-123",
+  createdByUserId: "user-123",
+  title: "Cannot update billing address",
+  description: "I'm trying to update my billing address...",
+  status: "Open",
+  priority: "Medium",
+  category: "Bug Report",
+  channel: "Support Hub",
+  assignedAgentName: "Sarah M.",
+  createdAt: Timestamp.fromDate(new Date('2026-01-15T10:00:00')),
+  lastUpdatedAt: Timestamp.fromDate(new Date(Date.now() - 2 * 60 * 60 * 1000)),
+};
+
+// With click handler for navigation
+<SupportTicketCard 
+  ticket={ticket}
+  onClick={() => router.push(\`/dashboard/support/tickets/\${ticket.ticketId}\`)}
+/>
+
+// Empty state
+<SupportTicketCard variant="empty" />`}
+                </code>
+              </div>
+            </div>
+
+            {/* PastSupportTicketsTable */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Past Support Tickets Table</h3>
+              <p className="text-gray-600 mb-6">Displays historical support tickets in a table format with ticket ID, description, status badge, dates, and download action. Features hover states and responsive design.</p>
+              
+              {/* Live Preview */}
+              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600 font-semibold mb-4">Preview:</p>
+                <PastSupportTicketsTable
+                  tickets={mockSupportTickets.slice(3, 5)} // Show resolved and closed tickets
+                  onDownload={(ticket) => alert(`Downloading report for ${ticket.ticketId}`)}
+                />
+              </div>
+
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Table layout with fixed column widths for consistent alignment</li>
+                  <li>Header row: Background #F7F6F1, Inter Semi Bold 15px</li>
+                  <li>Data rows: Background white, hover state #F2F0E7</li>
+                  <li>Ticket ID: Manrope Bold 16px (#232521), fixed width 300px</li>
+                  <li>Description: Inter Medium 15px (#545552), flexible width</li>
+                  <li>Status badge: Dynamic colors from STATUS_COLORS, Inter Medium 13px, rounded-full</li>
+                  <li>Dates: Inter Medium 15px (#545552), flexible width</li>
+                  <li>Download button: Inter Bold 16px (#1B4A41), hover underline, fixed width 80px</li>
+                  <li>Border: rgba(111,121,122,0.4) on all sides</li>
+                  <li>Padding: 18px on all cells</li>
+                  <li>Gap: 16px between columns</li>
+                  <li>Smooth hover transition on rows</li>
+                  <li>Empty state with centered message</li>
+                  <li>Click handler on download button with event.stopPropagation()</li>
+                  <li>Date formatting: "Jan 10, 2026" format</li>
+                </ul>
+              </div>
+
+              {/* Column Structure */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Column Structure:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <ul className="text-xs text-gray-700 space-y-2 font-mono">
+                    <li><strong>Ticket ID</strong>: 300px fixed width - Displays ticket identifier</li>
+                    <li><strong>Description</strong>: flex-1 - Ticket title/summary</li>
+                    <li><strong>Status</strong>: flex-1 - Status badge with dynamic colors</li>
+                    <li><strong>Created</strong>: flex-1 - Creation date</li>
+                    <li><strong>Resolved</strong>: flex-1 - Resolution/closure date</li>
+                    <li><strong>Action</strong>: 80px fixed width - Download button</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Props */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Props:</p>
+                <div className="bg-gray-50 rounded p-4">
+                  <ul className="text-xs text-gray-700 space-y-2 font-mono">
+                    <li><strong>tickets</strong>: SupportTicket[] - Array of past ticket data from Firestore</li>
+                    <li><strong>onDownload?</strong>: (ticket: SupportTicket) =&gt; void - Callback when download is clicked</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Hover States */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Interactive States:</p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 h-10 bg-white border border-[rgba(111,121,122,0.4)] rounded flex items-center justify-center text-xs">
+                      Default
+                    </div>
+                    <span className="text-sm text-gray-600">White background</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 h-10 bg-[#F2F0E7] border border-[rgba(111,121,122,0.4)] rounded flex items-center justify-center text-xs">
+                      Hover
+                    </div>
+                    <span className="text-sm text-gray-600">Light beige background (#F2F0E7)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
+import type { SupportTicket } from '@/types/support';
+
+const pastTickets: SupportTicket[] = [
+  {
+    ticketId: "#TSG-1047",
+    title: "Plugin update causing site slowdown",
+    status: "Resolved",
+    createdAt: Timestamp.fromDate(new Date('2026-01-10')),
+    resolvedAt: Timestamp.fromDate(new Date('2026-01-12')),
+    // ... other fields
+  },
+  // ... more tickets
+];
+
+<PastSupportTicketsTable
+  tickets={pastTickets}
+  onDownload={(ticket) => {
+    console.log('Downloading:', ticket.ticketId);
+    // Handle download logic
+  }}
+/>`}
                 </code>
               </div>
             </div>
