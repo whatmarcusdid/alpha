@@ -70,25 +70,20 @@ export default function SupportPage() {
   // Fetch functions
   const fetchActiveTickets = useCallback(async () => {
     if (!user) {
-      console.log('❌ No user, skipping fetch');
       return;
     }
-    
-    console.log('🔍 Fetching active tickets for user:', user.uid);
     
     setLoadingActive(true);
     try {
       const result = await getActiveTickets(user.uid);
-      console.log('📋 Result:', result);
       
       if (result.success && result.tickets) {
-        console.log('✅ Found', result.tickets.length, 'tickets:', result.tickets);
         setActiveTickets(result.tickets);
       } else {
-        console.error('❌ Failed:', result.error);
+        console.error('Failed to fetch active tickets:', result.error);
       }
     } catch (error) {
-      console.error('💥 Exception:', error);
+      console.error('Error fetching active tickets:', error);
     } finally {
       setLoadingActive(false);
     }
@@ -96,25 +91,20 @@ export default function SupportPage() {
 
   const fetchPastTickets = useCallback(async () => {
     if (!user) {
-      console.log('❌ No user, skipping fetch');
       return;
     }
-    
-    console.log('🔍 Fetching past tickets for user:', user.uid);
     
     setLoadingPast(true);
     try {
       const result = await getPastTickets(user.uid);
-      console.log('📋 Result:', result);
       
       if (result.success && result.tickets) {
-        console.log('✅ Found', result.tickets.length, 'tickets:', result.tickets);
         setPastTickets(result.tickets);
       } else {
-        console.error('❌ Failed:', result.error);
+        console.error('Failed to fetch past tickets:', result.error);
       }
     } catch (error) {
-      console.error('💥 Exception:', error);
+      console.error('Error fetching past tickets:', error);
     } finally {
       setLoadingPast(false);
     }
@@ -334,13 +324,13 @@ export default function SupportPage() {
             <>
               {/* Active Tickets Section */}
               <div className="mb-8 flex flex-col gap-2">
-                <h2 className="text-2xl font-bold text-[#232521]">Active Tickets</h2>
+                <h2 className="text-xl font-semibold text-[#232521]">Active Tickets</h2>
                 <p className="text-sm leading-relaxed tracking-tight text-gray-600">
                   All communication within an active ticket will happen within your email thread. 
                   Search for the subject title of the ticket within your inbox.
                 </p>
                 {/* Active Tickets Cards */}
-                <div className="flex flex-col gap-4 w-full justify-center items-center">
+                <div className="flex flex-col gap-4 w-full justify-start items-start">
                   {loadingActive ? (
                     // Loading skeleton - 3 placeholder cards
                     <>

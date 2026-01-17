@@ -80,8 +80,7 @@ export default function SupportTicketCard({
         gap-2 
         items-start 
         p-4 
-        w-full 
-        max-w-[800px]
+        w-full
         ${onClick ? 'cursor-pointer hover:border-[rgba(111,121,122,0.6)] transition-colors' : ''}
       `}
       onClick={onClick}
