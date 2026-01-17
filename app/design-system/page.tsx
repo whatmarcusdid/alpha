@@ -140,7 +140,7 @@ export default function DesignSystemPage() {
   const mockSupportTickets: SupportTicket[] = [
     {
       ticketId: "#TSG-1046",
-      customerId: "user-123",
+      userId: "user-123",
       createdByUserId: "user-123",
       title: "Cannot update billing address",
       description: "I'm trying to update my billing address but the save button is not working.",
@@ -154,7 +154,7 @@ export default function DesignSystemPage() {
     },
     {
       ticketId: "#TSG-1047",
-      customerId: "user-123",
+      userId: "user-123",
       createdByUserId: "user-123",
       title: "Need help with SEO optimization",
       description: "Can someone help me optimize my site for search engines?",
@@ -168,7 +168,7 @@ export default function DesignSystemPage() {
     },
     {
       ticketId: "#TSG-1048",
-      customerId: "user-123",
+      userId: "user-123",
       createdByUserId: "user-123",
       title: "Request for custom feature",
       description: "Would love to see a booking system integration.",
@@ -182,7 +182,7 @@ export default function DesignSystemPage() {
     },
     {
       ticketId: "#TSG-1049",
-      customerId: "user-123",
+      userId: "user-123",
       createdByUserId: "user-123",
       title: "Site is loading slowly",
       description: "My homepage takes over 10 seconds to load.",
@@ -197,7 +197,7 @@ export default function DesignSystemPage() {
     },
     {
       ticketId: "#TSG-1050",
-      customerId: "user-123",
+      userId: "user-123",
       createdByUserId: "user-123",
       title: "Form submission issue fixed",
       description: "Contact form wasn't sending emails.",
