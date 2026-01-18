@@ -190,9 +190,7 @@ export const createPaymentIntent = onRequest(
     logger.debug("--- CREATE PAYMENT INTENT REQUEST ---");
     logger.debug("Request Body:", request.body);
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-      apiVersion: "2025-12-15.clover",
-    });
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
     try {
       if (request.method !== "POST") {

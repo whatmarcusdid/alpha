@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signUpWithEmail, signInWithGoogle, signInWithApple } from '@/lib/auth';
+import { createUserWithSubscription, linkStripeCustomer } from '@/lib/firestore';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,8 +11,6 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GoogleIcon, AppleIcon } from '@/components/ui/icons';
 import { Loader2 } from 'lucide-react';
-import { doc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 export function SignUpForm() {
   const router = useRouter();
@@ -27,28 +26,54 @@ export function SignUpForm() {
     setLoading(true);
     setError(null);
     try {
-      const user = await signUpWithEmail(email, password, name);
-      await setDoc(doc(collection(db, 'users'), user.uid), {
-        email: user.email,
-        fullName: name,
-        createdAt: serverTimestamp(),
-        subscription: {
-          tier: 'monthly',
-          status: 'inactive'
-        },
-        stats: {
-          websiteTraffic: 0,
-          siteSpeedSeconds: 0,
-          supportHoursRemaining: 10,
-          maintenanceHoursRemaining: 10
-        }
-      });
-      
-      // Get query params and redirect to WordPress credentials
+      // Extract URL params for subscription data
       const searchParams = new URLSearchParams(window.location.search);
       const tier = searchParams.get('tier') || 'essential';
       const amount = searchParams.get('amount') || '0';
       const billingCycle = searchParams.get('billingCycle') || 'annual';
+      const session_id = searchParams.get('session_id') || '';
+
+      // Create user with Firebase Auth
+      const user = await signUpWithEmail(email, password, name);
+      
+      // Create user document with subscription data
+      await createUserWithSubscription(
+        user.uid,
+        user.email || email,
+        name,
+        {
+          tier: tier as 'essential' | 'advanced' | 'premium',
+          billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
+          amount: parseFloat(amount),
+          paymentIntentId: session_id, // Store session_id temporarily
+        }
+      );
+      
+      // Fetch and link Stripe customer/subscription IDs if session_id exists
+      if (session_id) {
+        try {
+          const response = await fetch('/api/stripe/get-session-details', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: session_id }),
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.customerId) {
+            await linkStripeCustomer(
+              user.uid,
+              data.customerId,
+              data.subscriptionId || ''
+            );
+          }
+        } catch (stripeError) {
+          // Log error but don't block user flow
+          console.error('Failed to link Stripe customer:', stripeError);
+        }
+      }
+      
+      // Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);
@@ -61,13 +86,54 @@ export function SignUpForm() {
     setSsoLoading('google');
     setError(null);
     try {
-      await signInWithGoogle();
-      
-      // Get query params and redirect to WordPress credentials
+      // Extract URL params for subscription data
       const searchParams = new URLSearchParams(window.location.search);
       const tier = searchParams.get('tier') || 'essential';
       const amount = searchParams.get('amount') || '0';
       const billingCycle = searchParams.get('billingCycle') || 'annual';
+      const session_id = searchParams.get('session_id') || '';
+
+      // Sign in with Google
+      const user = await signInWithGoogle();
+      
+      // Create user document with subscription data
+      await createUserWithSubscription(
+        user.uid,
+        user.email || '',
+        user.displayName || 'Google User',
+        {
+          tier: tier as 'essential' | 'advanced' | 'premium',
+          billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
+          amount: parseFloat(amount),
+          paymentIntentId: session_id, // Store session_id temporarily
+        }
+      );
+      
+      // Fetch and link Stripe customer/subscription IDs if session_id exists
+      if (session_id) {
+        try {
+          const response = await fetch('/api/stripe/get-session-details', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: session_id }),
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.customerId) {
+            await linkStripeCustomer(
+              user.uid,
+              data.customerId,
+              data.subscriptionId || ''
+            );
+          }
+        } catch (stripeError) {
+          // Log error but don't block user flow
+          console.error('Failed to link Stripe customer:', stripeError);
+        }
+      }
+      
+      // Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);
@@ -80,13 +146,54 @@ export function SignUpForm() {
     setSsoLoading('apple');
     setError(null);
     try {
-      await signInWithApple();
-      
-      // Get query params and redirect to WordPress credentials
+      // Extract URL params for subscription data
       const searchParams = new URLSearchParams(window.location.search);
       const tier = searchParams.get('tier') || 'essential';
       const amount = searchParams.get('amount') || '0';
       const billingCycle = searchParams.get('billingCycle') || 'annual';
+      const session_id = searchParams.get('session_id') || '';
+
+      // Sign in with Apple
+      const user = await signInWithApple();
+      
+      // Create user document with subscription data
+      await createUserWithSubscription(
+        user.uid,
+        user.email || '',
+        user.displayName || 'Apple User',
+        {
+          tier: tier as 'essential' | 'advanced' | 'premium',
+          billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
+          amount: parseFloat(amount),
+          paymentIntentId: session_id, // Store session_id temporarily
+        }
+      );
+      
+      // Fetch and link Stripe customer/subscription IDs if session_id exists
+      if (session_id) {
+        try {
+          const response = await fetch('/api/stripe/get-session-details', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: session_id }),
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.customerId) {
+            await linkStripeCustomer(
+              user.uid,
+              data.customerId,
+              data.subscriptionId || ''
+            );
+          }
+        } catch (stripeError) {
+          // Log error but don't block user flow
+          console.error('Failed to link Stripe customer:', stripeError);
+        }
+      }
+      
+      // Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);

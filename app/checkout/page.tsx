@@ -2,14 +2,16 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Elements } from '@stripe/react-stripe-js';
-import { stripePromise, PRICING, PricingTier, BillingCycle, getPrice, getRenewalDate } from '@/lib/stripe';
-import CheckoutForm from '@/components/checkout/CheckoutForm';
+import { loadStripe } from '@stripe/stripe-js';
+import { PRICING, PricingTier, BillingCycle, getPrice, getRenewalDate } from '@/lib/stripe';
 import { PageCard } from '@/components/layout/PageCard';
 import { Header } from '@/components/layout/Header';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SelectedProductCard } from '@/components/checkout/SelectedProductCard';
 import { TertiaryButton } from '@/components/ui/TertiaryButton';
+
+// Initialize Stripe
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Define types for applied coupon
 interface AppliedCoupon {
@@ -28,8 +30,7 @@ function CheckoutContent() {
   const tier = (searchParams?.get('tier') as PricingTier) || 'essential';
   
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('annual');
-  const [clientSecret, setClientSecret] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [renewalDate, setRenewalDate] = useState<string>('');
   
   // Promo code states
@@ -86,50 +87,54 @@ function CheckoutContent() {
     }
   };
 
-  useEffect(() => {
-    const createPaymentIntent = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: total,
-            tier,
-            billingCycle,
-            couponCode: appliedCoupon?.id || null,
-          }),
+  // Handle checkout - redirect to Stripe Checkout
+  const handleCheckout = async () => {
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tier,
+          billingCycle,
+          couponCode: appliedCoupon?.id || null,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('API returned error status:', response.status);
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.sessionId) {
+        // Redirect to Stripe Checkout
+        const stripe = await stripePromise;
+        if (!stripe) {
+          throw new Error('Stripe failed to load');
+        }
+
+        const { error } = await (stripe as any).redirectToCheckout({
+          sessionId: data.sessionId,
         });
 
-        // Check if response is ok before trying to parse JSON
-        if (!response.ok) {
-          console.error('API returned error status:', response.status);
-          throw new Error(`API error: ${response.status}`);
+        if (error) {
+          console.error('Stripe redirect error:', error);
+          alert(error.message);
         }
-
-        // Check if response has content before parsing
-        const text = await response.text();
-        if (!text) {
-          console.error('API returned empty response');
-          throw new Error('Empty response from API');
-        }
-
-        const data = JSON.parse(text);
-        
-        if (data.success && data.clientSecret) {
-          setClientSecret(data.clientSecret);
-        } else {
-          console.error('Failed to create payment intent:', data);
-        }
-      } catch (error) {
-        console.error('Error creating payment intent:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        console.error('Failed to create checkout session:', data);
+        alert('Failed to start checkout. Please try again.');
       }
-    };
-
-    createPaymentIntent();
-  }, [total, tier, billingCycle, appliedCoupon]);
+    } catch (error) {
+      console.error('Error starting checkout:', error);
+      alert('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F7F6F1]">
@@ -144,42 +149,22 @@ function CheckoutContent() {
 
               <SelectedProductCard planName={planData.name} />
 
-              {loading ? (
-                <div className="rounded-lg border border-gray-200 p-8 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#9be382] mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading payment form...</p>
+              <div className="bg-white rounded-lg border border-gray-200 p-8 mt-6">
+                <h2 className="text-xl font-bold text-[#232521] mb-4">Payment Information</h2>
+                <p className="text-gray-600 mb-6">
+                  You'll be redirected to Stripe's secure checkout to complete your subscription purchase.
+                </p>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-900 mb-2">What happens next:</h3>
+                  <ul className="space-y-1 text-sm text-blue-800">
+                    <li>• You'll be redirected to Stripe's secure payment page</li>
+                    <li>• Enter your payment details safely with Stripe</li>
+                    <li>• Your subscription will activate immediately upon payment</li>
+                    <li>• You'll return here to create your account</li>
+                  </ul>
                 </div>
-              ) : clientSecret ? (
-                <Elements
-                  stripe={stripePromise}
-                  options={{
-                    clientSecret,
-                    appearance: {
-                      theme: 'stripe',
-                      variables: {
-                        colorPrimary: '#9be382',
-                        colorBackground: '#ffffff',
-                        colorText: '#232521',
-                        colorDanger: '#dc2626',
-                        fontFamily: 'system-ui, sans-serif',
-                        spacingUnit: '4px',
-                        borderRadius: '8px',
-                      },
-                    },
-                  }}
-                >
-                  <CheckoutForm
-                    amount={total}
-                    tier={tier}
-                    billingCycle={billingCycle}
-                    couponCode={appliedCoupon?.id || null}
-                  />
-                </Elements>
-              ) : (
-                <div className="rounded-lg border border-gray-200 p-8 text-center">
-                  <p className="text-red-600">Failed to load payment form. Please refresh the page.</p>
-                </div>
-              )}
+              </div>
             </div>
 
             <div className="lg:col-span-1">
@@ -211,7 +196,7 @@ function CheckoutContent() {
                       <p className="text-sm font-medium text-[#232521]">
                         Genie Maintenance - {planData.name} Plan (Plan renews on {renewalDate})
                       </p>
-                      <p className="text-sm text-gray-600">${subtotal.toFixed(2)}</p>
+                      <p className="text-sm text-gray-600">${subtotal.toFixed(2)}/year</p>
                     </div>
                   </div>
 
@@ -262,11 +247,6 @@ function CheckoutContent() {
                     </div>
                   )}
                   
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Taxes</span>
-                    <span className="font-medium text-[#232521]">${taxes.toFixed(2)}</span>
-                  </div>
-                  
                   <div className="pt-3">
                     <label className="block text-sm font-medium text-[#232521] mb-2">
                       Promo Code
@@ -312,17 +292,16 @@ function CheckoutContent() {
                     )}
                   </div>
 
-                  <div className="flex justify-between text-lg font-bold pt-3 border-t border-gray-200">
-                    <span className="text-[#232521]">Total Due Today</span>
-                    <span className="text-[#232521]">${total.toFixed(2)}</span>
+                  <div className="text-sm text-gray-600 pt-3">
+                    <p className="italic">Taxes calculated at checkout</p>
                   </div>
 
                   <PrimaryButton
-                    onClick={() => document.getElementById('checkout-submit-btn')?.click()}
+                    onClick={handleCheckout}
                     disabled={loading}
                     className="w-full mt-6"
                   >
-                    {loading ? 'Processing...' : 'Place Order'}
+                    {loading ? 'Processing...' : 'Continue to Payment'}
                   </PrimaryButton>
                 </div>
               </div>

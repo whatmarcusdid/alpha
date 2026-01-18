@@ -14,10 +14,8 @@ if (!admin.apps.length) {
 }
 const adminDb = admin.firestore();
 
-// Initialize Stripe - use 'as any' to bypass strict API version check
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20' as any,
-});
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const TIER_HIERARCHY = {
   essential: 1,

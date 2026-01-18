@@ -13,30 +13,119 @@ function ConfirmationContent() {
   const tier = (searchParams?.get('tier') as PricingTier) || 'essential';
   const amount = searchParams?.get('amount') || '0';
   const billingCycle = (searchParams?.get('billingCycle') as BillingCycle) || 'annual';
-  const paymentIntent = searchParams?.get('payment_intent');
+  const sessionId = searchParams?.get('session_id');
   
   const [isVerifying, setIsVerifying] = useState(true);
   const [orderDetails, setOrderDetails] = useState({
     orderId: '',
     date: '',
+    amount: '0',
+    customerEmail: '',
   });
 
   const planData = PRICING[tier];
+  
+  // Calculate hours based on tier
+  const tierHours = {
+    essential: { support: 4, maintenance: 8 },
+    advanced: { support: 6, maintenance: 12 },
+    premium: { support: 8, maintenance: 16 },
+    'safety-net': { support: 2, maintenance: 0 },
+  };
+  
+  const hours = tierHours[tier] || tierHours.essential;
 
   useEffect(() => {
-    // Simulate verification delay
-    setTimeout(() => {
-      setOrderDetails({
-        orderId: `#BC-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-        date: new Date().toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
-        }),
-      });
-      setIsVerifying(false);
-    }, 1500);
-  }, []);
+    const fetchSessionDetails = async () => {
+      console.log('fetchSessionDetails called');
+      console.log('sessionId:', sessionId);
+      console.log('amount from URL:', amount);
+      
+      if (!sessionId) {
+        console.log('No sessionId, using fallback');
+        // No session ID, use fallback values
+        setOrderDetails({
+          orderId: `#TSG-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+          date: new Date().toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
+          }),
+          amount: amount,
+          customerEmail: '',
+        });
+        setIsVerifying(false);
+        return;
+      }
+
+      try {
+        console.log('Fetching session details from API...');
+        const response = await fetch('/api/stripe/get-session-details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+        
+        console.log('API response status:', response.status);
+        console.log('API response ok:', response.ok);
+        
+        const data = await response.json();
+        console.log('API response data:', data);
+        
+        if (data.success) {
+          console.log('Setting order details from API');
+          console.log('amountTotal from API:', data.amountTotal);
+          console.log('customerEmail from API:', data.customerEmail);
+          
+          setOrderDetails({
+            orderId: `#TSG-${sessionId.slice(-8).toUpperCase()}`,
+            date: new Date().toLocaleDateString('en-US', { 
+              month: 'long', 
+              day: 'numeric', 
+              year: 'numeric' 
+            }),
+            amount: data.amountTotal ? (data.amountTotal / 100).toFixed(2) : amount,
+            customerEmail: data.customerEmail || '',
+          });
+          console.log('Order details set successfully');
+        } else {
+          console.log('API returned success: false', data.error);
+          // API failed, use fallback values
+          setOrderDetails({
+            orderId: `#TSG-${sessionId.slice(-8).toUpperCase()}`,
+            date: new Date().toLocaleDateString('en-US', { 
+              month: 'long', 
+              day: 'numeric', 
+              year: 'numeric' 
+            }),
+            amount: amount,
+            customerEmail: '',
+          });
+          console.log('Using fallback values due to API error');
+        }
+      } catch (error) {
+        console.error('Error fetching session details:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        // Use fallback values on error
+        setOrderDetails({
+          orderId: `#TSG-${sessionId ? sessionId.slice(-8).toUpperCase() : Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+          date: new Date().toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
+          }),
+          amount: amount,
+          customerEmail: '',
+        });
+        console.log('Using fallback values due to catch error');
+      } finally {
+        console.log('fetchSessionDetails completed, setting isVerifying to false');
+        setIsVerifying(false);
+      }
+    };
+
+    fetchSessionDetails();
+  }, [sessionId, amount]);
 
   if (isVerifying) {
     return (
@@ -63,9 +152,11 @@ function ConfirmationContent() {
             Welcome to TradeSiteGenie. We'll handle the tech stuff while you focus on running your business.
           </p>
 
-          <p className="text-sm text-gray-600 mb-8 text-left">
-            A receipt and your onboarding link has been to: marcus@allstarplumbingdmv.com
-          </p>
+          {orderDetails.customerEmail && (
+            <p className="text-sm text-gray-600 mb-8 text-left">
+              A receipt and your onboarding link has been sent to: {orderDetails.customerEmail}
+            </p>
+          )}
 
           {/* Order Summary */}
           <div className="mb-8">
@@ -74,16 +165,15 @@ function ConfirmationContent() {
             <ul className="space-y-2 text-sm mb-4">
               <li>Plan: GenieMaintenance - {planData.name} Plan</li>
               <li>Duration: 1 Year</li>
-              <li>Support Hours: 4 hours/year</li>
-              <li>Maintenance Hours: 8 hours/year</li>
+              <li>Support Hours: {hours.support} hours/year</li>
+              <li>Maintenance Hours: {hours.maintenance} hours/year</li>
               <li className="mt-4 font-semibold">Features Included:</li>
-              <li className="ml-4">Ongoing Security Monitoring & Backups</li>
-              <li className="ml-4">Monthly Traffic Analytics Reports</li>
-              <li className="ml-4">Monthly Performance Checkups</li>
-              <li className="ml-4">Monthly Plugin & Theme Updates</li>
+              {planData.features.map((feature, index) => (
+                <li key={index} className="ml-4">{feature}</li>
+              ))}
             </ul>
             
-            <p className="text-sm font-semibold mb-1">Total Paid Today: ${parseFloat(amount).toFixed(2)}</p>
+            <p className="text-sm font-semibold mb-1">Total Paid Today: ${parseFloat(orderDetails.amount).toFixed(2)}</p>
             <p className="text-sm">Order ID: {orderDetails.orderId}</p>
             <p className="text-sm">Date: {orderDetails.date}</p>
           </div>
@@ -109,7 +199,7 @@ function ConfirmationContent() {
           </div>
 
           <PrimaryButton
-            onClick={() => router.push(`/signup?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`)}
+            onClick={() => router.push(`/signup?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}&session_id=${sessionId}`)}
             className="w-full"
           >
             Create Your Account

@@ -1,30 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+// Map tier names to Stripe Price IDs
+const PRICE_IDS = {
+  essential: 'price_1So9MuPTDVjQnuCnpaIYQQtA',
+  advanced: 'price_1So9NMPTDVjQnuCnLeL0VrEW',
+  premium: 'price_1So9NkPTDVjQnuCn8f6PywGQ',
+  'safety-net': 'price_1SlRYNPTDVjQnuCnm9lCoiQT',
+} as const;
+
 export async function POST(request: NextRequest) {
   // Initialize Stripe inside the function
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-12-15.clover',
-  });
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
   try {
-    const { amount, tier, billingCycle, couponCode } = await request.json();
+    const { tier, billingCycle, couponCode } = await request.json();
 
     // Validate required fields
-    if (!amount || !tier || !billingCycle) {
+    if (!tier || !billingCycle) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields: amount, tier, billingCycle' },
+        { success: false, error: 'Missing required fields: tier, billingCycle' },
         { status: 400 }
       );
     }
 
-    // Build payment intent parameters
-    const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
-      amount: Math.round(amount * 100), // Convert to cents
-      currency: 'usd',
-      automatic_payment_methods: {
+    // Validate tier
+    if (!PRICE_IDS[tier as keyof typeof PRICE_IDS]) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid tier provided' },
+        { status: 400 }
+      );
+    }
+
+    const priceId = PRICE_IDS[tier as keyof typeof PRICE_IDS];
+
+    // Build Checkout Session parameters
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: 'subscription',
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/confirmation?session_id={CHECKOUT_SESSION_ID}&tier=${tier}&billingCycle=${billingCycle}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout?tier=${tier}`,
+      automatic_tax: {
         enabled: true,
       },
+      billing_address_collection: 'required',
       metadata: {
         tier,
         billingCycle,
@@ -33,13 +57,10 @@ export async function POST(request: NextRequest) {
 
     // Add coupon if provided
     if (couponCode) {
-      // Validate the coupon exists before applying
       try {
         const coupon = await stripe.coupons.retrieve(couponCode);
         if (coupon && coupon.valid !== false) {
-          if (paymentIntentParams.metadata) {
-            paymentIntentParams.metadata.couponCode = couponCode;
-          }
+          sessionParams.discounts = [{ coupon: couponCode }];
         }
       } catch (error) {
         console.error('Error validating coupon:', error);
@@ -47,20 +68,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+    // Create Checkout Session
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return NextResponse.json({
       success: true,
-      clientSecret: paymentIntent.client_secret,
+      sessionId: session.id,
     });
   } catch (error) {
-    console.error('Error creating payment intent:', error);
+    console.error('Error creating checkout session:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create payment intent' },
+      { success: false, error: 'Failed to create checkout session' },
       { status: 500 }
     );
   }
 }
-// Redeploy after re-adding STRIPE_SECRET_KEY
-// Redeploy after re-adding STRIPE_SECRET_KEY

@@ -4,23 +4,24 @@ import { app } from './firebase';
 export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-export async function signInWithGoogle(): Promise<{ success: boolean; error?: string }> {
+export async function signInWithGoogle(): Promise<User> {
   try {
-    await signInWithPopup(auth, googleProvider);
-    return { success: true };
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
   } catch (error: any) {
     console.error('Google sign-in error:', error);
-    return { success: false, error: error.message || 'Failed to sign in with Google' };
+    throw new Error(error.message || 'Failed to sign in with Google');
   }
 }
 
-export async function signInWithApple() {
+export async function signInWithApple(): Promise<User> {
   const provider = new OAuthProvider('apple.com');
   provider.addScope('email');
   provider.addScope('name');
   
   try {
-    await signInWithRedirect(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
   } catch (error: any) {
     console.error('Apple sign-in error:', error);
     throw new Error(error.message || 'Failed to sign in with Apple');

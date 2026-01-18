@@ -1,5 +1,5 @@
 'use client';
-import { doc, getDoc, collection, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 // User Metrics Function
@@ -132,6 +132,92 @@ export async function updateWordPressCredentials(
     });
   } catch (error) {
     console.error('Error updating WordPress credentials:', error);
+    throw error;
+  }
+}
+
+// Create User with Subscription Function
+export async function createUserWithSubscription(
+  userId: string,
+  email: string,
+  fullName: string,
+  subscriptionData: {
+    tier: 'essential' | 'advanced' | 'premium';
+    billingCycle: 'monthly' | 'yearly';
+    amount: number;
+    paymentIntentId: string;
+  }
+) {
+  if (!db) {
+    console.error('Firestore is not initialized. This function must be called on the client side.');
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    // Calculate hours based on tier
+    const tierHours = {
+      essential: { support: 4, maintenance: 8 },
+      advanced: { support: 6, maintenance: 12 },
+      premium: { support: 8, maintenance: 16 },
+    };
+
+    const hours = tierHours[subscriptionData.tier];
+
+    const userData = {
+      email,
+      fullName,
+      createdAt: serverTimestamp(),
+      subscription: {
+        tier: subscriptionData.tier,
+        billingCycle: subscriptionData.billingCycle,
+        status: 'active' as const,
+        amount: subscriptionData.amount,
+        startDate: serverTimestamp(),
+        paymentIntentId: subscriptionData.paymentIntentId,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+      },
+      metrics: {
+        websiteTraffic: 0,
+        averageSiteSpeed: 0,
+        supportHoursRemaining: hours.support,
+        maintenanceHoursRemaining: hours.maintenance,
+        lastUpdated: serverTimestamp(),
+      },
+      wordpress: null,
+      company: null,
+    };
+
+    const userRef = doc(collection(db, 'users'), userId);
+    await setDoc(userRef, userData);
+
+    return userData;
+  } catch (error) {
+    console.error('Error creating user with subscription:', error);
+    throw error;
+  }
+}
+
+// Link Stripe Customer to User Function
+export async function linkStripeCustomer(
+  userId: string,
+  stripeCustomerId: string,
+  stripeSubscriptionId: string
+) {
+  if (!db) {
+    console.error('Firestore is not initialized. This function must be called on the client side.');
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const userRef = doc(collection(db, 'users'), userId);
+    
+    await updateDoc(userRef, {
+      'subscription.stripeCustomerId': stripeCustomerId,
+      'subscription.stripeSubscriptionId': stripeSubscriptionId,
+    });
+  } catch (error) {
+    console.error('Error linking Stripe customer:', error);
     throw error;
   }
 }
