@@ -167,10 +167,6 @@ function ConfirmationContent() {
               <li>Duration: 1 Year</li>
               <li>Support Hours: {hours.support} hours/year</li>
               <li>Maintenance Hours: {hours.maintenance} hours/year</li>
-              <li className="mt-4 font-semibold">Features Included:</li>
-              {planData.features.map((feature, index) => (
-                <li key={index} className="ml-4">{feature}</li>
-              ))}
             </ul>
             
             <p className="text-sm font-semibold mb-1">Total Paid Today: ${parseFloat(orderDetails.amount).toFixed(2)}</p>
@@ -202,7 +198,7 @@ function ConfirmationContent() {
             onClick={() => router.push(`/signup?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}&session_id=${sessionId}`)}
             className="w-full"
           >
-            Create Your Account
+            Continue
           </PrimaryButton>
         </div>
       </div>
