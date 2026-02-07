@@ -118,7 +118,7 @@ export function ForgotPasswordForm() {
           <p className="text-base text-[#545552]">
             {emailSent
               ? 'If an account exists with this email, you will receive password reset instructions shortly.'
-              : 'Enter your email address and we'll send you instructions to reset your password.'}
+              : 'Enter your email address and we will send you instructions to reset your password.'}
           </p>
         </div>
 

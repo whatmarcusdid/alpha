@@ -1,10 +1,34 @@
-import { reauthenticateWithCredential, EmailAuthProvider, updatePassword } from 'firebase/auth';
+/**
+ * Password Management Functions
+ * 
+ * CRITICAL: This file follows the browser-only initialization pattern.
+ * - All Firebase Auth functions wrapped in typeof window !== 'undefined' checks
+ * - Uses require() pattern instead of ES6 imports
+ * - Firebase Auth only runs in the browser, never on the server
+ */
+
 import { auth } from '@/lib/firebase';
+
+// Load Firebase Auth functions only in browser
+let authFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const firebaseAuth = require('firebase/auth');
+  authFunctions = {
+    reauthenticateWithCredential: firebaseAuth.reauthenticateWithCredential,
+    EmailAuthProvider: firebaseAuth.EmailAuthProvider,
+    updatePassword: firebaseAuth.updatePassword,
+  };
+}
 
 export async function changePassword(
   currentPassword: string,
   newPassword: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined') {
+    return { success: false, error: 'Auth functions only work in browser' };
+  }
+
   try {
     // Check if auth is initialized (browser-only pattern)
     if (!auth) {
@@ -17,11 +41,11 @@ export async function changePassword(
       return { success: false, error: 'No user is currently logged in' };
     }
 
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    const credential = authFunctions.EmailAuthProvider.credential(user.email, currentPassword);
 
-    await reauthenticateWithCredential(user, credential);
+    await authFunctions.reauthenticateWithCredential(user, credential);
 
-    await updatePassword(user, newPassword);
+    await authFunctions.updatePassword(user, newPassword);
 
     return { success: true };
   } catch (error: any) {
