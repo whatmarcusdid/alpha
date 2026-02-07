@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { validateRequestBody, createSetupIntentSchema } from '@/lib/validation';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -28,6 +29,12 @@ export async function POST(request: NextRequest) {
     
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
+
+    // Validate request body (empty schema catches unexpected params)
+    const validation = await validateRequestBody(request, createSetupIntentSchema);
+    if (!validation.success) {
+      return validation.error;
+    }
 
     // Get user's subscription data from Firestore
     if (!adminDb) {

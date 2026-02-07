@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { validateRequestBody, cancelSubscriptionSchema } from '@/lib/validation';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -29,8 +30,13 @@ export async function POST(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Get cancellation reason from request body
-    const { reason } = await request.json();
+    // Validate request body
+    const validation = await validateRequestBody(request, cancelSubscriptionSchema);
+    if (!validation.success) {
+      return validation.error;
+    }
+
+    const { reason } = validation.data;
 
     // Get user's subscription data from Firestore
     if (!adminDb) {

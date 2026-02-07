@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import * as admin from 'firebase-admin';
 import { PRICING } from '@/lib/stripe';
+import { validateRequestBody, createSubscriptionSchema } from '@/lib/validation';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -31,25 +32,16 @@ export async function POST(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const userId = decodedToken.uid;
 
-    const { email, tier, billingCycle, couponCode, paymentMethodId } = await request.json();
-
-    // Validate required fields
-    if (!email || !tier || !billingCycle) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = await validateRequestBody(request, createSubscriptionSchema);
+    if (!validation.success) {
+      return validation.error;
     }
+
+    const { email, tier, billingCycle, couponCode, paymentMethodId } = validation.data;
 
     // Get the Stripe price ID for the tier
     const pricingData = PRICING[tier as keyof typeof PRICING];
-    if (!pricingData) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tier' },
-        { status: 400 }
-      );
-    }
-
     const priceId = pricingData.stripePriceId;
 
     // Check if customer already exists

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import * as admin from 'firebase-admin';
 import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
 import { checkoutLimiter } from '@/lib/middleware/rateLimiting';
+import { validateRequestBody, upgradeSubscriptionSchema } from '@/lib/validation';
 
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
@@ -36,17 +37,13 @@ const YEARLY_PRICE_IDS: Record<Tier, string> = {
 export const POST = withAuthAndRateLimit(
   async (req, { userId }) => {
     try {
-      // Get newTier from request body (userId now comes from verified auth token)
-      const { newTier } = await req.json();
-
-      // 1. Validate input
-      if (!newTier) {
-        return NextResponse.json({ success: false, error: 'Missing newTier' }, { status: 400 });
+      // Validate request body
+      const validation = await validateRequestBody(req, upgradeSubscriptionSchema);
+      if (!validation.success) {
+        return validation.error;
       }
 
-    if (!Object.keys(TIER_HIERARCHY).includes(newTier)) {
-      return NextResponse.json({ success: false, error: 'Invalid tier specified.' }, { status: 400 });
-    }
+      const { newTier } = validation.data;
 
     // 2. Fetch user's current subscription from Firestore
     // userId is now from verified authentication token, not request body

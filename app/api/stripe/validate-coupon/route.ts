@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { withRateLimit } from '@/lib/middleware/apiHandler';
 import { couponLimiter } from '@/lib/middleware/rateLimiting';
+import { validateRequestBody, validateCouponSchema } from '@/lib/validation';
 
 export const POST = withRateLimit(
   async (request) => {
@@ -9,22 +10,17 @@ export const POST = withRateLimit(
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
     try {
-      const { couponCode } = await request.json();
-
-      // Validate required fields
-      if (!couponCode || typeof couponCode !== 'string') {
-        return NextResponse.json(
-          { 
-            valid: false, 
-            error: 'Coupon code is required' 
-          },
-          { status: 400 }
-        );
+      // Validate request body
+      const validation = await validateRequestBody(request, validateCouponSchema);
+      if (!validation.success) {
+        return validation.error;
       }
 
+      const { couponCode } = validation.data;
+
       try {
-        // Retrieve the coupon from Stripe
-        const coupon = await stripe.coupons.retrieve(couponCode.trim().toUpperCase());
+        // Retrieve the coupon from Stripe (couponCode is already trimmed and uppercased by schema)
+        const coupon = await stripe.coupons.retrieve(couponCode);
 
         // Check if coupon is valid (not deleted and still valid)
         if (!coupon || coupon.valid === false) {

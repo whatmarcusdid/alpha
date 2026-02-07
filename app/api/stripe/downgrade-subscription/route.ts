@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { validateRequestBody, downgradeSubscriptionSchema } from '@/lib/validation';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -29,15 +30,13 @@ export async function POST(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Get request body
-    const { newTier, currentTier } = await request.json();
-
-    if (!newTier || !currentTier) {
-      return NextResponse.json(
-        { error: 'Missing required fields: newTier and currentTier' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = await validateRequestBody(request, downgradeSubscriptionSchema);
+    if (!validation.success) {
+      return validation.error;
     }
+
+    const { newTier, currentTier } = validation.data;
 
     // Get user's subscription data from Firestore
     if (!adminDb) {
@@ -74,13 +73,6 @@ export async function POST(request: NextRequest) {
     };
 
     const newPriceId = tierPriceIds[newTier];
-
-    if (!newPriceId) {
-      return NextResponse.json(
-        { error: `Invalid tier: ${newTier}` },
-        { status: 400 }
-      );
-    }
 
     // Get the current subscription from Stripe
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);

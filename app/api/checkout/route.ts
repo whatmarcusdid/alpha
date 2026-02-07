@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { validateRequestBody, checkoutSchema } from '@/lib/validation';
 
 // Map tier names to Stripe Price IDs
 const PRICE_IDS = {
@@ -14,23 +15,13 @@ export async function POST(request: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
   try {
-    const { tier, billingCycle, couponCode } = await request.json();
-
-    // Validate required fields
-    if (!tier || !billingCycle) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields: tier, billingCycle' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = await validateRequestBody(request, checkoutSchema);
+    if (!validation.success) {
+      return validation.error;
     }
 
-    // Validate tier
-    if (!PRICE_IDS[tier as keyof typeof PRICE_IDS]) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tier provided' },
-        { status: 400 }
-      );
-    }
+    const { tier, billingCycle, couponCode } = validation.data;
 
     const priceId = PRICE_IDS[tier as keyof typeof PRICE_IDS];
 
