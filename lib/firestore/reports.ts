@@ -1,6 +1,30 @@
 'use client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const { 
+    collection, 
+    query, 
+    where, 
+    orderBy, 
+    limit, 
+    getDocs, 
+    Timestamp 
+  } = require('firebase/firestore');
+  
+  firestoreFunctions = { 
+    collection, 
+    query, 
+    where, 
+    orderBy, 
+    limit, 
+    getDocs, 
+    Timestamp 
+  };
+}
 
 export interface Report {
   id: string;
@@ -24,19 +48,19 @@ export async function getReportsForUser(userId: string): Promise<Report[]> {
   }
 
   try {
-    const reportsRef = collection(db, 'users', userId, 'reports');
-    const q = query(reportsRef, orderBy('createdDate', 'desc'));
+    const reportsRef = firestoreFunctions.collection(db, 'users', userId, 'reports');
+    const q = firestoreFunctions.query(reportsRef, firestoreFunctions.orderBy('createdDate', 'desc'));
     
-    const snapshot = await getDocs(q);
+    const snapshot = await firestoreFunctions.getDocs(q);
     
-    return snapshot.docs.map((docSnap) => {
+    return snapshot.docs.map((docSnap: any) => {
       const data = docSnap.data();
       return {
         id: docSnap.id,
         title: data.title || '',
         subtitle: data.subtitle || '',
-        createdDate: (data.createdDate as Timestamp).toDate().toISOString(),
-        updatedDate: (data.updatedDate as Timestamp).toDate().toISOString(),
+        createdDate: (data.createdDate as any).toDate().toISOString(),
+        updatedDate: (data.updatedDate as any).toDate().toISOString(),
         fileUrl: data.fileUrl || '',
         type: data.type || 'performance',
       } as Report;
@@ -61,30 +85,30 @@ export async function getRecentReportsForUser(userId: string): Promise<Report[]>
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
+    const thirtyDaysAgoTimestamp = firestoreFunctions.Timestamp.fromDate(thirtyDaysAgo);
 
-    const reportsRef = collection(db, 'users', userId, 'reports');
-    const q = query(
+    const reportsRef = firestoreFunctions.collection(db, 'users', userId, 'reports');
+    const q = firestoreFunctions.query(
       reportsRef,
-      where('createdDate', '>=', thirtyDaysAgoTimestamp),
-      orderBy('createdDate', 'desc'),
-      limit(3)
+      firestoreFunctions.where('createdDate', '>=', thirtyDaysAgoTimestamp),
+      firestoreFunctions.orderBy('createdDate', 'desc'),
+      firestoreFunctions.limit(3)
     );
 
-    const snapshot = await getDocs(q);
+    const snapshot = await firestoreFunctions.getDocs(q);
 
     if (snapshot.empty) {
       return [];
     }
 
-    return snapshot.docs.map((docSnap) => {
+    return snapshot.docs.map((docSnap: any) => {
       const data = docSnap.data();
       return {
         id: docSnap.id,
         title: data.title || '',
         subtitle: data.subtitle || '',
-        createdDate: (data.createdDate as Timestamp).toDate().toISOString(),
-        updatedDate: (data.updatedDate as Timestamp).toDate().toISOString(),
+        createdDate: (data.createdDate as any).toDate().toISOString(),
+        updatedDate: (data.updatedDate as any).toDate().toISOString(),
         fileUrl: data.fileUrl || '',
         type: data.type || 'performance',
       } as Report;

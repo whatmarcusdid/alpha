@@ -1,16 +1,34 @@
 'use client';
 import { db } from '@/lib/firebase';
-import {
-  collection,
-  doc,
-  addDoc,
-  getDoc,
-  getDocs,
-  updateDoc,
-  query,
-  where,
-  Timestamp,
-} from 'firebase/firestore';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const {
+    collection,
+    doc,
+    addDoc,
+    getDoc,
+    getDocs,
+    updateDoc,
+    query,
+    where,
+    Timestamp,
+  } = require('firebase/firestore');
+  firestoreFunctions = {
+    collection,
+    doc,
+    addDoc,
+    getDoc,
+    getDocs,
+    updateDoc,
+    query,
+    where,
+    Timestamp,
+  };
+}
+
 import { SupportTicket } from '@/types/supportTicket';
 
 const supportTicketsCollection = (userId: string) => {
@@ -23,7 +41,7 @@ const supportTicketsCollection = (userId: string) => {
     if (!db) {
         throw new Error('Firestore is not initialized');
     }
-    return collection(db, 'users', userId, 'supportTickets');
+    return firestoreFunctions.collection(db, 'users', userId, 'supportTickets');
 };
 
 export async function createSupportTicket(
@@ -35,17 +53,17 @@ export async function createSupportTicket(
   }
 
   try {
-    const newTicketRef = doc(supportTicketsCollection(userId));
+    const newTicketRef = firestoreFunctions.doc(supportTicketsCollection(userId));
     const newTicket: Partial<SupportTicket> = {
       ...ticketData,
       id: newTicketRef.id,
       userId,
       status: 'open',
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      createdAt: firestoreFunctions.Timestamp.now(),
+      updatedAt: firestoreFunctions.Timestamp.now(),
     };
 
-    await addDoc(supportTicketsCollection(userId), newTicket);
+    await firestoreFunctions.addDoc(supportTicketsCollection(userId), newTicket);
     return { success: true, ticketId: newTicketRef.id };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -61,8 +79,8 @@ export async function getSupportTicket(
   }
 
   try {
-    const ticketRef = doc(supportTicketsCollection(userId), ticketId);
-    const ticketSnap = await getDoc(ticketRef);
+    const ticketRef = firestoreFunctions.doc(supportTicketsCollection(userId), ticketId);
+    const ticketSnap = await firestoreFunctions.getDoc(ticketRef);
 
     if (ticketSnap.exists()) {
       return { ticket: ticketSnap.data() as SupportTicket };
@@ -83,14 +101,14 @@ export async function getUserSupportTickets(
   }
 
   try {
-    let q = query(supportTicketsCollection(userId));
+    let q = firestoreFunctions.query(supportTicketsCollection(userId));
 
     if (filters?.status) {
-      q = query(q, where('status', '==', filters.status));
+      q = firestoreFunctions.query(q, firestoreFunctions.where('status', '==', filters.status));
     }
 
-    const querySnapshot = await getDocs(q);
-    const tickets = querySnapshot.docs.map(doc => doc.data() as SupportTicket);
+    const querySnapshot = await firestoreFunctions.getDocs(q);
+    const tickets = querySnapshot.docs.map((doc: any) => doc.data() as SupportTicket);
     return { tickets };
   } catch (error: any) {
     return { error: error.message };
@@ -107,10 +125,10 @@ export async function updateSupportTicket(
   }
 
   try {
-    const ticketRef = doc(supportTicketsCollection(userId), ticketId);
-    await updateDoc(ticketRef, {
+    const ticketRef = firestoreFunctions.doc(supportTicketsCollection(userId), ticketId);
+    await firestoreFunctions.updateDoc(ticketRef, {
       ...updates,
-      updatedAt: Timestamp.now(),
+      updatedAt: firestoreFunctions.Timestamp.now(),
     });
     return { success: true };
   } catch (error: any) {
@@ -124,7 +142,7 @@ export async function resolveSupportTicket(
 ): Promise<{ success: boolean; error?: string }> {
   return updateSupportTicket(userId, ticketId, {
     status: 'resolved',
-    resolvedAt: Timestamp.now(),
+    resolvedAt: firestoreFunctions.Timestamp.now(),
   });
 }
 

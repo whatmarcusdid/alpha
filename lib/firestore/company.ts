@@ -1,6 +1,13 @@
 'use client';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection } from 'firebase/firestore';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const { doc, getDoc, updateDoc, collection } = require('firebase/firestore');
+  firestoreFunctions = { doc, getDoc, updateDoc, collection };
+}
 
 export interface CompanyData {
   legalName: string;
@@ -23,8 +30,8 @@ export async function getCompanyData(userId: string): Promise<CompanyData | null
   }
 
   try {
-    const userRef = doc(collection(db, 'users'), userId);
-    const userDoc = await getDoc(userRef);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
+    const userDoc = await firestoreFunctions.getDoc(userRef);
 
     if (userDoc.exists()) {
       const data = userDoc.data();
@@ -62,7 +69,7 @@ export async function updateCompanyData(
   }
 
   try {
-    const userRef = doc(collection(db, 'users'), userId);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
     
     const updatePayload: { [key: string]: any } = {};
     for (const [key, value] of Object.entries(companyData)) {
@@ -70,7 +77,7 @@ export async function updateCompanyData(
     }
     updatePayload['company.lastUpdated'] = new Date().toISOString();
 
-    await updateDoc(userRef, updatePayload);
+    await firestoreFunctions.updateDoc(userRef, updatePayload);
     
     return true;
   } catch (error: any) {

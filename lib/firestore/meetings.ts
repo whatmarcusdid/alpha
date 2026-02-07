@@ -1,12 +1,26 @@
 'use client';
 import { db } from '@/lib/firebase';
-import {
-  doc,
-  updateDoc,
-  getDoc,
-  arrayUnion,
-  arrayRemove,
-} from 'firebase/firestore';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const {
+    doc,
+    updateDoc,
+    getDoc,
+    arrayUnion,
+    arrayRemove,
+  } = require('firebase/firestore');
+  firestoreFunctions = {
+    doc,
+    updateDoc,
+    getDoc,
+    arrayUnion,
+    arrayRemove,
+  };
+}
+
 import { Meeting } from '@/types/user';
 import { UserProfile, getUserProfile } from './profile';
 
@@ -22,7 +36,7 @@ const getUserDocRef = (userId: string) => {
     if (!db) {
         throw new Error('Firestore is not initialized');
     }
-    return doc(db, 'users', userId);
+    return firestoreFunctions.doc(db, 'users', userId);
 };
 
 export async function addMeeting(
@@ -40,8 +54,8 @@ export async function addMeeting(
       id: meetingId,
     };
 
-    await updateDoc(getUserDocRef(userId), {
-      upcomingMeetings: arrayUnion(newMeeting),
+    await firestoreFunctions.updateDoc(getUserDocRef(userId), {
+      upcomingMeetings: firestoreFunctions.arrayUnion(newMeeting),
     });
 
     return { success: true, meetingId };
@@ -58,7 +72,7 @@ export async function getMeetings(
   }
 
   try {
-    const userDoc = await getDoc(getUserDocRef(userId));
+    const userDoc = await firestoreFunctions.getDoc(getUserDocRef(userId));
     if (userDoc.exists()) {
       const userData = userDoc.data() as UserProfile;
       return { meetings: (userData as any).upcomingMeetings || [] };
@@ -79,7 +93,7 @@ export async function updateMeeting(
     }
 
     try {
-        const userDoc = await getDoc(getUserDocRef(userId));
+        const userDoc = await firestoreFunctions.getDoc(getUserDocRef(userId));
         if (userDoc.exists()) {
             const userData = userDoc.data();
             const meetings = (userData as any).upcomingMeetings || [];
@@ -90,7 +104,7 @@ export async function updateMeeting(
                 const updatedMeetings = [...meetings];
                 updatedMeetings[meetingIndex] = updatedMeeting;
 
-                await updateDoc(getUserDocRef(userId), { upcomingMeetings: updatedMeetings });
+                await firestoreFunctions.updateDoc(getUserDocRef(userId), { upcomingMeetings: updatedMeetings });
                 return { success: true };
             } else {
                 return { success: false, error: 'Meeting not found' };
@@ -125,7 +139,7 @@ export async function deletePastMeetings(
     }
 
     try {
-        const userDoc = await getDoc(getUserDocRef(userId));
+        const userDoc = await firestoreFunctions.getDoc(getUserDocRef(userId));
         if (userDoc.exists()) {
             const userData = userDoc.data();
             const meetings = (userData as any).upcomingMeetings || [];
@@ -137,7 +151,7 @@ export async function deletePastMeetings(
                 return !((m.status === 'completed' || m.status === 'cancelled') && meetingDate < thirtyDaysAgo);
             });
 
-            await updateDoc(getUserDocRef(userId), { upcomingMeetings: meetingsToKeep });
+            await firestoreFunctions.updateDoc(getUserDocRef(userId), { upcomingMeetings: meetingsToKeep });
             return { success: true };
         } else {
             return { success: false, error: 'User not found' };

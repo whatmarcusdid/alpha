@@ -1,5 +1,13 @@
+'use client';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const { doc, updateDoc } = require('firebase/firestore');
+  firestoreFunctions = { doc, updateDoc };
+}
 
 /**
  * Updates the thumbnail URL for a specific site in Firestore.
@@ -18,8 +26,8 @@ export async function updateSiteThumbnail(
   }
 
   try {
-    const siteRef = doc(db, 'sites', siteId);
-    await updateDoc(siteRef, {
+    const siteRef = firestoreFunctions.doc(db, 'sites', siteId);
+    await firestoreFunctions.updateDoc(siteRef, {
       thumbnailUrl: thumbnailUrl,
     });
 

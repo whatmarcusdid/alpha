@@ -1,6 +1,13 @@
 'use client';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection } from 'firebase/firestore';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const { doc, getDoc, updateDoc, collection } = require('firebase/firestore');
+  firestoreFunctions = { doc, getDoc, updateDoc, collection };
+}
 
 export interface UserProfile {
   fullName: string;
@@ -16,8 +23,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
   }
 
   try {
-    const userRef = doc(collection(db, 'users'), userId);
-    const docSnap = await getDoc(userRef);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
+    const docSnap = await firestoreFunctions.getDoc(userRef);
 
     if (docSnap.exists()) {
       const data = docSnap.data();
@@ -45,8 +52,8 @@ export async function updateUserProfile(
   }
 
   try {
-    const userRef = doc(collection(db, 'users'), userId);
-    await updateDoc(userRef, updates);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
+    await firestoreFunctions.updateDoc(userRef, updates);
     return { success: true };
   } catch (error: any) {
     console.error('Error updating user profile:', error);

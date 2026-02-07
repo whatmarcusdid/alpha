@@ -1,18 +1,37 @@
 'use client';
 
 import { db } from '@/lib/firebase';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  getDoc, 
-  getDocs, 
-  updateDoc, 
-  query, 
-  where, 
-  orderBy,
-  serverTimestamp 
-} from 'firebase/firestore';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const { 
+    collection, 
+    doc, 
+    addDoc, 
+    getDoc, 
+    getDocs, 
+    updateDoc, 
+    query, 
+    where, 
+    orderBy,
+    serverTimestamp 
+  } = require('firebase/firestore');
+  firestoreFunctions = { 
+    collection, 
+    doc, 
+    addDoc, 
+    getDoc, 
+    getDocs, 
+    updateDoc, 
+    query, 
+    where, 
+    orderBy,
+    serverTimestamp 
+  };
+}
+
 import type {
   SupportTicket,
   CreateTicketInput,
@@ -80,18 +99,18 @@ export async function getActiveTickets(
   }
 
   try {
-    const ticketsRef = collection(db, 'supportTickets');
-    const q = query(
+    const ticketsRef = firestoreFunctions.collection(db, 'supportTickets');
+    const q = firestoreFunctions.query(
       ticketsRef,
-      where('userId', '==', userId),
-      where('status', 'in', ['Open', 'In Progress', 'Awaiting Customer']),
-      orderBy('lastUpdatedAt', 'desc')
+      firestoreFunctions.where('userId', '==', userId),
+      firestoreFunctions.where('status', 'in', ['Open', 'In Progress', 'Awaiting Customer']),
+      firestoreFunctions.orderBy('lastUpdatedAt', 'desc')
     );
 
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await firestoreFunctions.getDocs(q);
     const tickets: SupportTicket[] = [];
 
-    querySnapshot.forEach((docSnap) => {
+    querySnapshot.forEach((docSnap: any) => {
       const data = docSnap.data();
       tickets.push(convertTicketData(docSnap.id, data));
     });
@@ -113,18 +132,18 @@ export async function getPastTickets(
   }
 
   try {
-    const ticketsRef = collection(db, 'supportTickets');
-    const q = query(
+    const ticketsRef = firestoreFunctions.collection(db, 'supportTickets');
+    const q = firestoreFunctions.query(
       ticketsRef,
-      where('userId', '==', userId),
-      where('status', 'in', ['Resolved', 'Closed', 'Cancelled']),
-      orderBy('createdAt', 'desc')
+      firestoreFunctions.where('userId', '==', userId),
+      firestoreFunctions.where('status', 'in', ['Resolved', 'Closed', 'Cancelled']),
+      firestoreFunctions.orderBy('createdAt', 'desc')
     );
 
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await firestoreFunctions.getDocs(q);
     const tickets: SupportTicket[] = [];
 
-    querySnapshot.forEach((docSnap) => {
+    querySnapshot.forEach((docSnap: any) => {
       const data = docSnap.data();
       tickets.push(convertTicketData(docSnap.id, data));
     });
@@ -145,8 +164,8 @@ export async function getTicketById(
   }
 
   try {
-    const ticketRef = doc(db, 'supportTickets', ticketId);
-    const ticketDoc = await getDoc(ticketRef);
+    const ticketRef = firestoreFunctions.doc(db, 'supportTickets', ticketId);
+    const ticketDoc = await firestoreFunctions.getDoc(ticketRef);
 
     if (!ticketDoc.exists()) {
       return { success: false, error: 'Ticket not found.' };
@@ -170,7 +189,7 @@ export async function createSupportTicket(
   }
 
   try {
-    const ticketsRef = collection(db, 'supportTickets');
+    const ticketsRef = firestoreFunctions.collection(db, 'supportTickets');
 
     const ticketData = {
       userId: input.userId,
@@ -188,8 +207,8 @@ export async function createSupportTicket(
       lastSyncedAt: null,
       assignedAgentId: null,
       assignedAgentName: null,
-      createdAt: serverTimestamp(),
-      lastUpdatedAt: serverTimestamp(),
+      createdAt: firestoreFunctions.serverTimestamp(),
+      lastUpdatedAt: firestoreFunctions.serverTimestamp(),
       resolvedAt: null,
       closedAt: null,
       cancelledAt: null,
@@ -200,7 +219,7 @@ export async function createSupportTicket(
       internalNotes: null,
     };
 
-    const docRef = await addDoc(ticketsRef, ticketData);
+    const docRef = await firestoreFunctions.addDoc(ticketsRef, ticketData);
     console.log('✅ Support ticket created:', docRef.id);
     return { success: true, ticketId: docRef.id };
   } catch (error: any) {
@@ -218,27 +237,27 @@ export async function updateTicketStatus(
   }
 
   try {
-    const ticketRef = doc(db, 'supportTickets', ticketId);
+    const ticketRef = firestoreFunctions.doc(db, 'supportTickets', ticketId);
 
     const updateData: any = {
       status: updates.newStatus,
-      lastUpdatedAt: serverTimestamp(),
+      lastUpdatedAt: firestoreFunctions.serverTimestamp(),
     };
 
     if (updates.newStatus === 'Resolved') {
-      updateData.resolvedAt = serverTimestamp();
+      updateData.resolvedAt = firestoreFunctions.serverTimestamp();
     }
     if (updates.newStatus === 'Closed') {
-      updateData.closedAt = serverTimestamp();
+      updateData.closedAt = firestoreFunctions.serverTimestamp();
     }
     if (updates.newStatus === 'Cancelled') {
-      updateData.cancelledAt = serverTimestamp();
+      updateData.cancelledAt = firestoreFunctions.serverTimestamp();
     }
     if (updates.notes) {
       updateData.internalNotes = updates.notes;
     }
 
-    await updateDoc(ticketRef, updateData);
+    await firestoreFunctions.updateDoc(ticketRef, updateData);
     console.log(`✅ Ticket ${ticketId} updated to: ${updates.newStatus}`);
     return { success: true };
   } catch (error: any) {

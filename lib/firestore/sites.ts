@@ -1,6 +1,14 @@
 'use client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+
+// Browser-only Firestore functions
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const { collection, query, where, getDocs, Timestamp } = require('firebase/firestore');
+  firestoreFunctions = { collection, query, where, getDocs, Timestamp };
+}
+
 import { Site } from '@/types';
 
 export async function getSitesForUser(userId: string): Promise<Site[]> {
@@ -10,12 +18,12 @@ export async function getSitesForUser(userId: string): Promise<Site[]> {
   }
 
   try {
-    const sitesRef = collection(db, 'sites');
-    const q = query(sitesRef, where('userId', '==', userId));
+    const sitesRef = firestoreFunctions.collection(db, 'sites');
+    const q = firestoreFunctions.query(sitesRef, firestoreFunctions.where('userId', '==', userId));
     
-    const snapshot = await getDocs(q);
+    const snapshot = await firestoreFunctions.getDocs(q);
     
-    return snapshot.docs.map((docSnap) => {
+    return snapshot.docs.map((docSnap: any) => {
       const data = docSnap.data();
       return {
         id: docSnap.id,
@@ -25,10 +33,10 @@ export async function getSitesForUser(userId: string): Promise<Site[]> {
         type: data.type || 'wordpress',
         status: data.status || 'active',
         thumbnailUrl: data.thumbnailUrl || '',
-        createdAt: data.createdAt instanceof Timestamp 
+        createdAt: data.createdAt instanceof firestoreFunctions.Timestamp 
           ? data.createdAt.toDate() 
           : new Date(),
-        updatedAt: data.updatedAt instanceof Timestamp 
+        updatedAt: data.updatedAt instanceof firestoreFunctions.Timestamp 
           ? data.updatedAt.toDate() 
           : new Date(),
       } as Site;
