@@ -31,8 +31,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Ensure onAuthStateChanged is available before calling it
-    if (authFunctions.onAuthStateChanged) {
+    // Ensure auth and onAuthStateChanged are available before calling it
+    if (auth && authFunctions.onAuthStateChanged) {
       const unsubscribe = authFunctions.onAuthStateChanged(auth, (user) => {
         setUser(user);
         setLoading(false);
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Cleanup subscription on unmount
       return () => unsubscribe();
     } else {
-      // If on server, set loading to false as there is no user state
+      // If on server or auth not initialized, set loading to false as there is no user state
       setLoading(false);
     }
   }, []);

@@ -18,6 +18,10 @@ const getUserDocRef = (userId: string) => {
         const adminDb = getFirestore();
         return adminDb.collection('users').doc(userId);
     }
+    // Check if db is initialized (browser-only pattern)
+    if (!db) {
+        throw new Error('Firestore is not initialized');
+    }
     return doc(db, 'users', userId);
 };
 

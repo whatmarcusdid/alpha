@@ -124,14 +124,8 @@ export function getClientIdentifier(req: NextRequest): string {
     return realIp.trim();
   }
 
-  // Fallback to request IP (might not be available in all environments)
-  const ip = req.ip;
-  if (ip) {
-    return ip;
-  }
-
   // Last resort fallback
-  console.warn('⚠️ Could not determine client IP address');
+  console.warn('⚠️ Could not determine client IP address from headers');
   return 'unknown';
 }
 

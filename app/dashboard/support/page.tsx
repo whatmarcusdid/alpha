@@ -193,6 +193,17 @@ export default function SupportPage() {
      setIsSubmitting(true);
 
      try {
+       // Check if Firebase Storage is initialized
+       if (!storage) {
+         setNotification({
+           show: true,
+           type: 'error',
+           message: 'Storage not available',
+           subtitle: 'Please refresh the page and try again.'
+         });
+         return;
+       }
+
        // Upload attachments to Firebase Storage first
        const uploadedUrls: string[] = [];
        

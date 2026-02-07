@@ -6,6 +6,11 @@ export async function changePassword(
   newPassword: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if auth is initialized (browser-only pattern)
+    if (!auth) {
+      return { success: false, error: 'Authentication is not initialized' };
+    }
+
     const user = auth.currentUser;
 
     if (!user || !user.email) {

@@ -19,6 +19,10 @@ const supportTicketsCollection = (userId: string) => {
         const adminDb = getFirestore();
         return adminDb.collection('users').doc(userId).collection('supportTickets');
     }
+    // Check if db is initialized (browser-only pattern)
+    if (!db) {
+        throw new Error('Firestore is not initialized');
+    }
     return collection(db, 'users', userId, 'supportTickets');
 };
 
