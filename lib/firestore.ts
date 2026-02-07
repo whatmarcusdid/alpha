@@ -1,6 +1,29 @@
 'use client';
-import { doc, getDoc, collection, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+/**
+ * Firestore Helper Functions
+ * 
+ * CRITICAL: This file follows the browser-only initialization pattern.
+ * - All Firestore functions wrapped in typeof window !== 'undefined' checks
+ * - Uses require() pattern instead of ES6 imports
+ * - Firestore only runs in the browser, never on the server
+ */
+
 import { db } from '@/lib/firebase';
+
+// Load Firestore functions only in browser
+let firestoreFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const firebaseFirestore = require('firebase/firestore');
+  firestoreFunctions = {
+    doc: firebaseFirestore.doc,
+    getDoc: firebaseFirestore.getDoc,
+    collection: firebaseFirestore.collection,
+    updateDoc: firebaseFirestore.updateDoc,
+    setDoc: firebaseFirestore.setDoc,
+    serverTimestamp: firebaseFirestore.serverTimestamp,
+  };
+}
 
 // User Metrics Function
 export async function getUserMetrics(userId: string) {
@@ -15,8 +38,8 @@ export async function getUserMetrics(userId: string) {
   }
 
   try {
-    const userRef = doc(collection(db, 'users'), userId);
-    const userDoc = await getDoc(userRef);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
+    const userDoc = await firestoreFunctions.getDoc(userRef);
 
     if (userDoc.exists()) {
       const data = userDoc.data();
@@ -58,8 +81,8 @@ export async function getUserCompany(userId: string) {
   }
   
   try {
-    const userRef = doc(collection(db, 'users'), userId);
-    const userDoc = await getDoc(userRef);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
+    const userDoc = await firestoreFunctions.getDoc(userRef);
 
     if (userDoc.exists()) {
       const data = userDoc.data();
@@ -81,8 +104,8 @@ export async function getUserSubscription(userId: string) {
   }
   
   try {
-    const userRef = doc(collection(db, 'users'), userId);
-    const userDoc = await getDoc(userRef);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
+    const userDoc = await firestoreFunctions.getDoc(userRef);
 
     if (userDoc.exists()) {
       const data = userDoc.data();
@@ -119,15 +142,15 @@ export async function updateWordPressCredentials(
   }
 
   try {
-    const userRef = doc(collection(db, 'users'), userId);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
     
     // TODO: Encrypt adminPassword before storing in production
-    await updateDoc(userRef, {
+    await firestoreFunctions.updateDoc(userRef, {
       wordpressCredentials: {
         dashboardUrl: credentials.dashboardUrl,
         adminEmail: credentials.adminEmail,
         adminPassword: credentials.adminPassword, // TODO: Encrypt this in production
-        lastUpdated: serverTimestamp(),
+        lastUpdated: firestoreFunctions.serverTimestamp(),
       },
     });
   } catch (error) {
@@ -166,13 +189,13 @@ export async function createUserWithSubscription(
     const userData = {
       email,
       fullName,
-      createdAt: serverTimestamp(),
+      createdAt: firestoreFunctions.serverTimestamp(),
       subscription: {
         tier: subscriptionData.tier,
         billingCycle: subscriptionData.billingCycle,
         status: 'active' as const,
         amount: subscriptionData.amount,
-        startDate: serverTimestamp(),
+        startDate: firestoreFunctions.serverTimestamp(),
         paymentIntentId: subscriptionData.paymentIntentId,
         stripeCustomerId: null,
         stripeSubscriptionId: null,
@@ -182,14 +205,14 @@ export async function createUserWithSubscription(
         averageSiteSpeed: 0,
         supportHoursRemaining: hours.support,
         maintenanceHoursRemaining: hours.maintenance,
-        lastUpdated: serverTimestamp(),
+        lastUpdated: firestoreFunctions.serverTimestamp(),
       },
       wordpress: null,
       company: null,
     };
 
-    const userRef = doc(collection(db, 'users'), userId);
-    await setDoc(userRef, userData);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
+    await firestoreFunctions.setDoc(userRef, userData);
 
     return userData;
   } catch (error) {
@@ -210,9 +233,9 @@ export async function linkStripeCustomer(
   }
 
   try {
-    const userRef = doc(collection(db, 'users'), userId);
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
     
-    await updateDoc(userRef, {
+    await firestoreFunctions.updateDoc(userRef, {
       'subscription.stripeCustomerId': stripeCustomerId,
       'subscription.stripeSubscriptionId': stripeSubscriptionId,
     });

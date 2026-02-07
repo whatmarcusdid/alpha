@@ -1,40 +1,167 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# TradeSiteGenie Customer Dashboard
 
-## Getting Started
+A modern, secure customer dashboard built with Next.js 16, Firebase, and Stripe for managing TradeSiteGenie services, subscriptions, and support tickets.
 
-First, run the development server:
+## 🚀 Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Set Up Environment Variables
+
+Copy the environment template and fill in your credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+**📖 Detailed Setup Guide:** See [docs/SETUP.md](./docs/SETUP.md) for complete instructions on getting all required API keys and credentials.
+
+**Required services:**
+- Firebase (Authentication & Database)
+- Stripe (Payments)
+- Upstash Redis (Rate Limiting)
+- Zapier (Support Tickets - optional)
+
+### 3. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## 🏗️ Tech Stack
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+- **Framework:** Next.js 16 with TypeScript
+- **Authentication:** Firebase Authentication
+- **Database:** Cloud Firestore
+- **Payments:** Stripe
+- **Styling:** Tailwind CSS
+- **Rate Limiting:** Upstash Redis
+- **Support Integration:** Zapier + Notion
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## 📁 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+tradesitegenie-dashboard/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── dashboard/         # Protected dashboard pages
+│   ├── (auth)/           # Authentication pages
+│   └── checkout/         # Checkout flow
+├── components/           # React components
+│   ├── auth/            # Authentication components
+│   ├── dashboard/       # Dashboard-specific components
+│   └── ui/              # Reusable UI components
+├── lib/                 # Core utilities
+│   ├── middleware/      # API middleware (auth, rate limiting)
+│   ├── firebase/        # Firebase configuration
+│   └── stripe/          # Stripe utilities
+├── contexts/           # React context providers
+└── docs/              # Documentation
+```
 
-## Learn More
+## 🔐 Security Features
 
-To learn more about Next.js, take a look at the following resources:
+**Phase 1 Implementation Complete:**
+- ✅ Firebase Admin authentication on protected routes
+- ✅ IP-based rate limiting on all API endpoints
+- ✅ Stripe webhook signature verification
+- ✅ Input validation and sanitization
+- ✅ Composable middleware system
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+See [SECURITY_FIXES_APPLIED.md](./SECURITY_FIXES_APPLIED.md) for details.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📚 Documentation
 
-## Deploy on Vercel
+- **[Setup Guide](./docs/SETUP.md)** - Environment variables and service configuration
+- **[Middleware Usage](./lib/middleware/USAGE.md)** - How to use auth and rate limiting
+- **[Implementation Status](./lib/middleware/IMPLEMENTATION_STATUS.md)** - Current progress and next steps
+- **[Security Fixes](./SECURITY_FIXES_APPLIED.md)** - Recent security improvements
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔧 Development
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+### Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+```
+
+### API Routes
+
+Key API endpoints:
+- `/api/stripe/*` - Stripe operations (subscriptions, payments)
+- `/api/webhooks/stripe` - Stripe webhook handler
+- `/api/zapier-webhook` - Support ticket forwarding
+
+All API routes use middleware for authentication and rate limiting. See [lib/middleware/USAGE.md](./lib/middleware/USAGE.md) for implementation details.
+
+## 🚢 Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Import project in [Vercel](https://vercel.com)
+3. Configure environment variables (see [docs/SETUP.md](./docs/SETUP.md))
+4. Deploy
+
+### Environment Variables in Production
+
+Set all variables from `.env.example` in your hosting platform:
+- Vercel: Project Settings → Environment Variables
+- Ensure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set (required for rate limiting)
+
+## 🧪 Testing
+
+### Test Rate Limiting
+
+```bash
+# Test coupon validation rate limit (5/min)
+for i in {1..6}; do
+  curl -X POST http://localhost:3000/api/stripe/validate-coupon \
+    -H "Content-Type: application/json" \
+    -d '{"couponCode":"TEST"}' && echo
+done
+```
+
+Expected: 6th request returns 429 Too Many Requests
+
+### Test Authentication
+
+```bash
+# Try protected route without auth
+curl -X POST http://localhost:3000/api/stripe/upgrade-subscription \
+  -H "Content-Type: application/json" \
+  -d '{"newTier":"premium"}'
+```
+
+Expected: 401 Unauthorized
+
+## 📖 Learn More
+
+**Next.js Resources:**
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Next.js GitHub](https://github.com/vercel/next.js)
+
+**Project-Specific:**
+- [TSG Color System](./.cursorrules) - Design system and coding standards
+- [Stripe Setup Guides](./STRIPE_SUBSCRIPTION_MIGRATION.md) - Subscription management
+- [Firebase Setup](./docs/SETUP.md#2-firebase-authentication--database) - Authentication configuration
+
+## 🤝 Contributing
+
+This is a private project for TradeSiteGenie. For questions or issues:
+1. Check documentation in `/docs`
+2. Review security implementation in `/lib/middleware`
+3. See implementation status in `IMPLEMENTATION_STATUS.md`
+
+## 📝 License
+
+Private - TradeSiteGenie Internal Project

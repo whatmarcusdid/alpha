@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import * as admin from 'firebase-admin';
+import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
+import { checkoutLimiter } from '@/lib/middleware/rateLimiting';
 
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
@@ -31,20 +33,23 @@ const YEARLY_PRICE_IDS: Record<Tier, string> = {
   premium: 'price_1So9NkPTDVjQnuCn8f6PywGQ',
 };
 
-export async function POST(req: NextRequest) {
-  try {
-    const { userId, newTier } = await req.json();
+export const POST = withAuthAndRateLimit(
+  async (req, { userId }) => {
+    try {
+      // Get newTier from request body (userId now comes from verified auth token)
+      const { newTier } = await req.json();
 
-    // 1. Validate input
-    if (!userId || !newTier) {
-      return NextResponse.json({ success: false, error: 'Missing userId or newTier' }, { status: 400 });
-    }
+      // 1. Validate input
+      if (!newTier) {
+        return NextResponse.json({ success: false, error: 'Missing newTier' }, { status: 400 });
+      }
 
     if (!Object.keys(TIER_HIERARCHY).includes(newTier)) {
       return NextResponse.json({ success: false, error: 'Invalid tier specified.' }, { status: 400 });
     }
 
     // 2. Fetch user's current subscription from Firestore
+    // userId is now from verified authentication token, not request body
     const userRef = adminDb.collection('users').doc(userId);
     const userSnap = await userRef.get();
 
@@ -130,4 +135,6 @@ export async function POST(req: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
     return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
-}
+  },
+  checkoutLimiter // 10 requests per minute per IP
+);

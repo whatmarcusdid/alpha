@@ -1,12 +1,45 @@
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, sendPasswordResetEmail, getRedirectResult, OAuthProvider, signInWithRedirect, signInWithEmailAndPassword, onAuthStateChanged, User, updateEmail, reauthenticateWithCredential, EmailAuthProvider, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { app } from './firebase';
+/**
+ * Firebase Auth Helper Functions
+ * 
+ * CRITICAL: This file follows the browser-only initialization pattern.
+ * - All Firebase Auth functions wrapped in typeof window !== 'undefined' checks
+ * - Uses require() pattern instead of ES6 imports
+ * - Firebase Auth only runs in the browser, never on the server
+ */
 
-export const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+import type { User } from 'firebase/auth';
+import { auth } from './firebase'; // Browser-safe auth instance
+
+// Load Firebase Auth functions only in browser
+let authFunctions: any = {};
+
+if (typeof window !== 'undefined') {
+  const firebaseAuth = require('firebase/auth');
+  authFunctions = {
+    signInWithEmailAndPassword: firebaseAuth.signInWithEmailAndPassword,
+    signInWithPopup: firebaseAuth.signInWithPopup,
+    signOut: firebaseAuth.signOut,
+    sendPasswordResetEmail: firebaseAuth.sendPasswordResetEmail,
+    getRedirectResult: firebaseAuth.getRedirectResult,
+    onAuthStateChanged: firebaseAuth.onAuthStateChanged,
+    updateEmail: firebaseAuth.updateEmail,
+    reauthenticateWithCredential: firebaseAuth.reauthenticateWithCredential,
+    createUserWithEmailAndPassword: firebaseAuth.createUserWithEmailAndPassword,
+    updateProfile: firebaseAuth.updateProfile,
+    GoogleAuthProvider: firebaseAuth.GoogleAuthProvider,
+    OAuthProvider: firebaseAuth.OAuthProvider,
+    EmailAuthProvider: firebaseAuth.EmailAuthProvider,
+  };
+}
 
 export async function signInWithGoogle(): Promise<User> {
+  if (typeof window === 'undefined') {
+    throw new Error('Auth functions only work in browser');
+  }
+
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    const provider = new authFunctions.GoogleAuthProvider();
+    const result = await authFunctions.signInWithPopup(auth, provider);
     return result.user;
   } catch (error: any) {
     console.error('Google sign-in error:', error);
@@ -15,12 +48,16 @@ export async function signInWithGoogle(): Promise<User> {
 }
 
 export async function signInWithApple(): Promise<User> {
-  const provider = new OAuthProvider('apple.com');
+  if (typeof window === 'undefined') {
+    throw new Error('Auth functions only work in browser');
+  }
+
+  const provider = new authFunctions.OAuthProvider('apple.com');
   provider.addScope('email');
   provider.addScope('name');
   
   try {
-    const result = await signInWithPopup(auth, provider);
+    const result = await authFunctions.signInWithPopup(auth, provider);
     return result.user;
   } catch (error: any) {
     console.error('Apple sign-in error:', error);
@@ -29,8 +66,12 @@ export async function signInWithApple(): Promise<User> {
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<User> {
+  if (typeof window === 'undefined') {
+    throw new Error('Auth functions only work in browser');
+  }
+
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await authFunctions.signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error: any) {
     console.error('Email sign-in error:', error);
@@ -52,12 +93,16 @@ export async function signUpWithEmail(
   password: string,
   displayName?: string
 ): Promise<User> {
+  if (typeof window === 'undefined') {
+    throw new Error('Auth functions only work in browser');
+  }
+
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await authFunctions.createUserWithEmailAndPassword(auth, email, password);
     
     // Optionally update display name if provided
     if (displayName && userCredential.user) {
-      await updateProfile(userCredential.user, { displayName });
+      await authFunctions.updateProfile(userCredential.user, { displayName });
     }
     
     return userCredential.user;
@@ -79,30 +124,42 @@ export async function signUpWithEmail(
 }
 
 export function onAuthStateChange(callback: (user: User | null) => void): () => void {
-  return onAuthStateChanged(auth, callback);
+  if (typeof window === 'undefined') {
+    throw new Error('Auth functions only work in browser');
+  }
+
+  return authFunctions.onAuthStateChanged(auth, callback);
 }
 
 export function getCurrentUser(): User | null {
-  return auth.currentUser;
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return auth?.currentUser || null;
 }
 
 export async function updateUserEmail(
   newEmail: string,
   currentPassword: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined') {
+    return { success: false, error: 'Auth functions only work in browser' };
+  }
+
   try {
-    const user = auth.currentUser;
+    const user = auth?.currentUser;
 
     if (!user || !user.email) {
       return { success: false, error: 'No user is currently logged in' };
     }
 
     // Re-authenticate user before sensitive operation
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential);
+    const credential = authFunctions.EmailAuthProvider.credential(user.email, currentPassword);
+    await authFunctions.reauthenticateWithCredential(user, credential);
 
     // Update email
-    await updateEmail(user, newEmail);
+    await authFunctions.updateEmail(user, newEmail);
 
     return { success: true };
   } catch (error: any) {
@@ -123,8 +180,12 @@ export async function updateUserEmail(
 }
 
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined') {
+    return { success: false, error: 'Auth functions only work in browser' };
+  }
+
   try {
-    await firebaseSignOut(auth);
+    await authFunctions.signOut(auth);
     return { success: true };
   } catch (error: any) {
     console.error('Sign-out error:', error);
@@ -133,8 +194,12 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
 }
 
 export async function sendPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined') {
+    return { success: false, error: 'Auth functions only work in browser' };
+  }
+
   try {
-    await sendPasswordResetEmail(auth, email);
+    await authFunctions.sendPasswordResetEmail(auth, email);
     return { success: true };
   } catch (error: any) {
     console.error('Password reset error:', error);
@@ -150,8 +215,12 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
 }
 
 export async function handleRedirectResult() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
   try {
-    const result = await getRedirectResult(auth);
+    const result = await authFunctions.getRedirectResult(auth);
     return result?.user || null;
   } catch (error: any) {
     console.error('Redirect result error:', error);

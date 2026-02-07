@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 // Force a rebuild
-module.exports = {
+export default {
   darkMode: ["class"],
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
