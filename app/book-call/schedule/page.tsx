@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 export default function SchedulePage() {
   const router = useRouter();
   const [bookingData, setBookingData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadBookingData = async () => {
@@ -20,20 +22,31 @@ export default function SchedulePage() {
         return;
       }
 
+      // Check if Firestore is initialized (browser-only pattern)
+      if (!db) {
+        console.error('Firestore not initialized');
+        setError('Database not available. Please refresh the page.');
+        setLoading(false);
+        return;
+      }
+
       try {
         // Fetch directly from Firestore client-side
-        const docRef = doc(collection(db, "bookingIntakes"), bookingIntakeId);
+        // TypeScript: db is guaranteed to be non-null here due to the check above
+        const docRef = doc(collection(db!, "bookingIntakes"), bookingIntakeId);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
           setBookingData(docSnap.data());
+          setLoading(false);
         } else {
           console.error("No booking data found");
           router.push("/book-call");
         }
       } catch (error) {
         console.error("Error fetching booking data:", error);
-        router.push("/book-call");
+        setError('Failed to load booking data. Please try again.');
+        setLoading(false);
       }
     };
 
@@ -49,8 +62,46 @@ export default function SchedulePage() {
     router.push("/book-call/confirmation");
   };
 
+  if (loading) {
+    return (
+      <BookingLayout>
+        <BookingCard>
+          <div className="flex items-center justify-center py-12">
+            <p className="text-lg text-gray-600">Loading your booking information...</p>
+          </div>
+        </BookingCard>
+      </BookingLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <BookingLayout>
+        <BookingCard>
+          <div className="space-y-4 py-12 text-center">
+            <p className="text-lg text-red-600">{error}</p>
+            <Button
+              onClick={handleGoBack}
+              className="rounded-[360px] border-2 border-[#1B4A41] bg-white px-6 py-3 text-base font-semibold text-[#1B4A41] transition-all hover:bg-gray-50"
+            >
+              Go Back
+            </Button>
+          </div>
+        </BookingCard>
+      </BookingLayout>
+    );
+  }
+
   if (!bookingData) {
-    return <div>Loading...</div>;
+    return (
+      <BookingLayout>
+        <BookingCard>
+          <div className="flex items-center justify-center py-12">
+            <p className="text-lg text-gray-600">Loading...</p>
+          </div>
+        </BookingCard>
+      </BookingLayout>
+    );
   }
 
   return (
