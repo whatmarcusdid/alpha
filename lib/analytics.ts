@@ -11,7 +11,9 @@ type AnalyticsEvent =
   | 'password_reset_failed'
   | 'password_reset_completed'
   | 'password_changed'
-  | 'password_change_failed';
+  | 'password_change_failed'
+  | 'password_change_initiated'
+  | 'password_change_success';
 
 interface EventParams {
   [key: string]: string | number | boolean | undefined;
