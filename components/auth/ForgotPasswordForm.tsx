@@ -147,11 +147,12 @@ export function ForgotPasswordForm() {
         </div>
 
         {!emailSent ? (
-          <form onSubmit={handleSubmit} className="space-y-6 pt-6">
+          <form onSubmit={handleSubmit} className="space-y-6 pt-6" aria-label="Password reset form">
             <div className="space-y-2 text-left">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="reset-email">Email address</Label>
               <Input
-                id="email"
+                id="reset-email"
+                name="email"
                 type="email"
                 placeholder="name@example.com"
                 value={formData.email}
@@ -160,7 +161,13 @@ export function ForgotPasswordForm() {
                 autoComplete="email"
                 disabled={loading}
                 className="min-h-[40px]"
+                aria-label="Email address for password reset"
+                aria-describedby="email-help"
+                aria-required="true"
               />
+              <p id="email-help" className="text-sm text-gray-600">
+                Enter the email address associated with your account
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -168,6 +175,7 @@ export function ForgotPasswordForm() {
                 type="submit"
                 disabled={loading}
                 className="w-full min-h-[40px]"
+                aria-busy={loading}
               >
                 {loading ? 'Sending...' : 'Send reset instructions'}
               </PrimaryButton>
@@ -180,7 +188,7 @@ export function ForgotPasswordForm() {
             </div>
           </form>
         ) : (
-          <div className="space-y-6 pt-6">
+          <div className="space-y-6 pt-6" role="status" aria-live="polite">
             <div className="space-y-3">
               <Link href="/signin" className="block">
                 <PrimaryButton className="w-full min-h-[40px]">
