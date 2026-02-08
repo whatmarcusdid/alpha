@@ -14,6 +14,7 @@ export interface UserProfile {
   email: string;
   phone: string;
   role: string;
+  stripeCustomerId?: string;
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {

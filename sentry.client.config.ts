@@ -55,8 +55,8 @@ Sentry.init({
         if (breadcrumb.data) {
           const sensitiveFields = ['api_key', 'apiKey', 'token', 'password'];
           sensitiveFields.forEach((field) => {
-            if (field in breadcrumb.data) {
-              breadcrumb.data[field] = '[REDACTED]';
+            if (field in breadcrumb.data!) {
+              breadcrumb.data![field] = '[REDACTED]';
             }
           });
         }
