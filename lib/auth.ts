@@ -198,16 +198,65 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
     return { success: false, error: 'Auth functions only work in browser' };
   }
 
+  console.group('🔐 Password Reset Debug');
+  console.log('📧 Email:', email);
+  console.log('🔥 Auth initialized:', !!auth);
+  console.log('🔥 Auth functions available:', !!authFunctions.sendPasswordResetEmail);
+  console.log('🌍 Current domain:', window.location.hostname);
+  console.log('🌐 Full origin:', window.location.origin);
+
+  if (!authFunctions.sendPasswordResetEmail) {
+    console.error('❌ Firebase Auth not initialized');
+    console.groupEnd();
+    return { success: false, error: 'Firebase Auth not initialized' };
+  }
+
   try {
-    await authFunctions.sendPasswordResetEmail(auth, email);
+    console.log('📤 Calling Firebase sendPasswordResetEmail...');
+    
+    // Add actionCodeSettings to ensure correct domain handling
+    const actionCodeSettings = {
+      url: `${window.location.origin}/signin`,
+      handleCodeInApp: false,
+    };
+    
+    console.log('⚙️ Action code settings:', actionCodeSettings);
+    
+    await authFunctions.sendPasswordResetEmail(auth, email, actionCodeSettings);
+    
+    console.log('✅ Firebase API call succeeded (HTTP 200)');
+    console.log('📨 Email should be queued for:', email);
+    console.log('');
+    console.log('⚠️  IMPORTANT: 200 status does NOT guarantee email delivery!');
+    console.log('');
+    console.log('📋 VERIFICATION CHECKLIST:');
+    console.log('1. Check Firebase Console → Authentication → Usage tab');
+    console.log('2. Look for "Authentication activity" spike at current time');
+    console.log('3. Verify email quota (should show X/100 daily emails used)');
+    console.log('4. Check email inbox AND spam folder');
+    console.log('5. Verify Firebase email templates are configured');
+    console.log('6. Check authorized domains in Firebase Console');
+    console.log('');
+    console.log('📧 Email provider details:');
+    console.log('   From: noreply@[project-id].firebaseapp.com');
+    console.log('   Template: Password reset');
+    console.log('   Action URL:', actionCodeSettings.url);
+    console.groupEnd();
+    
     return { success: true };
   } catch (error: any) {
-    console.error('Password reset error:', error);
+    console.error('❌ Firebase sendPasswordResetEmail failed:');
+    console.error('   Code:', error.code);
+    console.error('   Message:', error.message);
+    console.error('   Full error:', error);
+    console.groupEnd();
     
     if (error.code === 'auth/user-not-found') {
       return { success: false, error: 'No account found with this email address' };
     } else if (error.code === 'auth/invalid-email') {
       return { success: false, error: 'Invalid email address' };
+    } else if (error.code === 'auth/too-many-requests') {
+      return { success: false, error: 'Too many attempts. Please wait before trying again.' };
     }
     
     return { success: false, error: error.message || 'Failed to send reset email' };

@@ -68,7 +68,16 @@ export function ForgotPasswordForm() {
       // Track password reset attempt
       trackPasswordResetRequested('email');
 
+      console.log('🔍 Starting password reset flow...');
+      console.log('📧 Email entered:', formData.email);
+      
       const result = await sendPasswordReset(formData.email);
+
+      console.log('🔍 Password reset result:', result);
+
+      if (!result.success && result.error) {
+        throw new Error(result.error);
+      }
 
       // Always show success message (security: don't reveal if email exists)
       setEmailSent(true);
@@ -81,6 +90,21 @@ export function ForgotPasswordForm() {
 
       // Track successful request
       trackPasswordResetEmailSent();
+      
+      console.log('');
+      console.log('📊 FIREBASE CONSOLE VERIFICATION STEPS:');
+      console.log('1. Open Firebase Console (console.firebase.google.com)');
+      console.log('2. Navigate to Authentication → Usage tab');
+      console.log('3. Check "Authentication activity" for recent spike');
+      console.log('4. Verify email quota hasn\'t been exceeded');
+      console.log('5. Check if email shows in activity log');
+      console.log('');
+      console.log('⚠️  If email doesn\'t arrive within 5 minutes:');
+      console.log('   • Check spam/junk folder');
+      console.log('   • Verify email templates configured in Firebase');
+      console.log('   • Check authorized domains include:', window.location.hostname);
+      console.log('   • Review Firebase email quota (100/day for free tier)');
+      console.log('');
     } catch (error: any) {
       // Track failure
       trackPasswordResetFailed(error?.message || 'Unknown error');
