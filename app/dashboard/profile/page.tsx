@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChange, signOut, updateUserEmail } from '@/lib/auth';
 import { getUserProfile, updateUserProfile, UserProfile } from '@/lib/firestore/profile';
-import { changePassword } from '@/lib/auth/password';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import { PageCard } from '@/components/layout/PageCard';
+import ChangePasswordModal from '@/components/profile/ChangePasswordModal';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const [originalData, setOriginalData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; show: boolean; message: string; subtitle?: string }>({ type: 'success', show: false, message: '' });
-  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChange(setUser);
@@ -96,22 +96,6 @@ export default function ProfilePage() {
   const handleCancel = () => {
     setFormData(originalData);
     setIsEditMode(false);
-  };
-  
-  const handlePasswordChange = async () => {
-    if (passwordData.new !== passwordData.confirm) {
-        showNotification('error', 'New passwords do not match.');
-        return;
-    }
-
-    const result = await changePassword(passwordData.current, passwordData.new);
-
-    if (result.success) {
-        showNotification('success', 'Password changed successfully!');
-        setPasswordData({ current: '', new: '', confirm: '' });
-    } else {
-        showNotification('error', result.error || 'Failed to change password.');
-    }
   };
   
   const handleLogout = async () => {
@@ -224,60 +208,45 @@ export default function ProfilePage() {
 
           {/* Password & Security Section */}
           <div className="mt-8 pt-8 border-t border-gray-200">
-            <h2 className="text-lg font-semibold text-[#232521] mb-4">
-              Password & Security
-            </h2>
-            <div className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                  <input
-                      type="password"
-                      value={passwordData.current}
-                      onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
-                      disabled={isEditMode}
-                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                  />
-              </div>
-              <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                  <input
-                      type="password"
-                      value={passwordData.new}
-                      onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
-                      disabled={isEditMode}
-                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                  />
-              </div>
-              <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                  <input
-                      type="password"
-                      value={passwordData.confirm}
-                      onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                      disabled={isEditMode}
-                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:text-gray-600"
-                  />
+                <h2 className="text-lg font-semibold text-[#232521]">Security</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Manage your account security settings
+                </p>
               </div>
             </div>
-            <div className="flex gap-3 justify-end mt-6">
-                <SecondaryButton 
-                  onClick={() => setPasswordData({ current: '', new: '', confirm: '' })}
-                  disabled={isEditMode}
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <div>
+                  <p className="text-sm font-medium text-[#232521]">Password</p>
+                  <p className="text-sm text-gray-500">
+                    Update your password to keep your account secure
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowChangePasswordModal(true)}
+                  className="rounded-full border-2 border-[#1B4A41] bg-white px-6 py-2 text-[#1B4A41] font-bold hover:bg-gray-50 transition-colors"
                 >
-                  Clear
-                </SecondaryButton>
-                <PrimaryButton 
-                  onClick={handlePasswordChange}
-                  disabled={isEditMode}
-                >
-                  Update Password
-                </PrimaryButton>
+                  Change Password
+                </button>
+              </div>
             </div>
           </div>
 
         </div>
         
       </PageCard>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        onSuccess={() => {
+          showNotification('success', 'Password updated successfully', 'You can now use your new password to sign in.');
+        }}
+      />
     </main>
   );
 }
