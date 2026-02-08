@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
+import * as Sentry from '@sentry/nextjs';
 import { stripePromise } from '@/lib/stripe';
 import { UpdatePaymentMethodModal, PaymentMethodData } from './UpdatePaymentMethodModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UpdatePaymentMethodModalWrapperProps {
   isOpen: boolean;
@@ -18,39 +20,66 @@ export function UpdatePaymentMethodModalWrapper({
 }: UpdatePaymentMethodModalWrapperProps) {
   const [clientSecret, setClientSecret] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!isOpen) return;
 
     const createSetupIntent = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/stripe/create-setup-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
+      return Sentry.startSpan(
+        {
+          op: 'ui.action',
+          name: 'Update Payment Method - Open Modal',
+        },
+        async (span) => {
+          try {
+            setLoading(true);
 
-        if (!response.ok) {
-          console.error('Failed to create setup intent:', response.status);
-          throw new Error(`API error: ${response.status}`);
-        }
+            // Set span attribute for userId if available
+            if (user?.uid) {
+              span.setAttribute('userId', user.uid);
+            }
 
-        const data = await response.json();
-        
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-        } else {
-          console.error('No client secret returned');
+            const response = await fetch('/api/stripe/create-setup-intent', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+            });
+
+            if (!response.ok) {
+              console.error('Failed to create setup intent:', response.status);
+              throw new Error(`API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.clientSecret) {
+              setClientSecret(data.clientSecret);
+            } else {
+              console.error('No client secret returned');
+            }
+          } catch (error) {
+            console.error('Error creating setup intent:', error);
+            
+            // Capture exception in Sentry
+            Sentry.captureException(error, {
+              tags: {
+                component: 'UpdatePaymentMethodModal',
+                action: 'openModal',
+              },
+              user: {
+                id: user?.uid,
+                email: user?.email || undefined,
+              },
+            });
+          } finally {
+            setLoading(false);
+          }
         }
-      } catch (error) {
-        console.error('Error creating setup intent:', error);
-      } finally {
-        setLoading(false);
-      }
+      );
     };
 
     createSetupIntent();
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 
