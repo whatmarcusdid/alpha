@@ -7,75 +7,100 @@ export default function SentryExamplePage() {
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleClientError = () => {
+    // Immediate UI feedback
     setLoading('client-error');
-    try {
-      throw new Error('🧪 Test client error from TSG Dashboard!');
-    } catch (error) {
-      Sentry.captureException(error);
-      alert('Client error sent to Sentry! Check your Sentry dashboard.');
-    } finally {
-      setLoading(null);
-    }
+    
+    // Defer heavy work to next tick to avoid blocking UI
+    setTimeout(() => {
+      try {
+        throw new Error('🧪 Test client error from TSG Dashboard!');
+      } catch (error) {
+        Sentry.captureException(error);
+        alert('Client error sent to Sentry! Check your Sentry dashboard.');
+      } finally {
+        setLoading(null);
+      }
+    }, 0);
   };
 
-  const handleServerError = async () => {
+  const handleServerError = () => {
+    // Immediate UI feedback
     setLoading('server-error');
-    try {
-      const response = await fetch('/api/test-sentry-error');
-      const data = await response.json();
-      alert(data.message || 'Server error triggered! Check your Sentry dashboard.');
-    } catch (error) {
-      alert('Server error sent to Sentry! Check your Sentry dashboard.');
-    } finally {
-      setLoading(null);
-    }
+    
+    // Defer API call to next tick to avoid blocking UI
+    setTimeout(async () => {
+      try {
+        const response = await fetch('/api/test-sentry-error');
+        const data = await response.json();
+        alert(data.message || 'Server error triggered! Check your Sentry dashboard.');
+      } catch (error) {
+        alert('Server error sent to Sentry! Check your Sentry dashboard.');
+      } finally {
+        setLoading(null);
+      }
+    }, 0);
   };
 
   const handleSendMessage = () => {
+    // Immediate UI feedback
     setLoading('message');
-    Sentry.captureMessage('🧪 Test message from TSG Dashboard', {
-      level: 'info',
-      tags: {
-        testType: 'message',
-        environment: process.env.NODE_ENV,
-        source: 'sentry-example-page',
-      },
-      extra: {
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-      },
-    });
-    alert('Test message sent to Sentry! Check your Sentry dashboard.');
-    setLoading(null);
+    
+    // Defer Sentry capture to next tick to avoid blocking UI
+    setTimeout(() => {
+      try {
+        Sentry.captureMessage('🧪 Test message from TSG Dashboard', {
+          level: 'info',
+          tags: {
+            testType: 'message',
+            environment: process.env.NODE_ENV,
+            source: 'sentry-example-page',
+          },
+          extra: {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+          },
+        });
+        alert('Test message sent to Sentry! Check your Sentry dashboard.');
+      } finally {
+        setLoading(null);
+      }
+    }, 0);
   };
 
-  const handlePerformanceTracking = async () => {
+  const handlePerformanceTracking = () => {
+    // Immediate UI feedback
     setLoading('performance');
     
-    // Start a performance span
-    const span = Sentry.startSpan(
-      {
-        name: '🧪 TSG Dashboard Performance Test',
-        op: 'test.performance',
-      },
-      async () => {
-        // Simulate some work
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        
-        // Add breadcrumb
-        Sentry.addBreadcrumb({
-          category: 'test',
-          message: 'Performance test completed',
-          level: 'info',
-        });
-        
-        return 'Performance test completed';
-      }
-    );
+    // Defer performance tracking to next tick to avoid blocking UI
+    setTimeout(async () => {
+      try {
+        // Start a performance span
+        const span = Sentry.startSpan(
+          {
+            name: '🧪 TSG Dashboard Performance Test',
+            op: 'test.performance',
+          },
+          async () => {
+            // Simulate some work
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            
+            // Add breadcrumb
+            Sentry.addBreadcrumb({
+              category: 'test',
+              message: 'Performance test completed',
+              level: 'info',
+            });
+            
+            return 'Performance test completed';
+          }
+        );
 
-    await span;
-    alert('Performance tracking sent to Sentry! Check your Sentry dashboard.');
-    setLoading(null);
+        await span;
+        alert('Performance tracking sent to Sentry! Check your Sentry dashboard.');
+      } finally {
+        setLoading(null);
+      }
+    }, 0);
   };
 
   return (
