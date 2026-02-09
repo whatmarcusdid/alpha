@@ -25,6 +25,7 @@ import {
   type DeliveryScoutRequest,
   type DeliveryScoutResponse,
   type DeliveryScoutAction,
+  type CreateUserPayload,
   type UpdateMeetingPayload,
   type UpdateMetricsPayload,
   type UpdateCompanyInfoPayload,
@@ -106,7 +107,8 @@ function validateRequestBody(body: any): string | null {
     return 'Missing or invalid "action" field';
   }
 
-  if (!body.userId || typeof body.userId !== 'string') {
+  // userId is optional for create_user action (since we're creating the user)
+  if (body.action !== 'create_user' && (!body.userId || typeof body.userId !== 'string')) {
     return 'Missing or invalid "userId" field';
   }
 
@@ -116,6 +118,7 @@ function validateRequestBody(body: any): string | null {
 
   // Validate action is one of the allowed types
   const validActions: DeliveryScoutAction[] = [
+    'create_user',
     'update_meeting',
     'update_metrics',
     'update_company_info',
@@ -131,6 +134,140 @@ function validateRequestBody(body: any): string | null {
   }
 
   return null;
+}
+
+// ============================================================================
+// CREATE HANDLERS - Create new user or documents
+// ============================================================================
+
+/**
+ * Creates a new user document in Firestore
+ * 
+ * IDEMPOTENT: No - creates a new document with auto-generated ID each time
+ * SPECIAL: Does not require userId since we're creating the user
+ * 
+ * @param data - User data (requires email, displayName, tier)
+ * @returns Success response with auto-generated userId
+ * @throws Error if validation fails or creation fails
+ * 
+ * @example
+ * handleCreateUser({
+ *   email: 'john@blueridgeplumbing.com',
+ *   displayName: 'John Smith',
+ *   tier: 'advanced',
+ *   companyName: 'Blue Ridge Plumbing',
+ *   websiteUrl: 'https://blueridgeplumbing.com'
+ * })
+ */
+async function handleCreateUser(
+  data: unknown
+): Promise<DeliveryScoutResponse> {
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+
+  // Validate payload with Zod schema
+  const validation = validatePayload(ValidationSchemas.create_user, data);
+  if (!validation.success) {
+    return {
+      success: false,
+      error: 'Validation failed',
+      validationErrors: validation.errors,
+    };
+  }
+
+  const {
+    email,
+    displayName,
+    tier,
+    companyName,
+    websiteUrl,
+    businessService,
+    serviceArea,
+    yearFounded,
+    numEmployees,
+    address,
+    city,
+    state,
+    zipCode,
+  } = validation.data;
+
+  try {
+    // Determine hours based on tier
+    // Essential: 3 hrs/month support
+    // Advanced: 8 hrs/month support
+    // Premium: 15 hrs/month support
+    const tierHours = {
+      essential: { support: 3, maintenance: 6 },
+      advanced: { support: 8, maintenance: 12 },
+      premium: { support: 15, maintenance: 20 },
+    };
+
+    const hours = tierHours[tier];
+
+    // Build user document
+    const userData = {
+      email,
+      displayName,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      
+      // Subscription details
+      subscription: {
+        tier,
+        status: 'active' as const,
+        startDate: admin.firestore.FieldValue.serverTimestamp(),
+        endDate: null,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      
+      // Initialize metrics with defaults
+      metrics: {
+        websiteTraffic: 0,
+        averageSiteSpeed: 0,
+        supportHoursRemaining: hours.support,
+        maintenanceHoursRemaining: hours.maintenance,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      
+      // Company information (if provided)
+      company: {
+        legalName: companyName || '',
+        websiteUrl: websiteUrl || '',
+        businessService: businessService || '',
+        serviceArea: serviceArea || '',
+        yearFounded: yearFounded || null,
+        numEmployees: numEmployees || null,
+        address: address || '',
+        city: city || '',
+        state: state || '',
+        zipCode: zipCode || '',
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      
+      // Initialize meeting as null/empty
+      meeting: null,
+    };
+
+    // Create new user document with auto-generated ID
+    const usersRef = adminDb.collection('users');
+    const newUserRef = await usersRef.add(userData);
+
+    console.log('👤 User created successfully:', { 
+      userId: newUserRef.id, 
+      email, 
+      tier,
+      supportHours: hours.support,
+    });
+
+    return {
+      success: true,
+      message: 'User created successfully',
+      userId: newUserRef.id,
+    };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw new Error('Failed to create user');
+  }
 }
 
 // ============================================================================
@@ -737,6 +874,11 @@ export async function POST(request: NextRequest) {
     let response: DeliveryScoutResponse;
 
     switch (action) {
+      case 'create_user':
+        // Special case: create_user doesn't need userId (we're creating it)
+        response = await handleCreateUser(data);
+        break;
+
       case 'update_meeting':
         response = await handleUpdateMeeting(userId, data);
         break;

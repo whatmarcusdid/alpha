@@ -35,6 +35,11 @@ const SiteStatusSchema = z.enum(['online', 'offline', 'maintenance']);
 const ReportTypeSchema = z.enum(['monthly', 'quarterly', 'annual', 'custom']);
 
 /**
+ * Subscription tier
+ */
+const SubscriptionTierSchema = z.enum(['essential', 'advanced', 'premium']);
+
+/**
  * Positive number validation helper
  */
 const PositiveNumber = z.number().positive('Must be a positive number');
@@ -198,6 +203,30 @@ export const CreateTicketSchema = z.object({
 export type CreateTicketPayload = z.infer<typeof CreateTicketSchema>;
 
 /**
+ * Schema for create_user action
+ * Required: email, displayName, tier
+ * Optional company fields will be added to company object
+ */
+export const CreateUserSchema = z.object({
+  email: z.string().email('Must be a valid email address'),
+  displayName: NonEmptyString,
+  tier: SubscriptionTierSchema,
+  // Optional company fields
+  companyName: OptionalNonEmptyString,
+  websiteUrl: z.string().url('Website URL must be valid (e.g., https://example.com)').optional(),
+  businessService: OptionalNonEmptyString,
+  serviceArea: OptionalNonEmptyString,
+  yearFounded: z.number().int().min(1800).max(new Date().getFullYear()).optional(),
+  numEmployees: z.number().int().positive('Number of employees must be positive').optional(),
+  address: OptionalNonEmptyString,
+  city: OptionalNonEmptyString,
+  state: OptionalNonEmptyString,
+  zipCode: OptionalNonEmptyString,
+});
+
+export type CreateUserPayload = z.infer<typeof CreateUserSchema>;
+
+/**
  * Schema for update_ticket action
  * Required: ticketId
  * At least one update field must be provided
@@ -233,6 +262,7 @@ export type UpdateTicketPayload = z.infer<typeof UpdateTicketSchema>;
  * Available actions that Lindy AI can trigger
  */
 export type DeliveryScoutAction =
+  | 'create_user'
   | 'update_meeting'
   | 'update_metrics'
   | 'update_company_info'
@@ -324,6 +354,7 @@ export function validatePayload<T>(
  * Used by the API route to validate incoming payloads
  */
 export const ValidationSchemas = {
+  create_user: CreateUserSchema,
   update_meeting: UpdateMeetingSchema,
   update_metrics: UpdateMetricsSchema,
   update_company_info: UpdateCompanyInfoSchema,
