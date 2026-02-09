@@ -31,49 +31,65 @@ export function SignUpForm() {
       const tier = searchParams.get('tier') || 'essential';
       const amount = searchParams.get('amount') || '0';
       const billingCycle = searchParams.get('billingCycle') || 'annual';
-      const session_id = searchParams.get('session_id') || '';
 
-      // Create user with Firebase Auth
+      // 1. Create user with Firebase Auth
       const user = await signUpWithEmail(email, password, name);
       
-      // Create user document with subscription data
-      await createUserWithSubscription(
-        user.uid,
-        user.email || email,
-        name,
-        {
-          tier: tier as 'essential' | 'advanced' | 'premium',
-          billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
-          amount: parseFloat(amount),
-          paymentIntentId: session_id, // Store session_id temporarily
-        }
-      );
-      
-      // Fetch and link Stripe customer/subscription IDs if session_id exists
-      if (session_id) {
-        try {
-          const response = await fetch('/api/stripe/get-session-details', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: session_id }),
-          });
-
+      // 2. Check for pending subscription FIRST (before creating user doc)
+      let pendingSubscription = null;
+      try {
+        const response = await fetch('/api/stripe/claim-pending-subscription', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await user.getIdToken()}`,
+          },
+          body: JSON.stringify({ email: email.toLowerCase().trim() }),
+        });
+        
+        if (response.ok) {
           const data = await response.json();
-
-          if (data.success && data.customerId) {
-            await linkStripeCustomer(
-              user.uid,
-              data.customerId,
-              data.subscriptionId || ''
-            );
+          if (data.success && data.subscription) {
+            pendingSubscription = data.subscription;
+            console.log('✅ Found pending subscription:', pendingSubscription);
           }
-        } catch (stripeError) {
-          // Log error but don't block user flow
-          console.error('Failed to link Stripe customer:', stripeError);
         }
+      } catch (pendingError) {
+        console.log('ℹ️ No pending subscription found (this is okay for new signups)');
       }
       
-      // 🆕 Send Slack notification for new signup
+      // 3. Create user document with subscription data
+      if (pendingSubscription) {
+        // Use data from pending subscription (from Stripe webhook)
+        await createUserWithSubscription(
+          user.uid,
+          user.email || email,
+          name,
+          {
+            tier: pendingSubscription.tier as 'essential' | 'advanced' | 'premium',
+            billingCycle: pendingSubscription.billingCycle === 'monthly' ? 'monthly' : 'yearly',
+            amount: pendingSubscription.amount || parseFloat(amount),
+            stripeCustomerId: pendingSubscription.stripeCustomerId,
+            stripeSubscriptionId: pendingSubscription.stripeSubscriptionId,
+          }
+        );
+      } else {
+        // Fallback: No pending subscription found, create with URL params
+        await createUserWithSubscription(
+          user.uid,
+          user.email || email,
+          name,
+          {
+            tier: tier as 'essential' | 'advanced' | 'premium',
+            billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
+            amount: parseFloat(amount),
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+          }
+        );
+      }
+      
+      // 4. Send Slack notification for new signup
       try {
         await fetch('/api/notifications/new-user', {
           method: 'POST',
@@ -93,7 +109,7 @@ export function SignUpForm() {
         console.error('⚠️ Failed to send Slack notification:', notificationError);
       }
       
-      // Redirect to WordPress credentials page
+      // 5. Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);
@@ -111,49 +127,65 @@ export function SignUpForm() {
       const tier = searchParams.get('tier') || 'essential';
       const amount = searchParams.get('amount') || '0';
       const billingCycle = searchParams.get('billingCycle') || 'annual';
-      const session_id = searchParams.get('session_id') || '';
 
-      // Sign in with Google
+      // 1. Sign in with Google
       const user = await signInWithGoogle();
       
-      // Create user document with subscription data
-      await createUserWithSubscription(
-        user.uid,
-        user.email || '',
-        user.displayName || 'Google User',
-        {
-          tier: tier as 'essential' | 'advanced' | 'premium',
-          billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
-          amount: parseFloat(amount),
-          paymentIntentId: session_id, // Store session_id temporarily
-        }
-      );
-      
-      // Fetch and link Stripe customer/subscription IDs if session_id exists
-      if (session_id) {
-        try {
-          const response = await fetch('/api/stripe/get-session-details', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: session_id }),
-          });
-
+      // 2. Check for pending subscription FIRST (before creating user doc)
+      let pendingSubscription = null;
+      try {
+        const response = await fetch('/api/stripe/claim-pending-subscription', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await user.getIdToken()}`,
+          },
+          body: JSON.stringify({ email: (user.email || '').toLowerCase().trim() }),
+        });
+        
+        if (response.ok) {
           const data = await response.json();
-
-          if (data.success && data.customerId) {
-            await linkStripeCustomer(
-              user.uid,
-              data.customerId,
-              data.subscriptionId || ''
-            );
+          if (data.success && data.subscription) {
+            pendingSubscription = data.subscription;
+            console.log('✅ Found pending subscription:', pendingSubscription);
           }
-        } catch (stripeError) {
-          // Log error but don't block user flow
-          console.error('Failed to link Stripe customer:', stripeError);
         }
+      } catch (pendingError) {
+        console.log('ℹ️ No pending subscription found (this is okay for new signups)');
       }
       
-      // 🆕 Send Slack notification for new signup
+      // 3. Create user document with subscription data
+      if (pendingSubscription) {
+        // Use data from pending subscription (from Stripe webhook)
+        await createUserWithSubscription(
+          user.uid,
+          user.email || '',
+          user.displayName || 'Google User',
+          {
+            tier: pendingSubscription.tier as 'essential' | 'advanced' | 'premium',
+            billingCycle: pendingSubscription.billingCycle === 'monthly' ? 'monthly' : 'yearly',
+            amount: pendingSubscription.amount || parseFloat(amount),
+            stripeCustomerId: pendingSubscription.stripeCustomerId,
+            stripeSubscriptionId: pendingSubscription.stripeSubscriptionId,
+          }
+        );
+      } else {
+        // Fallback: No pending subscription found, create with URL params
+        await createUserWithSubscription(
+          user.uid,
+          user.email || '',
+          user.displayName || 'Google User',
+          {
+            tier: tier as 'essential' | 'advanced' | 'premium',
+            billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
+            amount: parseFloat(amount),
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+          }
+        );
+      }
+      
+      // 4. Send Slack notification for new signup
       try {
         await fetch('/api/notifications/new-user', {
           method: 'POST',
@@ -173,7 +205,7 @@ export function SignUpForm() {
         console.error('⚠️ Failed to send Slack notification:', notificationError);
       }
       
-      // Redirect to WordPress credentials page
+      // 5. Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);
@@ -191,49 +223,65 @@ export function SignUpForm() {
       const tier = searchParams.get('tier') || 'essential';
       const amount = searchParams.get('amount') || '0';
       const billingCycle = searchParams.get('billingCycle') || 'annual';
-      const session_id = searchParams.get('session_id') || '';
 
-      // Sign in with Apple
+      // 1. Sign in with Apple
       const user = await signInWithApple();
       
-      // Create user document with subscription data
-      await createUserWithSubscription(
-        user.uid,
-        user.email || '',
-        user.displayName || 'Apple User',
-        {
-          tier: tier as 'essential' | 'advanced' | 'premium',
-          billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
-          amount: parseFloat(amount),
-          paymentIntentId: session_id, // Store session_id temporarily
-        }
-      );
-      
-      // Fetch and link Stripe customer/subscription IDs if session_id exists
-      if (session_id) {
-        try {
-          const response = await fetch('/api/stripe/get-session-details', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: session_id }),
-          });
-
+      // 2. Check for pending subscription FIRST (before creating user doc)
+      let pendingSubscription = null;
+      try {
+        const response = await fetch('/api/stripe/claim-pending-subscription', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await user.getIdToken()}`,
+          },
+          body: JSON.stringify({ email: (user.email || '').toLowerCase().trim() }),
+        });
+        
+        if (response.ok) {
           const data = await response.json();
-
-          if (data.success && data.customerId) {
-            await linkStripeCustomer(
-              user.uid,
-              data.customerId,
-              data.subscriptionId || ''
-            );
+          if (data.success && data.subscription) {
+            pendingSubscription = data.subscription;
+            console.log('✅ Found pending subscription:', pendingSubscription);
           }
-        } catch (stripeError) {
-          // Log error but don't block user flow
-          console.error('Failed to link Stripe customer:', stripeError);
         }
+      } catch (pendingError) {
+        console.log('ℹ️ No pending subscription found (this is okay for new signups)');
       }
       
-      // 🆕 Send Slack notification for new signup
+      // 3. Create user document with subscription data
+      if (pendingSubscription) {
+        // Use data from pending subscription (from Stripe webhook)
+        await createUserWithSubscription(
+          user.uid,
+          user.email || '',
+          user.displayName || 'Apple User',
+          {
+            tier: pendingSubscription.tier as 'essential' | 'advanced' | 'premium',
+            billingCycle: pendingSubscription.billingCycle === 'monthly' ? 'monthly' : 'yearly',
+            amount: pendingSubscription.amount || parseFloat(amount),
+            stripeCustomerId: pendingSubscription.stripeCustomerId,
+            stripeSubscriptionId: pendingSubscription.stripeSubscriptionId,
+          }
+        );
+      } else {
+        // Fallback: No pending subscription found, create with URL params
+        await createUserWithSubscription(
+          user.uid,
+          user.email || '',
+          user.displayName || 'Apple User',
+          {
+            tier: tier as 'essential' | 'advanced' | 'premium',
+            billingCycle: billingCycle === 'monthly' ? 'monthly' : 'yearly',
+            amount: parseFloat(amount),
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+          }
+        );
+      }
+      
+      // 4. Send Slack notification for new signup
       try {
         await fetch('/api/notifications/new-user', {
           method: 'POST',
@@ -253,7 +301,7 @@ export function SignUpForm() {
         console.error('⚠️ Failed to send Slack notification:', notificationError);
       }
       
-      // Redirect to WordPress credentials page
+      // 5. Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
       setError(err.message);

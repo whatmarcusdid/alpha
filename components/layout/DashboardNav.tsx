@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Home, 
   Building, 
@@ -35,9 +36,15 @@ const allNavItems = [...mainNavItems, ...moreNavItems];
 export function DashboardNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Get user display info
+  const userDisplayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+  const userEmail = user?.email || '';
+  const userInitial = userDisplayName.charAt(0).toUpperCase();
 
   const handleSignOut = async () => {
     await signOut();
@@ -68,7 +75,7 @@ export function DashboardNav() {
         className="flex items-center space-x-2 min-w-[112px] min-h-[71px] justify-center hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40 rounded-lg transition-colors"
       >
         <div className="w-8 h-8 rounded-full bg-[#1b4a41] flex items-center justify-center">
-          <span className="text-white text-sm font-semibold">M</span>
+          <span className="text-white text-sm font-semibold">{userInitial}</span>
         </div>
         <ChevronDown className="h-4 w-4 text-gray-600" />
       </button>
@@ -79,15 +86,15 @@ export function DashboardNav() {
               href="/dashboard/profile"
               className="block px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-200"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#1b4a41] flex items-center justify-center text-white font-semibold">
-                  M
-                </div>
-                <div className="flex-1">
-                  <div className="font-semibold text-[#232521]">Marcus White</div>
-                  <div className="text-sm text-gray-600">whitem0824@gmail.com</div>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#1b4a41] flex items-center justify-center text-white font-semibold">
+                {userInitial}
               </div>
+              <div className="flex-1">
+                <div className="font-semibold text-[#232521]">{userDisplayName}</div>
+                <div className="text-sm text-gray-600">{userEmail}</div>
+              </div>
+            </div>
             </Link>
           <button
             onClick={handleSignOut}

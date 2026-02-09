@@ -3,8 +3,7 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
 import { checkoutLimiter } from '@/lib/middleware/rateLimiting';
-import { validateRequestBody, createSetupIntentSchema } from '@/lib/validation';
-import { getUserProfile } from '@/lib/firestore/profile';
+import { adminDb } from '@/lib/firebase/admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -20,34 +19,45 @@ export const POST = withAuthAndRateLimit(
           // Set span attribute for userId
           span.setAttribute('userId', userId);
 
-          // Validate request body (empty schema catches unexpected params)
-          const validation = await validateRequestBody(req, createSetupIntentSchema);
-          if (!validation.success) {
-            return validation.error;
+          // Check if Firebase Admin is initialized
+          if (!adminDb) {
+            console.error('Firebase Admin not initialized');
+            return NextResponse.json(
+              { error: 'Server configuration error' },
+              { status: 500 }
+            );
           }
 
-          // Get user profile to fetch Stripe customer ID
-          const userProfile = await getUserProfile(userId);
-          const customerId = userProfile?.stripeCustomerId;
+          // Get user profile to fetch Stripe customer ID using Admin SDK
+          const userDoc = await adminDb.collection('users').doc(userId).get();
+          const userData = userDoc.data();
+          const customerId = userData?.stripeCustomerId;
 
-          // Set span attribute for customerId if available
-          if (customerId) {
-            span.setAttribute('customerId', customerId.substring(0, 10) + '...');
-          } else {
-            // Capture warning if no customer found
+          // If no Stripe customer, user needs to subscribe first
+          if (!customerId) {
             Sentry.captureMessage('SetupIntent: No Stripe customer found', {
               level: 'warning',
               extra: {
                 userId,
               },
             });
+            
+            return NextResponse.json(
+              { 
+                error: 'No active subscription found. Please subscribe to a plan first.',
+                code: 'NO_SUBSCRIPTION'
+              },
+              { status: 400 }
+            );
           }
+
+          // Set span attribute for customerId
+          span.setAttribute('customerId', customerId.substring(0, 10) + '...');
 
           // Create a SetupIntent for updating payment method
           const setupIntent = await stripe.setupIntents.create({
             payment_method_types: ['card'],
-            // Attach to customer if available
-            ...(customerId && { customer: customerId }),
+            customer: customerId,
           });
 
           return NextResponse.json({

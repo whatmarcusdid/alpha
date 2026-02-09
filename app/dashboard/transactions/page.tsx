@@ -26,6 +26,7 @@ export default function TransactionsPage() {
   
   const [currentTier, setCurrentTier] = useState<Tier>('essential'); // Default tier
   const [renewalDate, setRenewalDate] = useState<string>('6/15/26');
+  const [renewalDateISO, setRenewalDateISO] = useState<string | null>(null); // ISO date for UpgradeConfirmation
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled'>('active');
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -33,6 +34,9 @@ export default function TransactionsPage() {
   const [selectedUpgradeTier, setSelectedUpgradeTier] = useState<Tier | null>(null);
   const [showManageModal, setShowManageModal] = useState(false);
   const [transactionSortOrder, setTransactionSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState<{ brand: string; last4: string } | null>(null);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     show: boolean;
@@ -45,42 +49,8 @@ export default function TransactionsPage() {
     subtitle: undefined 
   });
 
-  // Mock transaction data - In production, this would be fetched from Firestore/Stripe
-  const mockTransactions: Transaction[] = [
-    {
-      id: "txn-001",
-      orderId: "#BCC-001205",
-      description: `Genie Maintenance - ${tierNames[currentTier]} Plan`,
-      date: "06-15-2024",
-      amount: "$679.00",
-      status: "completed",
-      paymentMethod: "•••• 4242",
-      invoiceUrl: "https://example.com/invoice-001205.pdf"
-    },
-    {
-      id: "txn-002",
-      orderId: "#BCC-001189",
-      description: `Genie Maintenance - ${tierNames[currentTier]} Plan`,
-      date: "06-15-2023",
-      amount: "$679.00",
-      status: "completed",
-      paymentMethod: "•••• 4242",
-      invoiceUrl: "https://example.com/invoice-001189.pdf"
-    },
-    {
-      id: "txn-003",
-      orderId: "#BCC-001173",
-      description: `Genie Maintenance - ${tierNames[currentTier]} Plan`,
-      date: "06-15-2022",
-      amount: "$679.00",
-      status: "completed",
-      paymentMethod: "•••• 4242",
-      invoiceUrl: "https://example.com/invoice-001173.pdf"
-    }
-  ];
-
   // Sort transactions based on sortOrder
-  const sortedTransactions = [...mockTransactions].sort((a, b) => {
+  const sortedTransactions = [...transactions].sort((a, b) => {
     const dateA = new Date(a.date).getTime();
     const dateB = new Date(b.date).getTime();
     return transactionSortOrder === 'asc' ? dateA - dateB : dateB - dateA;
@@ -99,27 +69,43 @@ export default function TransactionsPage() {
       if (!user?.uid) return;
       
       try {
-        const { getUserSubscription } = await import('@/lib/firestore');
-        const subscription = await getUserSubscription(user.uid);
+        // Use the helper function that handles browser-only initialization
+        const { getUserWithPaymentMethod } = await import('@/lib/firestore');
+        const userData = await getUserWithPaymentMethod(user.uid);
         
-        if (subscription) {
-          // Map Firestore tier to component tier type
-          const tier = subscription.tier as Tier;
-          setCurrentTier(tier);
-          setSubscriptionStatus(subscription.status as 'active' | 'canceled');
+        if (userData) {
+          // Set tier and status
+          setCurrentTier(userData.subscription.tier as Tier);
+          setSubscriptionStatus(userData.subscription.status as 'active' | 'canceled');
           
-          // Format renewal or expiration date based on status
-          const dateToFormat = subscription.status === 'canceled' 
-            ? subscription.expiresAt 
-            : subscription.renewalDate;
+          // Handle renewal date
+          const dateToFormat = userData.subscription.status === 'canceled' 
+            ? userData.subscription.expiresAt 
+            : userData.subscription.renewalDate;
           
           if (dateToFormat) {
+            // Store ISO date string for UpgradeConfirmation
+            setRenewalDateISO(dateToFormat);
+            
+            // Format for display
             const date = new Date(dateToFormat);
             setRenewalDate(date.toLocaleDateString('en-US', { 
               month: 'numeric', 
               day: 'numeric', 
               year: '2-digit' 
             }));
+          }
+          
+          // Set payment method
+          if (userData.paymentMethod) {
+            setPaymentMethod({
+              brand: userData.paymentMethod.brand,
+              last4: userData.paymentMethod.last4
+            });
+            console.log('✅ Payment method loaded:', userData.paymentMethod.brand, '****' + userData.paymentMethod.last4);
+          } else {
+            setPaymentMethod(null);
+            console.log('⚠️ No payment method on file');
           }
         }
       } catch (error) {
@@ -130,6 +116,63 @@ export default function TransactionsPage() {
     };
 
     fetchSubscriptionData();
+  }, [user?.uid]);
+
+  // Fetch user's invoice history from Stripe
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      if (!user?.uid) return;
+      
+      setIsLoadingTransactions(true);
+      
+      try {
+        // Import the pre-initialized auth instance
+        const { auth } = await import('@/lib/firebase');
+        
+        if (!auth) {
+          console.error('Firebase auth not initialized');
+          setIsLoadingTransactions(false);
+          return;
+        }
+        
+        const currentUser = auth.currentUser;
+        
+        if (!currentUser) {
+          console.error('User not authenticated');
+          setIsLoadingTransactions(false);
+          return;
+        }
+        
+        const token = await currentUser.getIdToken();
+
+        // Call get-invoices API
+        const response = await fetch('/api/stripe/get-invoices', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch invoices');
+        }
+
+        // Set transactions from API response
+        setTransactions(data.invoices || []);
+        console.log(`✅ Loaded ${data.invoices?.length || 0} invoices`);
+      } catch (error) {
+        console.error('Error fetching invoices:', error);
+        // Don't show error notification - just show empty state
+        // User experience: show empty state rather than scary error message
+        setTransactions([]);
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    };
+
+    fetchInvoices();
   }, [user?.uid]);
 
   const handleSelectPlan = (tier: Tier) => {
@@ -289,14 +332,29 @@ export default function TransactionsPage() {
             Billing History
           </h2>
           
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <TransactionsTable 
-              transactions={sortedTransactions}
-              sortOrder={transactionSortOrder}
-              onSortChange={handleToggleSort}
-              onDownload={handleDownloadInvoice}
-            />
-          </div>
+          {isLoadingTransactions ? (
+            // Loading state
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9be382]"></div>
+              <p className="ml-3 text-gray-600">Loading transactions...</p>
+            </div>
+          ) : transactions.length === 0 ? (
+            // Empty state
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-base">No transactions yet</p>
+              <p className="text-sm mt-2">Your billing history will appear here after your first payment.</p>
+            </div>
+          ) : (
+            // Transactions table
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <TransactionsTable 
+                transactions={sortedTransactions}
+                sortOrder={transactionSortOrder}
+                onSortChange={handleToggleSort}
+                onDownload={handleDownloadInvoice}
+              />
+            </div>
+          )}
         </div>
 
       </main>
@@ -329,6 +387,8 @@ export default function TransactionsPage() {
                             setShowUpgradeModal(true);
                         }}
                         isReactivation={subscriptionStatus === 'canceled'}
+                        paymentMethod={paymentMethod}
+                        renewalDate={renewalDateISO}
                     />
                 )}
 
@@ -340,7 +400,7 @@ export default function TransactionsPage() {
                         console.log('Cancel subscription clicked with reason:', reason);
                     }}
                     onUpdatePaymentClick={handleUpdatePaymentMethod}
-                    currentPaymentMethod="Visa •••• 4242"
+                    currentPaymentMethod={paymentMethod ? `${paymentMethod.brand.charAt(0).toUpperCase() + paymentMethod.brand.slice(1)} •••• ${paymentMethod.last4}` : 'No payment method on file'}
                 />
             </>
         )

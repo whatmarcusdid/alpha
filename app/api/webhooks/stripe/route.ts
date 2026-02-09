@@ -5,7 +5,9 @@ import * as Sentry from '@sentry/nextjs';
 import { adminDb } from '@/lib/firebase/admin';
 import * as admin from 'firebase-admin';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-12-15.clover',
+});
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -136,23 +138,62 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
   const userSnapshot = await userRef.get();
 
   if (userSnapshot.empty) {
-    // Critical: No user found for a paid customer
-    Sentry.captureMessage('Webhook: No user found for paid customer', {
-      level: 'error',
-      tags: {
-        webhook: 'true',
-        stripe: 'true',
-        critical: 'true',
-      },
-      extra: {
-        customerId: customerId?.substring(0, 10) + '...',
-        sessionId: session.id?.substring(0, 10) + '...',
-        amount: session.amount_total,
-        email: '[REDACTED]', // Email is already redacted by server config
-      },
+    // No user found - this is expected for "pay first, signup later" flow
+    // Store in pending_subscriptions collection for later linking
+    
+    // Get customer email from Stripe
+    const customer = await stripe.customers.retrieve(customerId);
+    const customerEmail = (customer as Stripe.Customer).email;
+    
+    if (!customerEmail) {
+      Sentry.captureMessage('Webhook: No email found for customer', {
+        level: 'error',
+        extra: { customerId, sessionId: session.id },
+      });
+      console.error(`No email found for Stripe customer: ${customerId}`);
+      return;
+    }
+    
+    // Normalize email (lowercase, trimmed)
+    const normalizedEmail = customerEmail.toLowerCase().trim();
+    
+    // Get subscription details
+    const subscriptionId = session.subscription as string;
+    let subscriptionData = null;
+    
+    if (subscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      subscriptionData = {
+        id: subscription.id,
+        status: subscription.status,
+        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+        priceId: subscription.items.data[0]?.price.id,
+      };
+    }
+    
+    // Store in pending_subscriptions collection
+    const pendingRef = adminDb.collection('pending_subscriptions').doc(normalizedEmail);
+    await pendingRef.set({
+      email: normalizedEmail,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscriptionId,
+      stripeSessionId: session.id,
+      tier: session.metadata?.tier || 'essential',
+      billingCycle: session.metadata?.billingCycle || 'annual',
+      amount: session.amount_total ? session.amount_total / 100 : 0,
+      subscription: subscriptionData,
+      createdAt: admin.firestore.Timestamp.now(),
+      status: 'pending', // Will be 'claimed' after user signs up
     });
     
-    console.error(`No user found with Stripe customer ID: ${customerId}`);
+    console.log(`✅ Stored pending subscription for email: ${normalizedEmail}`);
+    
+    Sentry.captureMessage('Webhook: Stored pending subscription', {
+      level: 'info',
+      extra: { email: normalizedEmail, customerId, subscriptionId },
+    });
+    
     return;
   }
 

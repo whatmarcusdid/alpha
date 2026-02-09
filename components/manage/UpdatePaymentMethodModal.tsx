@@ -160,13 +160,87 @@ export function UpdatePaymentMethodModal({ isOpen, onClose, onSave }: UpdatePaym
       }
 
       if (setupIntent && setupIntent.status === 'succeeded') {
-        // Payment method successfully added
-        await onSave(formData);
-        onClose();
+        // Extract payment method ID from setupIntent
+        const paymentMethodId = typeof setupIntent.payment_method === 'string' 
+          ? setupIntent.payment_method 
+          : setupIntent.payment_method?.id;
+
+        if (!paymentMethodId) {
+          alert('Unable to update payment method - please try again');
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          // Get Firebase auth token
+          const { getAuth } = await import('firebase/auth');
+          let auth;
+          
+          if (typeof window !== 'undefined') {
+            await import('@/lib/firebase');
+            auth = getAuth();
+          }
+          
+          const user = auth?.currentUser;
+          
+          if (!user) {
+            throw new Error('Not authenticated');
+          }
+          
+          const token = await user.getIdToken();
+
+          // Call attach-payment-method API
+          const response = await fetch('/api/stripe/attach-payment-method', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ paymentMethodId }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            // Handle specific error messages
+            const errorMessage = data.error || 'Unable to update payment method';
+            
+            // Check for card-specific errors
+            if (errorMessage.toLowerCase().includes('card') || 
+                errorMessage.toLowerCase().includes('declined')) {
+              alert('Card declined - please try another card');
+            } else {
+              alert('Unable to update payment method - please try again');
+            }
+            
+            setIsLoading(false);
+            return;
+          }
+
+          // Success - payment method attached and set as default
+          console.log(`✅ Payment method updated: ${data.card.brand} ****${data.card.last4}`);
+          
+          // Call onSave with billing address data
+          await onSave(formData);
+          onClose();
+        } catch (apiError: any) {
+          console.error('Error calling attach-payment-method API:', apiError);
+          alert('Unable to update payment method - please try again');
+          setIsLoading(false);
+          return;
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating payment method:', error);
-      alert('An error occurred while updating payment method. Please try again.');
+      
+      // User-friendly error messages
+      if (error.message?.toLowerCase().includes('card') || 
+          error.message?.toLowerCase().includes('declined')) {
+        alert('Card declined - please try another card');
+      } else {
+        alert('Unable to update payment method - please try again');
+      }
+      
       setIsLoading(false);
     }
   };

@@ -11,12 +11,14 @@ interface UpdatePaymentMethodModalWrapperProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (paymentData: PaymentMethodData) => Promise<void>;
+  onError?: (message: string) => void;
 }
 
 export function UpdatePaymentMethodModalWrapper({ 
   isOpen, 
   onClose, 
-  onSave 
+  onSave,
+  onError
 }: UpdatePaymentMethodModalWrapperProps) {
   const [clientSecret, setClientSecret] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -40,14 +42,47 @@ export function UpdatePaymentMethodModalWrapper({
               span.setAttribute('userId', user.uid);
             }
 
+            // Get Firebase auth token
+            const { auth } = await import('@/lib/firebase');
+            
+            if (!auth) {
+              console.error('Firebase auth not initialized');
+              throw new Error('Firebase auth not initialized');
+            }
+            
+            const currentUser = auth.currentUser;
+            
+            if (!currentUser) {
+              console.error('User not authenticated');
+              throw new Error('User not authenticated');
+            }
+            
+            const token = await currentUser.getIdToken();
+
             const response = await fetch('/api/stripe/create-setup-intent', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Authorization': `Bearer ${token}`,
+              },
             });
 
             if (!response.ok) {
-              console.error('Failed to create setup intent:', response.status);
-              throw new Error(`API error: ${response.status}`);
+              const errorData = await response.json();
+              console.error('Failed to create setup intent:', response.status, errorData);
+              
+              // Handle specific error for no subscription
+              if (errorData.code === 'NO_SUBSCRIPTION') {
+                onClose();
+                if (onError) {
+                  onError('Please subscribe to a plan before updating your payment method.');
+                } else {
+                  // Fallback to alert if no onError callback
+                  alert('Please subscribe to a plan before adding a payment method.');
+                }
+                return;
+              }
+              
+              throw new Error(errorData.error || `API error: ${response.status}`);
             }
 
             const data = await response.json();

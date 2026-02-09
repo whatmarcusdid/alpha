@@ -127,6 +127,44 @@ export async function getUserSubscription(userId: string) {
   }
 }
 
+// Get user data including subscription and payment method
+export async function getUserWithPaymentMethod(userId: string) {
+  if (!db) {
+    console.error('Firestore is not initialized. This function must be called on the client side.');
+    return null;
+  }
+  
+  try {
+    const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
+    const userDoc = await firestoreFunctions.getDoc(userRef);
+
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      return {
+        subscription: {
+          tier: data.subscription?.tier || 'essential',
+          renewalDate: data.subscription?.renewalDate || data.subscription?.endDate || null,
+          status: data.subscription?.status || 'active',
+          expiresAt: data.subscription?.expiresAt || null,
+          price: data.subscription?.price || null,
+          billingCycle: data.subscription?.billingCycle || 'yearly',
+        },
+        paymentMethod: data.paymentMethod ? {
+          brand: data.paymentMethod.brand,
+          last4: data.paymentMethod.last4,
+          expMonth: data.paymentMethod.expMonth,
+          expYear: data.paymentMethod.expYear,
+        } : null,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting user data with payment method:', error);
+    return null;
+  }
+}
+
 // WordPress Credentials Function
 export async function updateWordPressCredentials(
   userId: string,
@@ -168,7 +206,8 @@ export async function createUserWithSubscription(
     tier: 'essential' | 'advanced' | 'premium';
     billingCycle: 'monthly' | 'yearly';
     amount: number;
-    paymentIntentId: string;
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
   }
 ) {
   if (!db) {
@@ -196,9 +235,8 @@ export async function createUserWithSubscription(
         status: 'active' as const,
         amount: subscriptionData.amount,
         startDate: firestoreFunctions.serverTimestamp(),
-        paymentIntentId: subscriptionData.paymentIntentId,
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
+        stripeCustomerId: subscriptionData.stripeCustomerId || null,
+        stripeSubscriptionId: subscriptionData.stripeSubscriptionId || null,
       },
       metrics: {
         websiteTraffic: 0,

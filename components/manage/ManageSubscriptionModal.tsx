@@ -300,6 +300,14 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({
           setShowUpdatePaymentModal(false);
           await onUpdatePaymentClick();
         }}
+        onError={(message: string) => {
+          setNotification({
+            type: 'error',
+            show: true,
+            message: 'Unable to Update Payment Method',
+            subtitle: message,
+          });
+        }}
       />
 
       <NotificationToast
