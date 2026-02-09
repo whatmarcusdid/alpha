@@ -73,6 +73,26 @@ export function SignUpForm() {
         }
       }
       
+      // 🆕 Send Slack notification for new signup
+      try {
+        await fetch('/api/notifications/new-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            email: user.email || email,
+            displayName: name || 'New User',
+            tier: (tier || 'essential') as 'essential' | 'advanced' | 'premium',
+            billingCycle: (billingCycle || 'yearly') as 'monthly' | 'yearly',
+            amount: parseFloat(amount || '0'),
+          }),
+        });
+        console.log('✅ Slack notification sent for new user:', user.uid);
+      } catch (notificationError) {
+        // Log error but don't block user flow
+        console.error('⚠️ Failed to send Slack notification:', notificationError);
+      }
+      
       // Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
@@ -133,6 +153,26 @@ export function SignUpForm() {
         }
       }
       
+      // 🆕 Send Slack notification for new signup
+      try {
+        await fetch('/api/notifications/new-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || 'Google User',
+            tier: (tier || 'essential') as 'essential' | 'advanced' | 'premium',
+            billingCycle: (billingCycle || 'yearly') as 'monthly' | 'yearly',
+            amount: parseFloat(amount || '0'),
+          }),
+        });
+        console.log('✅ Slack notification sent for new user:', user.uid);
+      } catch (notificationError) {
+        // Log error but don't block user flow
+        console.error('⚠️ Failed to send Slack notification:', notificationError);
+      }
+      
       // Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
@@ -191,6 +231,26 @@ export function SignUpForm() {
           // Log error but don't block user flow
           console.error('Failed to link Stripe customer:', stripeError);
         }
+      }
+      
+      // 🆕 Send Slack notification for new signup
+      try {
+        await fetch('/api/notifications/new-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || 'Apple User',
+            tier: (tier || 'essential') as 'essential' | 'advanced' | 'premium',
+            billingCycle: (billingCycle || 'yearly') as 'monthly' | 'yearly',
+            amount: parseFloat(amount || '0'),
+          }),
+        });
+        console.log('✅ Slack notification sent for new user:', user.uid);
+      } catch (notificationError) {
+        // Log error but don't block user flow
+        console.error('⚠️ Failed to send Slack notification:', notificationError);
       }
       
       // Redirect to WordPress credentials page
