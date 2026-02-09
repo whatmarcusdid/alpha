@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "create-test-tickets": "tsx scripts/create-test-tickets.ts"
+    "create-test-tickets": "tsx scripts/create-test-tickets.ts",
+    "test:scout": "tsx scripts/test-delivery-scout.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",

@@ -99,6 +99,17 @@ export const generalLimiter = redis
     })
   : null;
 
+// Delivery Scout (Lindy AI): 100 requests per hour per IP
+// Lindy AI automation endpoint - prevents abuse while allowing reasonable automation
+export const deliveryScoutLimiter = redis
+  ? new Ratelimit({
+      redis: redis,
+      limiter: Ratelimit.slidingWindow(100, '1 h'),
+      analytics: true,
+      prefix: 'ratelimit:delivery-scout',
+    })
+  : null;
+
 /**
  * Extract client identifier (IP address) from request
  * 
