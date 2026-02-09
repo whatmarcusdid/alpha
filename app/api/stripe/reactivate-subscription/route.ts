@@ -57,6 +57,10 @@ export async function POST(request: NextRequest) {
 
     const userData = userDoc.data();
     const subscriptionId = userData?.subscription?.stripeSubscriptionId;
+    const currentTier = userData?.subscription?.tier;
+
+    // If no tier specified, reactivate at current tier
+    const tierToReactivate = newTier || currentTier || 'essential';
 
     // Map tiers to Stripe price IDs
     const tierPriceIds: Record<string, string> = {
@@ -65,7 +69,7 @@ export async function POST(request: NextRequest) {
       'premium': 'price_1So9NkPTDVjQnuCn8f6PywGQ',
     };
 
-    const newPriceId = tierPriceIds[newTier];
+    const newPriceId = tierPriceIds[tierToReactivate];
 
     let reactivatedSubscription;
 
@@ -93,7 +97,7 @@ export async function POST(request: NextRequest) {
             items: [{ price: newPriceId }],
             metadata: {
               userId: userId,
-              tier: newTier,
+              tier: tierToReactivate,
             },
           });
         } else {
@@ -123,7 +127,7 @@ export async function POST(request: NextRequest) {
             items: [{ price: newPriceId }],
             metadata: {
               userId: userId,
-              tier: newTier,
+              tier: tierToReactivate,
             },
           });
         } else {
@@ -146,7 +150,7 @@ export async function POST(request: NextRequest) {
         items: [{ price: newPriceId }],
         metadata: {
           userId: userId,
-          tier: newTier,
+          tier: tierToReactivate,
         },
       });
     }
@@ -156,7 +160,7 @@ export async function POST(request: NextRequest) {
 
     // Update Firestore with reactivated subscription
     await adminDb.collection('users').doc(userId).update({
-      'subscription.tier': newTier,
+      'subscription.tier': tierToReactivate,
       'subscription.status': 'active',
       'subscription.stripeSubscriptionId': reactivatedSubscription.id,
       'subscription.renewalDate': renewalDate.toISOString(),
@@ -169,7 +173,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true,
       message: 'Subscription reactivated successfully',
-      newTier,
+      newTier: tierToReactivate,
       renewalDate: renewalDate.toISOString(),
     });
     
