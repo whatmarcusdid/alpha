@@ -1,7 +1,35 @@
 import * as Sentry from '@sentry/nextjs';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Extract IP address from request headers
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'anonymous';
+
+  // Check rate limit
+  const { success, limit, remaining, reset } = await checkRateLimit(ip);
+
+  // If rate limit exceeded, return 429
+  if (!success) {
+    return NextResponse.json(
+      {
+        error: 'Too many requests. Please try again later.',
+        limit,
+        remaining: 0,
+        reset,
+      },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': limit.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': reset.toString(),
+        },
+      }
+    );
+  }
+
   return Sentry.startSpan(
     {
       op: 'http.server',
@@ -27,7 +55,7 @@ export async function GET() {
           },
         });
 
-        // Return a helpful response
+        // Return a helpful response with rate limit headers
         return NextResponse.json(
           {
             success: false,
@@ -40,7 +68,14 @@ export async function GET() {
               'Click the issue to see full context, tags, and breadcrumbs',
             ],
           },
-          { status: 500 }
+          {
+            status: 500,
+            headers: {
+              'X-RateLimit-Limit': limit.toString(),
+              'X-RateLimit-Remaining': remaining.toString(),
+              'X-RateLimit-Reset': reset.toString(),
+            },
+          }
         );
       }
     }
