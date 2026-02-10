@@ -38,33 +38,46 @@ export interface Report {
 
 /**
  * Fetches all reports for a given user, ordered by creation date.
+ * Handles reports created by both the Reports system and Delivery Scout API.
+ * 
  * @param userId - The ID of the user to fetch reports for.
  * @returns A promise that resolves to an array of Report objects.
  */
 export async function getReportsForUser(userId: string): Promise<Report[]> {
-  if (!db) {
+  if (typeof window === 'undefined' || !db) {
     console.error('Firestore is not initialized. This function must be called on the client side.');
     return [];
   }
 
   try {
     const reportsRef = firestoreFunctions.collection(db, 'users', userId, 'reports');
-    const q = firestoreFunctions.query(reportsRef, firestoreFunctions.orderBy('createdDate', 'desc'));
     
-    const snapshot = await firestoreFunctions.getDocs(q);
+    // Don't order by field name since documents may have different field names
+    // (Delivery Scout uses createdAt/lastUpdated, Reports system uses createdDate/updatedDate)
+    const snapshot = await firestoreFunctions.getDocs(reportsRef);
     
-    return snapshot.docs.map((docSnap: any) => {
+    const reports = snapshot.docs.map((docSnap: any) => {
       const data = docSnap.data();
+      
+      // Handle both field name patterns
+      const createdTimestamp = data.createdDate || data.createdAt;
+      const updatedTimestamp = data.updatedDate || data.lastUpdated;
+      
       return {
         id: docSnap.id,
         title: data.title || '',
-        subtitle: data.subtitle || '',
-        createdDate: (data.createdDate as any).toDate().toISOString(),
-        updatedDate: (data.updatedDate as any).toDate().toISOString(),
+        subtitle: data.subtitle || data.summary || '',
+        createdDate: createdTimestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedDate: updatedTimestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
         fileUrl: data.fileUrl || '',
         type: data.type || 'performance',
       } as Report;
     });
+    
+    // Sort client-side by createdDate descending
+    return reports.sort((a: Report, b: Report) => 
+      new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
+    );
   } catch (error) {
     console.error('Error fetching reports:', error);
     return [];
@@ -73,11 +86,13 @@ export async function getReportsForUser(userId: string): Promise<Report[]> {
 
 /**
  * Fetches the 3 most recent reports for a user created within the last 30 days.
+ * Handles reports created by both the Reports system and Delivery Scout API.
+ * 
  * @param userId - The ID of the user to fetch recent reports for.
  * @returns A promise that resolves to an array of up to 3 Report objects.
  */
 export async function getRecentReportsForUser(userId: string): Promise<Report[]> {
-  if (!db) {
+  if (typeof window === 'undefined' || !db) {
     console.error('Firestore is not initialized. This function must be called on the client side.');
     return [];
   }
@@ -85,34 +100,47 @@ export async function getRecentReportsForUser(userId: string): Promise<Report[]>
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoTimestamp = firestoreFunctions.Timestamp.fromDate(thirtyDaysAgo);
 
     const reportsRef = firestoreFunctions.collection(db, 'users', userId, 'reports');
-    const q = firestoreFunctions.query(
-      reportsRef,
-      firestoreFunctions.where('createdDate', '>=', thirtyDaysAgoTimestamp),
-      firestoreFunctions.orderBy('createdDate', 'desc'),
-      firestoreFunctions.limit(3)
-    );
-
-    const snapshot = await firestoreFunctions.getDocs(q);
+    
+    // Fetch all reports and filter/sort client-side to handle mixed field names
+    const snapshot = await firestoreFunctions.getDocs(reportsRef);
 
     if (snapshot.empty) {
       return [];
     }
 
-    return snapshot.docs.map((docSnap: any) => {
-      const data = docSnap.data();
-      return {
-        id: docSnap.id,
-        title: data.title || '',
-        subtitle: data.subtitle || '',
-        createdDate: (data.createdDate as any).toDate().toISOString(),
-        updatedDate: (data.updatedDate as any).toDate().toISOString(),
-        fileUrl: data.fileUrl || '',
-        type: data.type || 'performance',
-      } as Report;
-    });
+    interface ReportWithDate extends Report {
+      _createdDateObj: Date;
+    }
+
+    const reports: ReportWithDate[] = snapshot.docs
+      .map((docSnap: any) => {
+        const data = docSnap.data();
+        
+        // Handle both field name patterns
+        const createdTimestamp = data.createdDate || data.createdAt;
+        const updatedTimestamp = data.updatedDate || data.lastUpdated;
+        
+        const createdDate = createdTimestamp?.toDate?.() || new Date();
+        
+        return {
+          id: docSnap.id,
+          title: data.title || '',
+          subtitle: data.subtitle || data.summary || '',
+          createdDate: createdDate.toISOString(),
+          updatedDate: updatedTimestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+          fileUrl: data.fileUrl || '',
+          type: data.type || 'performance',
+          _createdDateObj: createdDate, // Temporary field for filtering
+        };
+      })
+      .filter((report: ReportWithDate) => report._createdDateObj >= thirtyDaysAgo)
+      .sort((a: ReportWithDate, b: ReportWithDate) => b._createdDateObj.getTime() - a._createdDateObj.getTime())
+      .slice(0, 3);
+
+    // Remove temporary field and return as Report[]
+    return reports.map(({ _createdDateObj, ...report }) => report as Report);
   } catch (error) {
     console.error('Error fetching recent reports:', error);
     return [];
