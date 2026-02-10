@@ -494,7 +494,7 @@ async function handleUpdateCompanyInfo(
 }
 
 /**
- * Updates an existing site in the sites subcollection
+ * Updates an existing site in the top-level sites collection
  * 
  * IDEMPOTENT: Yes - calling multiple times with same data produces same result
  * 
@@ -504,7 +504,7 @@ async function handleUpdateCompanyInfo(
  * @throws Error if validation fails or update fails
  * 
  * @example
- * handleUpdateSite('user123', { siteId: 'site456', status: 'online', url: 'https://newdomain.com' })
+ * handleUpdateSite('user123', { siteId: 'site456', status: 'active', url: 'https://newdomain.com' })
  */
 async function handleUpdateSite(
   userId: string,
@@ -524,30 +524,44 @@ async function handleUpdateSite(
     };
   }
 
-  const { siteId, name, url, status, description } = validation.data;
+  const { siteId, name, url, type, status, thumbnailUrl, description } = validation.data;
 
   try {
-    const siteRef = adminDb.collection('users').doc(userId).collection('sites').doc(siteId);
+    // Read from TOP-LEVEL sites collection
+    const siteRef = adminDb.collection('sites').doc(siteId);
 
-    // Check if site exists
     const siteDoc = await siteRef.get();
     if (!siteDoc.exists) {
-      throw new Error(`Site with ID ${siteId} not found`);
+      return {
+        success: false,
+        error: `Site with ID ${siteId} not found`,
+      };
+    }
+
+    // Verify the site belongs to this user
+    const siteData = siteDoc.data();
+    if (siteData?.userId !== userId) {
+      return {
+        success: false,
+        error: 'Unauthorized: Site does not belong to this user',
+      };
     }
 
     // Build update object with only provided fields
-    const updateData: any = {
-      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    const updateData: Record<string, any> = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     if (name !== undefined) updateData.name = name;
     if (url !== undefined) updateData.url = url;
+    if (type !== undefined) updateData.type = type;
     if (status !== undefined) updateData.status = status;
+    if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl;
     if (description !== undefined) updateData.description = description;
 
     await siteRef.update(updateData);
 
-    console.log('🌐 Site updated successfully:', { userId, siteId, updates: Object.keys(validation.data) });
+    console.log('🌐 Site updated successfully:', { userId, siteId, updates: Object.keys(updateData) });
 
     return {
       success: true,
@@ -556,7 +570,7 @@ async function handleUpdateSite(
     };
   } catch (error) {
     console.error('Error updating site:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to update site');
+    throw new Error('Failed to update site');
   }
 }
 
@@ -635,7 +649,7 @@ async function handleUpdateTicket(
 // ============================================================================
 
 /**
- * Adds a new site to the sites subcollection
+ * Adds a new site to the top-level sites collection
  * 
  * IDEMPOTENT: No - creates a new document with auto-generated ID each time
  * 
@@ -645,7 +659,7 @@ async function handleUpdateTicket(
  * @throws Error if validation fails or creation fails
  * 
  * @example
- * handleAddSite('user123', { name: 'Main Site', url: 'https://example.com', status: 'online' })
+ * handleAddSite('user123', { name: 'Main Site', url: 'https://example.com', status: 'active' })
  */
 async function handleAddSite(
   userId: string,
@@ -665,19 +679,23 @@ async function handleAddSite(
     };
   }
 
-  const { name, url, status, description } = validation.data;
+  const { name, url, type, status, thumbnailUrl, description } = validation.data;
 
   try {
-    const sitesRef = adminDb.collection('users').doc(userId).collection('sites');
+    // Write to TOP-LEVEL sites collection (not subcollection)
+    const sitesRef = adminDb.collection('sites');
 
     // Create new site document with auto-generated ID
     const newSiteRef = await sitesRef.add({
+      userId,  // Link to user
       name,
       url,
-      status: status || 'online',
+      type: type || 'wordpress',
+      status: status || 'active',  // Use frontend status values
+      thumbnailUrl: thumbnailUrl || '',
       description: description || '',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),  // Changed from lastUpdated
     });
 
     console.log('🌐 Site added successfully:', { userId, siteId: newSiteRef.id });

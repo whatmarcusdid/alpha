@@ -27,7 +27,7 @@ const TicketStatusSchema = z.enum(['open', 'in-progress', 'resolved', 'closed'])
 /**
  * Site status
  */
-const SiteStatusSchema = z.enum(['online', 'offline', 'maintenance']);
+const SiteStatusSchema = z.enum(['active', 'provisioning', 'error']);
 
 /**
  * Report type
@@ -154,8 +154,10 @@ export type UpdateCompanyInfoPayload = z.infer<typeof UpdateCompanyInfoSchema>;
 export const AddSiteSchema = z.object({
   name: NonEmptyString,
   url: UrlSchema,
+  type: z.enum(['wordpress', 'static', 'ecommerce', 'other']).optional(),
   status: SiteStatusSchema.optional(),
-  description: OptionalNonEmptyString,
+  thumbnailUrl: z.string().url('Thumbnail URL must be valid').optional().or(z.literal('')),
+  description: z.string().optional(),
 });
 
 export type AddSitePayload = z.infer<typeof AddSiteSchema>;
@@ -169,11 +171,13 @@ export const UpdateSiteSchema = z.object({
   siteId: NonEmptyString,
   name: OptionalNonEmptyString,
   url: z.string().url('URL must be valid (e.g., https://example.com)').optional(),
+  type: z.enum(['wordpress', 'static', 'ecommerce', 'other']).optional(),
   status: SiteStatusSchema.optional(),
+  thumbnailUrl: z.string().url('Thumbnail URL must be valid').optional().or(z.literal('')),
   description: z.string().optional(), // Can be empty for clearing description
 }).refine(
-  (data) => data.name || data.url || data.status || data.description !== undefined,
-  { message: 'At least one field (name, url, status, or description) must be provided for update' }
+  (data) => data.name || data.url || data.type || data.status || data.thumbnailUrl !== undefined || data.description !== undefined,
+  { message: 'At least one field (name, url, type, status, thumbnailUrl, or description) must be provided for update' }
 );
 
 export type UpdateSitePayload = z.infer<typeof UpdateSiteSchema>;

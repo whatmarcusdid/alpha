@@ -340,7 +340,8 @@ async function testAddSiteSuccess() {
   const response = await makeRequest('add_site', {
     name: 'Test Site',
     url: 'https://test-site.example.com',
-    status: 'online',
+    type: 'wordpress',
+    status: 'active',
     description: 'Test site for API validation',
   });
   
@@ -382,6 +383,7 @@ async function testUpdateSiteSuccess() {
   const createResponse = await makeRequest('add_site', {
     name: 'Site To Update',
     url: 'https://update-test.example.com',
+    type: 'wordpress',
   });
   
   assertSuccess(createResponse, 'Create site for update test should succeed');
@@ -391,7 +393,7 @@ async function testUpdateSiteSuccess() {
   // Now update it
   const updateResponse = await makeRequest('update_site', {
     siteId,
-    status: 'maintenance',
+    status: 'provisioning',
     description: 'Updated description',
   });
   
@@ -411,10 +413,9 @@ async function testUpdateSiteValidationMissingSiteId() {
 async function testUpdateSiteNotFound() {
   const response = await makeRequest('update_site', {
     siteId: 'non-existent-site-id',
-    status: 'online',
+    status: 'active',
   });
   
-  // This will throw an error from the handler
   assert(response.data.success === false, 'Should fail when site not found');
 }
 
