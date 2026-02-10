@@ -5,17 +5,6 @@ import { replyToTicket } from '@/lib/support/client';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import type { SupportTicket } from '@/types/support';
 
-interface TicketMessage {
-  id: string;
-  sender: 'user' | 'support';
-  senderName: string;
-  senderEmail?: string;
-  text: string;
-  timestamp: string;
-  source?: 'dashboard' | 'email' | 'helpscout';
-  attachmentUrls?: string[];
-}
-
 interface TicketDetailModalProps {
   ticket: SupportTicket | null;
   isOpen: boolean;
@@ -158,7 +147,7 @@ export default function TicketDetailModal({
 
   const statusColors = getStatusColors(ticket.status);
   const priorityColors = getPriorityColors(ticket.priority);
-  const isClosed = ticket.status === 'closed';
+  const isClosed = ticket.status === 'Closed';
 
   return (
     <div
@@ -228,7 +217,7 @@ export default function TicketDetailModal({
           </div>
 
           {/* Conversation messages */}
-          {(ticket as any).messages && (ticket as any).messages.length > 0 && (ticket as any).messages.map((message: TicketMessage) => {
+          {ticket.messages && ticket.messages.length > 0 && ticket.messages.map((message) => {
             const isUser = message.sender === 'user';
             
             return (

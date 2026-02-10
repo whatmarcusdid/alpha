@@ -125,6 +125,18 @@ export interface SupportTicket {
 
   // Internal Notes (not visible to customer)
   internalNotes?: string;
+
+  // Conversation Messages (added at runtime from Firestore)
+  messages?: Array<{
+    id: string;
+    sender: 'user' | 'support';
+    senderName: string;
+    senderEmail?: string;
+    text: string;
+    timestamp: string;
+    source?: 'dashboard' | 'email' | 'helpscout';
+    attachmentUrls?: string[];
+  }>;
 }
 
 // ============================================================================
