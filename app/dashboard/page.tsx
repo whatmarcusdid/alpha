@@ -73,7 +73,7 @@ export default function DashboardPage() {
 
         setMetrics([
           { type: 'traffic', value: userMetrics.websiteTraffic, label: 'Website Traffic This Month' },
-          { type: 'speed', value: userMetrics.averageSiteSpeed, label: 'Average Site Speed In Seconds' },
+          { type: 'speed', value: userMetrics.siteSpeedSeconds, label: 'Average Site Speed In Seconds' },
           { type: 'support', value: userMetrics.supportHoursRemaining, label: 'Support Hours Remaining' },
           { type: 'maintenance', value: userMetrics.maintenanceHoursRemaining, label: 'Maintenance Hours Remaining' }
         ]);

@@ -182,7 +182,7 @@ async function testUpdateMetricsSuccess() {
   const response = await makeRequest('update_metrics', {
     websiteTraffic: 1250,
     supportHoursRemaining: 5.5,
-    averageSiteSpeed: 2.3,
+    siteSpeedSeconds: 2.3,
   });
   
   assertSuccess(response, 'Update metrics should succeed');
@@ -204,6 +204,97 @@ async function testUpdateMetricsValidationNoFields() {
   const response = await makeRequest('update_metrics', {});
   
   assert(response.data.success === false, 'Should fail when no fields provided');
+}
+
+async function testUpdateMetricsAllExtendedFields() {
+  const response = await makeRequest('update_metrics', {
+    websiteTraffic: 847,
+    siteSpeedSeconds: 2.3,
+    performanceScore: 78,
+    leadsGenerated: 12,
+    supportHoursRemaining: 1.5,
+    supportHoursUsed: 0.5,
+    maintenanceHoursRemaining: 3,
+    maintenanceHoursUsed: 1,
+    lastBackupDate: '2026-02-08',
+    lastSecurityScan: '2026-02-09',
+    ticketsOpen: 0,
+    ticketsInProgress: 1,
+    ticketsResolved: 3,
+  });
+  
+  assertSuccess(response, 'Update metrics should succeed with all extended fields');
+}
+
+async function testUpdateMetricsInvalidDateFormat() {
+  const response = await makeRequest('update_metrics', {
+    lastBackupDate: '02/08/2026', // Wrong format, should be YYYY-MM-DD
+  });
+  
+  assert(response.data.success === false, 'Should fail with invalid date format');
+  assert(
+    response.data.validationErrors?.some((e: string) => e.includes('YYYY-MM-DD')),
+    'Should mention YYYY-MM-DD format requirement'
+  );
+}
+
+async function testUpdateMetricsPerformanceScoreOutOfRange() {
+  const response = await makeRequest('update_metrics', {
+    performanceScore: 150, // Max is 100
+  });
+  
+  assert(response.data.success === false, 'Should fail with performanceScore over 100');
+  assert(
+    response.data.validationErrors?.some((e: string) => e.includes('100')),
+    'Should mention max value of 100'
+  );
+}
+
+async function testUpdateMetricsPartialUpdateTicketFields() {
+  const response = await makeRequest('update_metrics', {
+    ticketsOpen: 2,
+  });
+  
+  assertSuccess(response, 'Should allow partial update with only ticket fields');
+}
+
+async function testUpdateMetricsMixedOldAndNewFields() {
+  const response = await makeRequest('update_metrics', {
+    websiteTraffic: 1000,
+    leadsGenerated: 15,
+    lastSecurityScan: '2026-02-10',
+  });
+  
+  assertSuccess(response, 'Should handle mixed old and new fields');
+}
+
+async function testUpdateMetricsNegativeTicketCounts() {
+  const response = await makeRequest('update_metrics', {
+    ticketsOpen: -1,
+  });
+  
+  assert(response.data.success === false, 'Should fail for negative ticket counts');
+  assert(
+    response.data.validationErrors?.some((e: string) => e.includes('non-negative')),
+    'Should mention non-negative requirement'
+  );
+}
+
+async function testUpdateMetricsPerformanceScoreNegative() {
+  const response = await makeRequest('update_metrics', {
+    performanceScore: -10,
+  });
+  
+  assert(response.data.success === false, 'Should fail for negative performanceScore');
+}
+
+async function testUpdateMetricsHoursUsedFields() {
+  const response = await makeRequest('update_metrics', {
+    supportHoursUsed: 2.5,
+    maintenanceHoursUsed: 4.0,
+  });
+  
+  assertSuccess(response, 'Should allow updating hours used fields');
 }
 
 // ============================================================================
@@ -560,6 +651,14 @@ async function main() {
     { name: 'Update Metrics: Success', fn: testUpdateMetricsSuccess, group: 'update_metrics' },
     { name: 'Update Metrics: Validation (negative)', fn: testUpdateMetricsValidationNegative, group: 'update_metrics' },
     { name: 'Update Metrics: Validation (no fields)', fn: testUpdateMetricsValidationNoFields, group: 'update_metrics' },
+    { name: 'Update Metrics: All extended fields', fn: testUpdateMetricsAllExtendedFields, group: 'update_metrics' },
+    { name: 'Update Metrics: Invalid date format', fn: testUpdateMetricsInvalidDateFormat, group: 'update_metrics' },
+    { name: 'Update Metrics: Performance score out of range', fn: testUpdateMetricsPerformanceScoreOutOfRange, group: 'update_metrics' },
+    { name: 'Update Metrics: Partial update (ticket fields)', fn: testUpdateMetricsPartialUpdateTicketFields, group: 'update_metrics' },
+    { name: 'Update Metrics: Mixed old and new fields', fn: testUpdateMetricsMixedOldAndNewFields, group: 'update_metrics' },
+    { name: 'Update Metrics: Negative ticket counts', fn: testUpdateMetricsNegativeTicketCounts, group: 'update_metrics' },
+    { name: 'Update Metrics: Negative performance score', fn: testUpdateMetricsPerformanceScoreNegative, group: 'update_metrics' },
+    { name: 'Update Metrics: Hours used fields', fn: testUpdateMetricsHoursUsedFields, group: 'update_metrics' },
     
     // Update Company Info
     { name: 'Update Company Info: Success', fn: testUpdateCompanyInfoSuccess, group: 'update_company_info' },

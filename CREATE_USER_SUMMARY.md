@@ -51,7 +51,7 @@ Creates a new TSG customer account in Firestore with all required fields, proper
 ### Auto-Generated Fields
 - `userId` (Firestore auto-ID, returned in response)
 - All timestamps using `serverTimestamp()`
-- Default metrics: websiteTraffic=0, averageSiteSpeed=0
+- Default metrics: websiteTraffic=0, siteSpeedSeconds=0
 - Default subscription: status='active', startDate=now, endDate=null
 
 ---

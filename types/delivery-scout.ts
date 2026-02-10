@@ -94,16 +94,28 @@ export type UpdateMeetingPayload = z.infer<typeof UpdateMeetingSchema>;
  * At least one field must be provided
  */
 export const UpdateMetricsSchema = z.object({
+  // Website performance
   websiteTraffic: NonNegativeNumber.optional(),
-  averageSiteSpeed: NonNegativeNumber.optional(),
+  siteSpeedSeconds: NonNegativeNumber.optional(),
+  performanceScore: z.number().min(0).max(100).optional(),
+  leadsGenerated: NonNegativeNumber.optional(),
+  
+  // Hours tracking
   supportHoursRemaining: NonNegativeNumber.optional(),
+  supportHoursUsed: NonNegativeNumber.optional(),
   maintenanceHoursRemaining: NonNegativeNumber.optional(),
+  maintenanceHoursUsed: NonNegativeNumber.optional(),
+  
+  // Maintenance dates (YYYY-MM-DD format)
+  lastBackupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD format').optional(),
+  lastSecurityScan: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD format').optional(),
+  
+  // Support tickets
+  ticketsOpen: NonNegativeNumber.optional(),
+  ticketsInProgress: NonNegativeNumber.optional(),
+  ticketsResolved: NonNegativeNumber.optional(),
 }).refine(
-  (data) => 
-    data.websiteTraffic !== undefined ||
-    data.averageSiteSpeed !== undefined ||
-    data.supportHoursRemaining !== undefined ||
-    data.maintenanceHoursRemaining !== undefined,
+  (data) => Object.values(data).some(value => value !== undefined),
   { message: 'At least one metric field must be provided' }
 );
 

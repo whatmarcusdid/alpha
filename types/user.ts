@@ -63,10 +63,29 @@ export interface User {
   };
   
   metrics: {
+    // Website performance
     websiteTraffic: number;
     siteSpeedSeconds: number;
+    performanceScore?: number;
+    leadsGenerated?: number;
+    
+    // Hours tracking
     supportHoursRemaining: number;
+    supportHoursUsed?: number;
     maintenanceHoursRemaining: number;
+    maintenanceHoursUsed?: number;
+    
+    // Maintenance dates
+    lastBackupDate?: string;
+    lastSecurityScan?: string;
+    
+    // Support tickets
+    ticketsOpen?: number;
+    ticketsInProgress?: number;
+    ticketsResolved?: number;
+    
+    // Meta
+    lastUpdated?: Date;
   };
   
   // Timestamps

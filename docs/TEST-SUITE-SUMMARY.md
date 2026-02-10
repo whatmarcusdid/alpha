@@ -162,7 +162,7 @@ DELIVERY_SCOUT_API_KEY=your-generated-key-here
   "meeting": {},
   "metrics": {
     "websiteTraffic": 0,
-    "averageSiteSpeed": 0,
+    "siteSpeedSeconds": 0,
     "supportHoursRemaining": 10,
     "maintenanceHoursRemaining": 20
   },

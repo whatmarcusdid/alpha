@@ -171,7 +171,7 @@ npm run build
   },
   metrics: {
     websiteTraffic: 1000,
-    averageSiteSpeed: 2.5,
+    siteSpeedSeconds: 2.5,
     supportHoursRemaining: 4,
     maintenanceHoursRemaining: 8,
     lastUpdated: Timestamp.now(),

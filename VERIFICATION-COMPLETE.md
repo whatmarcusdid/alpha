@@ -83,7 +83,7 @@ echo "DELIVERY_SCOUT_API_KEY=$(openssl rand -hex 32)" >> .env.local
   "meeting": {},
   "metrics": {
     "websiteTraffic": 0,
-    "averageSiteSpeed": 0,
+    "siteSpeedSeconds": 0,
     "supportHoursRemaining": 10,
     "maintenanceHoursRemaining": 20
   },

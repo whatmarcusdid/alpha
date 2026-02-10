@@ -124,7 +124,7 @@ users/{auto-generated-id}
   // Initialize metrics with defaults
   metrics: {
     websiteTraffic: 0,
-    averageSiteSpeed: 0,
+    siteSpeedSeconds: 0,
     supportHoursRemaining: 8,        // Based on tier
     maintenanceHoursRemaining: 12,   // Based on tier
     lastUpdated: <server-timestamp>
@@ -162,7 +162,7 @@ The handler sets these defaults automatically:
 | `subscription.startDate` | Server timestamp |
 | `subscription.endDate` | `null` |
 | `metrics.websiteTraffic` | `0` |
-| `metrics.averageSiteSpeed` | `0` |
+| `metrics.siteSpeedSeconds` | `0` |
 | `metrics.supportHoursRemaining` | Based on tier (3/8/15) |
 | `metrics.maintenanceHoursRemaining` | Based on tier (6/12/20) |
 | `meeting` | `null` |
@@ -577,7 +577,7 @@ async function handleCreateUser(
     },
     metrics: {
       websiteTraffic: 0,
-      averageSiteSpeed: 0,
+      siteSpeedSeconds: 0,
       supportHoursRemaining: hours.support,
       maintenanceHoursRemaining: hours.maintenance,
       lastUpdated: admin.firestore.FieldValue.serverTimestamp(),

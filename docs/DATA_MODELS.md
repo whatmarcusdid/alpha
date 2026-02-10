@@ -50,7 +50,7 @@ This document defines the canonical data schemas for TradeSiteGenie Dashboard, f
   // Metrics (displayed on dashboard)
   metrics: {
     websiteTraffic: number;          // REQUIRED - Monthly visitors
-    averageSiteSpeed: number;        // REQUIRED - Load time in seconds
+    siteSpeedSeconds: number;        // REQUIRED - Load time in seconds
     supportHoursRemaining: number;   // REQUIRED - Hours left this month
     maintenanceHoursRemaining: number; // REQUIRED - Hours left this month
     lastUpdated: Timestamp;          // REQUIRED - When metrics were updated

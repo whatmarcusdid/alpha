@@ -7,7 +7,7 @@
 | Action | Required Fields | Updates | Returns |
 |--------|----------------|---------|---------|
 | `update_meeting` | ≥1 of: month, day, title | `users/{userId}/meeting` | success |
-| `update_metrics` | ≥1 of: websiteTraffic, averageSiteSpeed, supportHoursRemaining, maintenanceHoursRemaining | `users/{userId}/metrics` | success |
+| `update_metrics` | ≥1 of: websiteTraffic, siteSpeedSeconds, supportHoursRemaining, maintenanceHoursRemaining | `users/{userId}/metrics` | success |
 | `update_company_info` | ≥1 of: legalName, websiteUrl, address, city, state, zipCode, businessService, serviceArea | `users/{userId}/company` | success |
 | `update_site` | siteId + ≥1 update field | `users/{userId}/sites/{siteId}` | siteId |
 | `update_ticket` | ticketId + ≥1 update field | `users/{userId}/tickets/{ticketId}` | ticketId |

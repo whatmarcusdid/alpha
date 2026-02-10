@@ -45,7 +45,7 @@ Comprehensive TypeScript types with Zod runtime validation for all 8 Delivery Sc
 | Field | Rule | Error Message |
 |-------|------|---------------|
 | websiteTraffic | ≥ 0 | "Must be a non-negative number (0 or greater)" |
-| averageSiteSpeed | ≥ 0 | "Must be a non-negative number (0 or greater)" |
+| siteSpeedSeconds | ≥ 0 | "Must be a non-negative number (0 or greater)" |
 | supportHoursRemaining | ≥ 0 | "Must be a non-negative number (0 or greater)" |
 | maintenanceHoursRemaining | ≥ 0 | "Must be a non-negative number (0 or greater)" |
 
@@ -61,7 +61,7 @@ Comprehensive TypeScript types with Zod runtime validation for all 8 Delivery Sc
 | Action | Required Fields |
 |--------|----------------|
 | update_meeting | At least 1 of: month, day, title |
-| update_metrics | At least 1 of: websiteTraffic, averageSiteSpeed, supportHoursRemaining, maintenanceHoursRemaining |
+| update_metrics | At least 1 of: websiteTraffic, siteSpeedSeconds, supportHoursRemaining, maintenanceHoursRemaining |
 | update_company_info | At least 1 of: legalName, websiteUrl, address, city, state, zipCode, businessService, serviceArea, email, phone |
 | add_site | name, url |
 | update_site | siteId + at least 1 update field |

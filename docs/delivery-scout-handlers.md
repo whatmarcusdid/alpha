@@ -88,7 +88,7 @@ These handlers modify existing data in the user document or subcollections.
 ```typescript
 {
   websiteTraffic?: number;
-  averageSiteSpeed?: number;
+  siteSpeedSeconds?: number;
   supportHoursRemaining?: number;
   maintenanceHoursRemaining?: number;
 }

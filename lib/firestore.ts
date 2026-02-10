@@ -31,7 +31,7 @@ export async function getUserMetrics(userId: string) {
     console.error('Firestore is not initialized. This function must be called on the client side.');
     return {
       websiteTraffic: 0,
-      averageSiteSpeed: 0,
+      siteSpeedSeconds: 0,
       supportHoursRemaining: 0,
       maintenanceHoursRemaining: 0,
     };
@@ -43,21 +43,21 @@ export async function getUserMetrics(userId: string) {
 
     if (userDoc.exists()) {
       const data = userDoc.data();
-      // Access stats object instead of metrics
-      const stats = data.stats || {};
+      // Access metrics object (updated from stats)
+      const metrics = data.metrics || {};
       
       return {
-        websiteTraffic: stats.websiteTraffic || 0,
-        averageSiteSpeed: stats.siteSpeedSeconds || 0,
-        supportHoursRemaining: stats.supportHoursRemaining || 0,
-        maintenanceHoursRemaining: stats.maintenanceHoursRemaining || 0,
+        websiteTraffic: metrics.websiteTraffic || 0,
+        siteSpeedSeconds: metrics.siteSpeedSeconds || 0,
+        supportHoursRemaining: metrics.supportHoursRemaining || 0,
+        maintenanceHoursRemaining: metrics.maintenanceHoursRemaining || 0,
       };
     }
 
     // Return default values if document doesn't exist
     return {
       websiteTraffic: 0,
-      averageSiteSpeed: 0,
+      siteSpeedSeconds: 0,
       supportHoursRemaining: 0,
       maintenanceHoursRemaining: 0,
     };
@@ -66,7 +66,7 @@ export async function getUserMetrics(userId: string) {
     // Return default values on error
     return {
       websiteTraffic: 0,
-      averageSiteSpeed: 0,
+      siteSpeedSeconds: 0,
       supportHoursRemaining: 0,
       maintenanceHoursRemaining: 0,
     };
@@ -240,7 +240,7 @@ export async function createUserWithSubscription(
       },
       metrics: {
         websiteTraffic: 0,
-        averageSiteSpeed: 0,
+        siteSpeedSeconds: 0,
         supportHoursRemaining: hours.support,
         maintenanceHoursRemaining: hours.maintenance,
         lastUpdated: firestoreFunctions.serverTimestamp(),

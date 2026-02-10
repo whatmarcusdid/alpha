@@ -223,7 +223,7 @@ async function handleCreateUser(
       // Initialize metrics with defaults
       metrics: {
         websiteTraffic: 0,
-        averageSiteSpeed: 0,
+        siteSpeedSeconds: 0,
         supportHoursRemaining: hours.support,
         maintenanceHoursRemaining: hours.maintenance,
         lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
@@ -340,7 +340,7 @@ async function handleUpdateMeeting(
  * IDEMPOTENT: Yes - calling multiple times with same data produces same result
  * 
  * @param userId - The user ID
- * @param data - Metrics fields to update (websiteTraffic, averageSiteSpeed, etc.)
+ * @param data - Metrics fields to update (websiteTraffic, siteSpeedSeconds, etc.)
  * @returns Success response
  * @throws Error if validation fails or update fails
  * 
@@ -355,7 +355,6 @@ async function handleUpdateMetrics(
     throw new Error('Firebase Admin not initialized');
   }
 
-  // Validate payload with Zod schema
   const validation = validatePayload(ValidationSchemas.update_metrics, data);
   if (!validation.success) {
     return {
@@ -365,22 +364,51 @@ async function handleUpdateMetrics(
     };
   }
 
-  const { websiteTraffic, averageSiteSpeed, supportHoursRemaining, maintenanceHoursRemaining } = validation.data;
+  const {
+    websiteTraffic,
+    siteSpeedSeconds,
+    performanceScore,
+    leadsGenerated,
+    supportHoursRemaining,
+    supportHoursUsed,
+    maintenanceHoursRemaining,
+    maintenanceHoursUsed,
+    lastBackupDate,
+    lastSecurityScan,
+    ticketsOpen,
+    ticketsInProgress,
+    ticketsResolved,
+  } = validation.data;
 
   try {
     const userRef = adminDb.collection('users').doc(userId);
 
     // Build update object with only provided fields
-    const updateData: any = {
+    const updateData: Record<string, any> = {
       'metrics.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
     };
 
+    // Website performance
     if (websiteTraffic !== undefined) updateData['metrics.websiteTraffic'] = websiteTraffic;
-    if (averageSiteSpeed !== undefined) updateData['metrics.averageSiteSpeed'] = averageSiteSpeed;
-    if (supportHoursRemaining !== undefined) updateData['metrics.supportHoursRemaining'] = supportHoursRemaining;
-    if (maintenanceHoursRemaining !== undefined) updateData['metrics.maintenanceHoursRemaining'] = maintenanceHoursRemaining;
+    if (siteSpeedSeconds !== undefined) updateData['metrics.siteSpeedSeconds'] = siteSpeedSeconds;
+    if (performanceScore !== undefined) updateData['metrics.performanceScore'] = performanceScore;
+    if (leadsGenerated !== undefined) updateData['metrics.leadsGenerated'] = leadsGenerated;
 
-    // Use updateDoc to merge (not overwrite)
+    // Hours tracking
+    if (supportHoursRemaining !== undefined) updateData['metrics.supportHoursRemaining'] = supportHoursRemaining;
+    if (supportHoursUsed !== undefined) updateData['metrics.supportHoursUsed'] = supportHoursUsed;
+    if (maintenanceHoursRemaining !== undefined) updateData['metrics.maintenanceHoursRemaining'] = maintenanceHoursRemaining;
+    if (maintenanceHoursUsed !== undefined) updateData['metrics.maintenanceHoursUsed'] = maintenanceHoursUsed;
+
+    // Maintenance dates
+    if (lastBackupDate !== undefined) updateData['metrics.lastBackupDate'] = lastBackupDate;
+    if (lastSecurityScan !== undefined) updateData['metrics.lastSecurityScan'] = lastSecurityScan;
+
+    // Support tickets
+    if (ticketsOpen !== undefined) updateData['metrics.ticketsOpen'] = ticketsOpen;
+    if (ticketsInProgress !== undefined) updateData['metrics.ticketsInProgress'] = ticketsInProgress;
+    if (ticketsResolved !== undefined) updateData['metrics.ticketsResolved'] = ticketsResolved;
+
     await userRef.update(updateData);
 
     console.log('📊 Metrics updated successfully:', { userId, updates: Object.keys(validation.data) });

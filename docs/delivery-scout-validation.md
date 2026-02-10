@@ -21,7 +21,7 @@ All Delivery Scout API operations use **Zod** for runtime validation to ensure d
 | Field | Type | Required | Validation |
 |-------|------|----------|------------|
 | `websiteTraffic` | number | ⚠️ At least one | ≥ 0 |
-| `averageSiteSpeed` | number | ⚠️ At least one | ≥ 0 |
+| `siteSpeedSeconds` | number | ⚠️ At least one | ≥ 0 |
 | `supportHoursRemaining` | number | ⚠️ At least one | ≥ 0 |
 | `maintenanceHoursRemaining` | number | ⚠️ At least one | ≥ 0 |
 
