@@ -454,7 +454,7 @@ async function handleUpdateCompanyInfo(
     };
   }
 
-  const { legalName, websiteUrl, address, city, state, zipCode, businessService, serviceArea, email, phone } = validation.data;
+  const { legalName, websiteUrl, yearFounded, numEmployees, address, address2, city, state, zipCode, businessService, serviceArea, email, phone } = validation.data;
 
   try {
     const userRef = adminDb.collection('users').doc(userId);
@@ -466,7 +466,10 @@ async function handleUpdateCompanyInfo(
 
     if (legalName !== undefined) updateData['company.legalName'] = legalName;
     if (websiteUrl !== undefined) updateData['company.websiteUrl'] = websiteUrl;
+    if (yearFounded !== undefined) updateData['company.yearFounded'] = yearFounded;
+    if (numEmployees !== undefined) updateData['company.numEmployees'] = numEmployees;
     if (address !== undefined) updateData['company.address'] = address;
+    if (address2 !== undefined) updateData['company.address2'] = address2;
     if (city !== undefined) updateData['company.city'] = city;
     if (state !== undefined) updateData['company.state'] = state;
     if (zipCode !== undefined) updateData['company.zipCode'] = zipCode;

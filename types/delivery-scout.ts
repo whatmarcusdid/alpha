@@ -128,8 +128,11 @@ export type UpdateMetricsPayload = z.infer<typeof UpdateMetricsSchema>;
  */
 export const UpdateCompanyInfoSchema = z.object({
   legalName: OptionalNonEmptyString,
-  websiteUrl: z.string().url('Website URL must be valid (e.g., https://example.com)').optional(),
+  websiteUrl: z.string().url('Website URL must be valid (e.g., https://example.com)').optional().or(z.literal('')),
+  yearFounded: OptionalNonEmptyString,
+  numEmployees: OptionalNonEmptyString,
   address: OptionalNonEmptyString,
+  address2: z.string().optional(), // Can be empty for clearing
   city: OptionalNonEmptyString,
   state: OptionalNonEmptyString,
   zipCode: OptionalNonEmptyString,
@@ -138,17 +141,7 @@ export const UpdateCompanyInfoSchema = z.object({
   email: z.string().email('Email must be valid').optional(),
   phone: OptionalNonEmptyString,
 }).refine(
-  (data) => 
-    data.legalName ||
-    data.websiteUrl ||
-    data.address ||
-    data.city ||
-    data.state ||
-    data.zipCode ||
-    data.businessService ||
-    data.serviceArea ||
-    data.email ||
-    data.phone,
+  (data) => Object.values(data).some(value => value !== undefined),
   { message: 'At least one company field must be provided' }
 );
 

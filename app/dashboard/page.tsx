@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { TertiaryButton } from '@/components/ui/TertiaryButton';
-import { getUserMetrics } from '@/lib/firestore';
+import { getUserMetrics, getUserCompany } from '@/lib/firestore';
 import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
 import { getUserSupportTickets } from '@/lib/firestore/supportTickets';
 import { getMeetings } from '@/lib/firestore/meetings';
@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState<string>('');
   const [metrics, setMetrics] = useState([
     { type: 'traffic', value: 0, label: 'Website Traffic This Month' },
     { type: 'speed', value: 0, label: 'Average Site Speed In Seconds' },
@@ -65,10 +66,11 @@ export default function DashboardPage() {
         const name = email.split('@')[0];
         setUserName(name.charAt(0).toUpperCase() + name.slice(1));
         
-        const [userMetrics, ticketsResult, meetingsResult] = await Promise.all([
+        const [userMetrics, ticketsResult, meetingsResult, companyData] = await Promise.all([
           getUserMetrics(user.uid),
           getUserSupportTickets(user.uid, { status: 'open' }),
-          getMeetings(user.uid)
+          getMeetings(user.uid),
+          getUserCompany(user.uid)
         ]);
 
         setMetrics([
@@ -77,6 +79,11 @@ export default function DashboardPage() {
           { type: 'support', value: userMetrics.supportHoursRemaining, label: 'Support Hours Remaining' },
           { type: 'maintenance', value: userMetrics.maintenanceHoursRemaining, label: 'Maintenance Hours Remaining' }
         ]);
+        
+        // Set website URL from company data
+        if (companyData?.websiteUrl) {
+          setWebsiteUrl(companyData.websiteUrl);
+        }
         
         if (ticketsResult.tickets) {
           setSupportTickets(ticketsResult.tickets);
@@ -126,9 +133,21 @@ export default function DashboardPage() {
               {greeting} {userName}
             </h1>
           </div>
-          <SecondaryButton>
-            View Site
-          </SecondaryButton>
+          {websiteUrl ? (
+            <a 
+              href={websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <SecondaryButton>
+                View Site
+              </SecondaryButton>
+            </a>
+          ) : (
+            <SecondaryButton disabled className="opacity-50 cursor-not-allowed">
+              View Site
+            </SecondaryButton>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
