@@ -41,10 +41,29 @@ export async function changePassword(
       return { success: false, error: 'No user is currently logged in' };
     }
 
-    const credential = authFunctions.EmailAuthProvider.credential(user.email, currentPassword);
+    // Check if user signed in with email/password (not social auth)
+    const hasPasswordProvider = user.providerData.some(
+      provider => provider.providerId === 'password'
+    );
 
+    if (!hasPasswordProvider) {
+      // User signed in with Google/Apple - they don't have a password to change
+      const provider = user.providerData[0]?.providerId;
+      const providerName = provider === 'google.com' ? 'Google' : 
+                          provider === 'apple.com' ? 'Apple' : 
+                          'social login';
+      
+      return { 
+        success: false, 
+        error: `You signed in with ${providerName}. Your password is managed by ${providerName}, not TradeSiteGenie.` 
+      };
+    }
+
+    // Re-authenticate with current password
+    const credential = authFunctions.EmailAuthProvider.credential(user.email, currentPassword);
     await authFunctions.reauthenticateWithCredential(user, credential);
 
+    // Update to new password
     await authFunctions.updatePassword(user, newPassword);
 
     return { success: true };

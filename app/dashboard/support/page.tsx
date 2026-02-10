@@ -3,14 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChange } from '@/lib/auth';
-import { formatNotionProperties, NotionSupportRequest } from '@/lib/notion/support';
-import { uploadSupportAttachment, validateFile } from '@/lib/firebase/storage';
+import { validateFile } from '@/lib/firebase/storage';
+import { createSupportTicket, TicketCategory, TicketUrgency } from '@/lib/support/client';
 import {
   PhoneIcon,
   EnvelopeIcon,
   DocumentTextIcon,
   PaperClipIcon,
   XMarkIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -21,20 +22,42 @@ import { PageCard } from '@/components/layout/PageCard';
 import HorizontalTabs, { TabItem } from '@/components/ui/HorizontalTabs';
 import SupportTicketCard from '@/components/support/SupportTicketCard';
 import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
+import TicketDetailModal from '@/components/support/TicketDetailModal';
 import { getActiveTickets, getPastTickets } from '@/lib/firestore/support';
 import type { SupportTicket } from '@/types/support';
+
+const CATEGORY_OPTIONS: { value: TicketCategory; label: string; description: string }[] = [
+  { value: 'Bug Report', label: 'Bug Report', description: 'Something is broken or not working correctly' },
+  { value: 'Updates', label: 'Content Update', description: 'Request changes to your website content' },
+  { value: 'Question', label: 'Question', description: 'General questions about your website or service' },
+  { value: 'Feature Request', label: 'Feature Request', description: 'Suggest a new feature or improvement' },
+  { value: 'Other', label: 'Other', description: 'Anything else not covered above' },
+];
+
+const URGENCY_OPTIONS: { value: TicketUrgency; label: string; description: string }[] = [
+  { value: 'low', label: 'Low', description: 'No rush - whenever you get to it' },
+  { value: 'normal', label: 'Normal', description: 'Standard priority - within 24 hours' },
+  { value: 'high', label: 'High', description: 'Important - please prioritize' },
+  { value: 'urgent', label: 'Urgent', description: 'Site is down or losing leads' },
+];
 
 export default function SupportPage() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'request' | 'tickets'>('request');
-  const [requestFromEmail, setRequestFromEmail] = useState('');
+  
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState<TicketCategory>('Question');
+  const [urgency, setUrgency] = useState<TicketUrgency>('normal');
   const [description, setDescription] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [activeTickets, setActiveTickets] = useState<SupportTicket[]>([]);
   const [pastTickets, setPastTickets] = useState<SupportTicket[]>([]);
   const [loadingActive, setLoadingActive] = useState(false);
   const [loadingPast, setLoadingPast] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  
   const [notification, setNotification] = useState<{
     show: boolean;
     type: 'success' | 'error';
@@ -42,7 +65,6 @@ export default function SupportPage() {
     subtitle?: string;
   }>({ show: false, type: 'success', message: '' });
 
-  // Define tabs configuration
   const tabs: TabItem[] = [
     { id: 'request', label: 'Support Request' },
     { id: 'tickets', label: 'Past Support Tickets' },
@@ -60,27 +82,18 @@ export default function SupportPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChange((user) => {
       setUser(user);
-      if (user?.email) {
-        setRequestFromEmail(user.email);
-      }
     });
     return () => unsubscribe();
   }, []);
 
-  // Fetch functions
   const fetchActiveTickets = useCallback(async () => {
-    if (!user) {
-      return;
-    }
+    if (!user) return;
     
     setLoadingActive(true);
     try {
       const result = await getActiveTickets(user.uid);
-      
       if (result.success && result.tickets) {
         setActiveTickets(result.tickets);
-      } else {
-        console.error('Failed to fetch active tickets:', result.error);
       }
     } catch (error) {
       console.error('Error fetching active tickets:', error);
@@ -90,18 +103,13 @@ export default function SupportPage() {
   }, [user]);
 
   const fetchPastTickets = useCallback(async () => {
-    if (!user) {
-      return;
-    }
+    if (!user) return;
     
     setLoadingPast(true);
     try {
       const result = await getPastTickets(user.uid);
-      
       if (result.success && result.tickets) {
         setPastTickets(result.tickets);
-      } else {
-        console.error('Failed to fetch past tickets:', result.error);
       }
     } catch (error) {
       console.error('Error fetching past tickets:', error);
@@ -110,14 +118,12 @@ export default function SupportPage() {
     }
   }, [user]);
 
-  // Fetch active tickets when on request tab
   useEffect(() => {
     if (activeTab === 'request' && user) {
       fetchActiveTickets();
     }
   }, [activeTab, user, fetchActiveTickets]);
 
-  // Fetch past tickets when on tickets tab
   useEffect(() => {
     if (activeTab === 'tickets' && user) {
       fetchPastTickets();
@@ -136,177 +142,139 @@ export default function SupportPage() {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      const newFiles = Array.from(event.target.files);
-      handleFiles(newFiles);
+      handleFiles(Array.from(event.target.files));
     }
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    const newFiles = Array.from(event.dataTransfer.files);
-    handleFiles(newFiles);
+    handleFiles(Array.from(event.dataTransfer.files));
   };
 
   const handleFiles = (files: File[]) => {
     const validFiles = files.filter(file => {
-        const validation = validateFile(file);
-        if (!validation.valid) {
-            setNotification({ show: true, type: 'error', message: 'Invalid File', subtitle: validation.error });
-            return false;
-        }
-        return true;
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        setNotification({ show: true, type: 'error', message: 'Invalid File', subtitle: validation.error });
+        return false;
+      }
+      return true;
     });
     setAttachments(prev => [...prev, ...validFiles]);
-  }
+  };
 
   const handleRemoveFile = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const resetForm = () => {
+    setTitle('');
+    setCategory('Question');
+    setUrgency('normal');
     setDescription('');
     setAttachments([]);
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-     e.preventDefault();
-     if (!user) {
-       setNotification({
-         show: true,
-         type: 'error',
-         message: 'Support form submission failed',
-         subtitle: 'You must be logged in to submit a request.'
-       });
-       return;
-     }
-     if (!description.trim()) {
-       setNotification({
-         show: true,
-         type: 'error',
-         message: 'Support form submission failed',
-         subtitle: 'Please provide a description of the issue.'
-       });
-       return;
-     }
+    e.preventDefault();
+    
+    if (!user) {
+      setNotification({
+        show: true,
+        type: 'error',
+        message: 'Authentication required',
+        subtitle: 'You must be logged in to submit a support request.'
+      });
+      return;
+    }
 
-     setIsSubmitting(true);
+    if (!title.trim()) {
+      setNotification({
+        show: true,
+        type: 'error',
+        message: 'Title required',
+        subtitle: 'Please provide a brief title for your request.'
+      });
+      return;
+    }
 
-     try {
-       // Check if Firebase Storage is initialized
-       if (!storage) {
-         setNotification({
-           show: true,
-           type: 'error',
-           message: 'Storage not available',
-           subtitle: 'Please refresh the page and try again.'
-         });
-         return;
-       }
+    if (!description.trim() || description.trim().length < 20) {
+      setNotification({
+        show: true,
+        type: 'error',
+        message: 'Description required',
+        subtitle: 'Please provide more details about your issue (minimum 20 characters).'
+      });
+      return;
+    }
 
-       // Upload attachments to Firebase Storage first
-       const uploadedUrls: string[] = [];
-       
-       for (const file of attachments) {
-         // Generate a unique filename with timestamp
-         const timestamp = Date.now();
-         const fileName = `${timestamp}-${file.name}`;
-         const storageRef = ref(storage, `support-attachments/${fileName}`);
-         
-         // Upload file
-         await uploadBytes(storageRef, file);
-         
-         // Get download URL
-         const downloadUrl = await getDownloadURL(storageRef);
-         uploadedUrls.push(downloadUrl);
-       }
+    setIsSubmitting(true);
 
-       // Send support request to Zapier webhook for Notion automation
-      const zapierWebhookUrl = process.env.NEXT_PUBLIC_ZAPIER_WEBHOOK_URL;
-
-      if (!zapierWebhookUrl) {
-        console.error('⚠️ Zapier webhook URL not configured');
+    try {
+      if (!storage) {
         setNotification({
-         show: true,
-         type: 'error',
-         message: 'Support form submission failed',
-         subtitle: 'Configuration error. Please contact support.'
-       });
+          show: true,
+          type: 'error',
+          message: 'Storage not available',
+          subtitle: 'Please refresh the page and try again.'
+        });
+        setIsSubmitting(false);
         return;
       }
 
-      try {
-        const webhookPayload = {
-          // Basic info
-          customerEmail: requestFromEmail,
-          description: description,
-          submittedAt: new Date().toISOString(),
-          
-          // Attachments
-          attachmentUrls: uploadedUrls,
-          attachmentCount: uploadedUrls.length,
-          
-          // Formatted attachment list for Notion description
-          attachmentList: uploadedUrls.length > 0 
-            ? uploadedUrls.map((url, index) => {
-                const fileName = url.split('/').pop()?.split('?')[0] || `attachment-${index + 1}`;
-                return `[${decodeURIComponent(fileName)}](${url})`;
-              }).join('\n')
-            : '',
-          
-          // Pre-formatted fields for easy Notion mapping
-          notionTitle: `Support Request from ${requestFromEmail}`,
-          notionDescription: description + (uploadedUrls.length > 0 
-            ? '\n\n**Attachments:**\n' + uploadedUrls.map((url, index) => {
-                const fileName = url.split('/').pop()?.split('?')[0] || `attachment-${index + 1}`;
-                return `- [${decodeURIComponent(fileName)}](${url})`;
-              }).join('\n')
-            : ''),
-          notionType: 'Support Ticket',
-          notionStatus: 'New',
-          notionPriority: 'Medium',
-          notionAssignedTo: 'Unassigned',
-          notionCreatedDate: new Date().toISOString().split('T')[0],
-          notionReportedDate: new Date().toISOString().split('T')[0],
-        };
-
-        console.log('📤 Sending to Zapier:', webhookPayload);
-
-        const response = await fetch('/api/zapier-webhook', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(webhookPayload),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Zapier webhook failed: ${response.status}`);
-        }
-
-        console.log('✅ Support request sent to Zapier successfully');
-        setNotification({ 
-         show: true, 
-         type: 'success', 
-         message: 'Support form submitted successfully' 
-       });
-        resetForm();
-
-      } catch (webhookError: any) {
-        console.error('❌ Zapier webhook error:', webhookError);
-        setNotification({
-         show: true,
-         type: 'error',
-         message: 'Support form submission failed',
-         subtitle: "We couldn't submit your form—please try again, and if it keeps happening, check your connection."
-       });
+      const uploadedUrls: string[] = [];
+      
+      for (const file of attachments) {
+        const timestamp = Date.now();
+        const fileName = `${timestamp}-${file.name}`;
+        const storageRef = ref(storage, `support-attachments/${user.uid}/${fileName}`);
+        
+        await uploadBytes(storageRef, file);
+        const downloadUrl = await getDownloadURL(storageRef);
+        uploadedUrls.push(downloadUrl);
       }
 
-     } catch (error: any) {
-       console.error('Submission error:', error);
-       setNotification({ show: true, type: 'error', message: 'Submission Error', subtitle: error.message || 'Failed to submit support request. Please try again.' });
-     } finally {
-       setIsSubmitting(false);
-     }
-   };
+      const result = await createSupportTicket({
+        title: title.trim(),
+        category,
+        urgency,
+        description: description.trim(),
+        attachmentUrls: uploadedUrls,
+      });
+
+      if (!result.success) {
+        setNotification({
+          show: true,
+          type: 'error',
+          message: 'Submission failed',
+          subtitle: result.error || 'Please try again or email support@tradesitegenie.com directly.'
+        });
+        return;
+      }
+
+      setNotification({
+        show: true,
+        type: 'success',
+        message: 'Support request submitted!',
+        subtitle: `Ticket ${result.ticketId} created. Check your email for confirmation.`
+      });
+      
+      resetForm();
+      fetchActiveTickets();
+
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      setNotification({
+        show: true,
+        type: 'error',
+        message: 'Submission error',
+        subtitle: error.message || 'An unexpected error occurred. Please try again.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -322,7 +290,6 @@ export default function SupportPage() {
         <PageCard>
           <h1 className="text-2xl font-bold text-[#232521] mb-6">Support Hub</h1>
 
-          {/* Tab Navigation */}
           <div className="mb-8">
             <HorizontalTabs
               tabs={tabs}
@@ -333,20 +300,17 @@ export default function SupportPage() {
 
           {activeTab === 'request' && (
             <>
-              {/* Active Tickets Section */}
               <div className="mb-8 flex flex-col gap-2">
                 <h2 className="text-xl font-semibold text-[#232521]">Active Tickets</h2>
                 <p className="text-sm leading-relaxed tracking-tight text-gray-600">
-                  All communication within an active ticket will happen within your email thread. 
-                  Search for the subject title of the ticket within your inbox.
+                  Track your open support requests below. You'll receive email updates when we respond.
                 </p>
-                {/* Active Tickets Cards */}
-                <div className="flex flex-col gap-4 w-full justify-start items-start">
+                
+                <div className="flex flex-col gap-4 w-full justify-start items-start mt-2">
                   {loadingActive ? (
-                    // Loading skeleton - 3 placeholder cards
                     <>
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="bg-[#FAF9F5] rounded border border-gray-200 p-4 animate-pulse">
+                        <div key={i} className="w-full bg-[#FAF9F5] rounded border border-gray-200 p-4 animate-pulse">
                           <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
                           <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
                           <div className="h-4 bg-gray-200 rounded w-2/3"></div>
@@ -354,73 +318,140 @@ export default function SupportPage() {
                       ))}
                     </>
                   ) : activeTickets.length > 0 ? (
-                    // Show active tickets
                     activeTickets.map((ticket) => (
                       <SupportTicketCard
                         key={ticket.ticketId}
                         ticket={ticket}
-                        onClick={() => {
-                          console.log('Ticket clicked:', ticket.ticketId);
-                          // TODO: Open ticket detail modal
-                        }}
+                        onClick={() => setSelectedTicket(ticket)}
                       />
                     ))
                   ) : (
-                    // Empty state
                     <SupportTicketCard variant="empty" />
                   )}
                 </div>
               </div>
 
-              {/* Contact Card */}
               <div className="mb-6 flex flex-col gap-2">
                 <h2 className="text-xl font-semibold text-[#232521]">Many ways to reach out</h2>
-                <p className="text-sm leading-relaxed tracking-tight text-gray-600">We're here when you need us. Whether you need to report an issue, request a change, or just have a quick question about your website, we've made it easy to reach our team.</p>
+                <p className="text-sm leading-relaxed tracking-tight text-gray-600">
+                  We're here when you need us.
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                  {/* Call Us */}
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><PhoneIcon className="h-6 w-6 text-[#1b4a41]"/></div>
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+                      <PhoneIcon className="h-6 w-6 text-[#1b4a41]"/>
+                    </div>
                     <p className="font-semibold">(555) 123-4567</p>
                     <p className="text-xs text-gray-500">Mon–Fri, 9 AM–5 PM EST</p>
-                    <SecondaryButton href="tel:+15551234567" className="mt-2">
-                      Call Number
-                    </SecondaryButton>
+                    <SecondaryButton href="tel:+15551234567" className="mt-2">Call Number</SecondaryButton>
                   </div>
-                  {/* Text Us */}
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/></div>
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+                      <DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/>
+                    </div>
                     <p className="font-semibold">(555) 123-4567</p>
                     <p className="text-xs text-gray-500">Text Anytime</p>
-                    <SecondaryButton onClick={handleCopyPhone} className="mt-2">
-                      Copy Number
-                    </SecondaryButton>
+                    <SecondaryButton onClick={handleCopyPhone} className="mt-2">Copy Number</SecondaryButton>
                   </div>
-                  {/* Email Us */}
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3"><EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/></div>
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+                      <EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/>
+                    </div>
                     <p className="font-semibold">support@tradesitegenie.com</p>
                     <p className="text-xs text-gray-500">Email Anytime</p>
-                    <SecondaryButton onClick={handleCopyEmail} className="mt-2">
-                      Copy Email
-                    </SecondaryButton>
+                    <SecondaryButton onClick={handleCopyEmail} className="mt-2">Copy Email</SecondaryButton>
                   </div>
                 </div>
               </div>
 
-              {/* Form Card */}
               <div className="">
-                <h2 className="text-xl font-semibold text-[#232521]">Your Support Team is Standing By</h2>
-                <p className="text-sm leading-relaxed tracking-tight text-gray-600 mt-1">Please give us a description of the issue and attach screenshots or screen recordings if helpful.</p>
+                <h2 className="text-xl font-semibold text-[#232521]">Submit a Support Request</h2>
+                <p className="text-sm leading-relaxed tracking-tight text-gray-600 mt-1">
+                  Fill out the form below and we'll get back to you within 24 hours.
+                </p>
                 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-6">
                   <div>
-                    <label htmlFor="requestFromEmail" className="block text-sm font-medium text-gray-700 mb-1">Request From</label>
-                    <input type="email" id="requestFromEmail" value={requestFromEmail} onChange={e => setRequestFromEmail(e.target.value)} required className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"/>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                      Brief Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="title"
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      placeholder="e.g., Homepage images not loading"
+                      required
+                      maxLength={200}
+                      className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                        Category <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="category"
+                          value={category}
+                          onChange={e => setCategory(e.target.value as TicketCategory)}
+                          className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent appearance-none pr-10"
+                        >
+                          {CATEGORY_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {CATEGORY_OPTIONS.find(o => o.value === category)?.description}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="urgency" className="block text-sm font-medium text-gray-700 mb-1">
+                        Urgency <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="urgency"
+                          value={urgency}
+                          onChange={e => setUrgency(e.target.value as TicketUrgency)}
+                          className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent appearance-none pr-10"
+                        >
+                          {URGENCY_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {URGENCY_OPTIONS.find(o => o.value === urgency)?.description}
+                      </p>
+                    </div>
                   </div>
 
                   <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Please give us a description of the issue</label>
-                    <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} required rows={5} className="w-full min-h-[120px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"></textarea>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                      Describe the Issue <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      id="description"
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      placeholder="Please describe your issue in detail."
+                      required
+                      rows={5}
+                      className="w-full min-h-[120px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1b4a41] focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {description.length < 20 
+                        ? `Minimum 20 characters required (${20 - description.length} more needed)`
+                        : `${description.length} characters`
+                      }
+                    </p>
                   </div>
 
                   <div>
@@ -456,7 +487,7 @@ export default function SupportPage() {
 
                   <div className="flex justify-end">
                     <PrimaryButton type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? 'Sending...' : 'Send Request'}
+                      {isSubmitting ? 'Submitting...' : 'Submit Request'}
                     </PrimaryButton>
                   </div>
                 </form>
@@ -469,7 +500,6 @@ export default function SupportPage() {
               <h2 className="text-2xl font-bold text-[#232521] mb-6">Past Support Tickets</h2>
               
               {loadingPast ? (
-                // Loading state - show table skeleton
                 <div className="bg-white border border-gray-200 rounded p-6">
                   <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
@@ -486,7 +516,6 @@ export default function SupportPage() {
                   tickets={pastTickets}
                   onDownload={(ticket) => {
                     console.log('Download ticket:', ticket.ticketId);
-                    // TODO: Generate and download PDF report
                     setNotification({
                       show: true,
                       type: 'success',
@@ -500,6 +529,16 @@ export default function SupportPage() {
           )}
         </PageCard>
       </main>
+
+      {/* Ticket Detail Modal */}
+      <TicketDetailModal
+        ticket={selectedTicket}
+        isOpen={!!selectedTicket}
+        onClose={() => setSelectedTicket(null)}
+        onTicketUpdated={() => {
+          fetchActiveTickets();
+        }}
+      />
     </>
   );
 }

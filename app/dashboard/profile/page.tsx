@@ -58,16 +58,38 @@ export default function ProfilePage() {
     try {
       // Update email in Firebase Auth if it changed
       if (emailChanged) {
-        // For email changes, require current password for security
-        const password = prompt('To change your email, please enter your current password:');
-        if (!password) {
-          showNotification('error', 'Password required to change email');
+        // Check if user has password authentication (not just social auth)
+        const hasPasswordProvider = user.providerData.some(
+          provider => provider.providerId === 'password'
+        );
+
+        let password: string | null = null;
+        
+        // Only ask for password if user has password authentication
+        if (hasPasswordProvider) {
+          password = prompt('To change your email, please enter your current password:');
+          if (!password) {
+            showNotification('error', 'Password required to change email');
+            return;
+          }
+        }
+        
+        const emailResult = await updateUserEmail(formData.email, password || undefined);
+        if (!emailResult.success) {
+          showNotification('error', emailResult.error || 'Failed to update email');
           return;
         }
         
-        const emailResult = await updateUserEmail(formData.email, password);
-        if (!emailResult.success) {
-          showNotification('error', emailResult.error || 'Failed to update email');
+        // If verification is required, show special message
+        if (emailResult.requiresVerification) {
+          showNotification(
+            'success', 
+            'Verification email sent',
+            `Please check ${formData.email} and click the verification link to complete your email change. Your current email remains active until verified.`
+          );
+          // Reset form to original data since email hasn't actually changed yet
+          setFormData(originalData);
+          setIsEditMode(false);
           return;
         }
       }
@@ -218,20 +240,34 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <div>
-                  <p className="text-sm font-medium text-[#232521]">Password</p>
-                  <p className="text-sm text-gray-500">
-                    Update your password to keep your account secure
-                  </p>
+              {/* Only show password change for users with password authentication */}
+              {user?.providerData.some(provider => provider.providerId === 'password') ? (
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <div>
+                    <p className="text-sm font-medium text-[#232521]">Password</p>
+                    <p className="text-sm text-gray-500">
+                      Update your password to keep your account secure
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowChangePasswordModal(true)}
+                    className="rounded-full border-2 border-[#1B4A41] bg-white px-6 py-2 text-[#1B4A41] font-bold hover:bg-gray-50 transition-colors"
+                  >
+                    Change Password
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowChangePasswordModal(true)}
-                  className="rounded-full border-2 border-[#1B4A41] bg-white px-6 py-2 text-[#1B4A41] font-bold hover:bg-gray-50 transition-colors"
-                >
-                  Change Password
-                </button>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <div>
+                    <p className="text-sm font-medium text-[#232521]">Sign-in Method</p>
+                    <p className="text-sm text-gray-500">
+                      You signed in with {user?.providerData[0]?.providerId === 'google.com' ? 'Google' : 
+                                         user?.providerData[0]?.providerId === 'apple.com' ? 'Apple' : 
+                                         'a social provider'}. Your password is managed by your provider, not TradeSiteGenie.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

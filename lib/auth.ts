@@ -22,7 +22,7 @@ if (typeof window !== 'undefined') {
     sendPasswordResetEmail: firebaseAuth.sendPasswordResetEmail,
     getRedirectResult: firebaseAuth.getRedirectResult,
     onAuthStateChanged: firebaseAuth.onAuthStateChanged,
-    updateEmail: firebaseAuth.updateEmail,
+    verifyBeforeUpdateEmail: firebaseAuth.verifyBeforeUpdateEmail,
     reauthenticateWithCredential: firebaseAuth.reauthenticateWithCredential,
     createUserWithEmailAndPassword: firebaseAuth.createUserWithEmailAndPassword,
     updateProfile: firebaseAuth.updateProfile,
@@ -141,8 +141,8 @@ export function getCurrentUser(): User | null {
 
 export async function updateUserEmail(
   newEmail: string,
-  currentPassword: string
-): Promise<{ success: boolean; error?: string }> {
+  currentPassword?: string
+): Promise<{ success: boolean; error?: string; requiresVerification?: boolean }> {
   if (typeof window === 'undefined') {
     return { success: false, error: 'Auth functions only work in browser' };
   }
@@ -154,14 +154,33 @@ export async function updateUserEmail(
       return { success: false, error: 'No user is currently logged in' };
     }
 
-    // Re-authenticate user before sensitive operation
-    const credential = authFunctions.EmailAuthProvider.credential(user.email, currentPassword);
-    await authFunctions.reauthenticateWithCredential(user, credential);
+    // Check if user has email/password provider
+    const hasPasswordProvider = user.providerData.some(
+      provider => provider.providerId === 'password'
+    );
 
-    // Update email
-    await authFunctions.updateEmail(user, newEmail);
+    // Re-authenticate if user has password authentication
+    if (hasPasswordProvider) {
+      if (!currentPassword) {
+        return { success: false, error: 'Password required to change email' };
+      }
+      
+      const credential = authFunctions.EmailAuthProvider.credential(user.email, currentPassword);
+      await authFunctions.reauthenticateWithCredential(user, credential);
+    }
 
-    return { success: true };
+    // Send verification email to new address (user must click link to complete update)
+    const actionCodeSettings = {
+      url: `${window.location.origin}/dashboard/profile`,
+      handleCodeInApp: false,
+    };
+    
+    await authFunctions.verifyBeforeUpdateEmail(user, newEmail, actionCodeSettings);
+
+    return { 
+      success: true, 
+      requiresVerification: true 
+    };
   } catch (error: any) {
     console.error('Email update error:', error);
     
