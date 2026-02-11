@@ -18,10 +18,12 @@ export async function getSitesForUser(userId: string): Promise<Site[]> {
   }
 
   try {
+    console.log('🔍 Fetching sites for userId:', userId);
     const sitesRef = firestoreFunctions.collection(db, 'sites');
     const q = firestoreFunctions.query(sitesRef, firestoreFunctions.where('userId', '==', userId));
     
     const snapshot = await firestoreFunctions.getDocs(q);
+    console.log('📊 Found', snapshot.docs.length, 'sites');
     
     return snapshot.docs.map((docSnap: any) => {
       const data = docSnap.data();

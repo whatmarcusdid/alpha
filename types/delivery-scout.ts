@@ -198,15 +198,21 @@ export type AddReportPayload = z.infer<typeof AddReportSchema>;
 
 /**
  * Schema for create_ticket action
- * Required: subject, priority
+ * Required: title
+ * Creates ticket in top-level supportTickets collection
  */
 export const CreateTicketSchema = z.object({
-  subject: NonEmptyString,
-  priority: PrioritySchema,
-  description: z.string().optional(),
-  category: OptionalNonEmptyString,
-  status: TicketStatusSchema.optional(),
-  assignedTo: OptionalNonEmptyString,
+  title: NonEmptyString,
+  description: NonEmptyString,
+  category: z.enum(['General', 'Billing', 'Technical', 'Sales', 'Maintenance', 'Emergency']).optional(),
+  status: z.enum(['Open', 'In Progress', 'Awaiting Customer', 'Resolved', 'Closed', 'Cancelled']).optional(),
+  priority: z.enum(['Critical', 'High', 'Medium', 'Low']).optional(),
+  channel: z.enum(['Support Hub', 'Email', 'Phone', 'Chat']).optional(),
+  assignedAgentId: OptionalNonEmptyString,
+  assignedAgentName: OptionalNonEmptyString,
+  customerEmail: z.string().email().optional(),
+  customerName: OptionalNonEmptyString,
+  internalNotes: z.string().optional(),
 });
 
 export type CreateTicketPayload = z.infer<typeof CreateTicketSchema>;
@@ -239,25 +245,32 @@ export type CreateUserPayload = z.infer<typeof CreateUserSchema>;
  * Schema for update_ticket action
  * Required: ticketId
  * At least one update field must be provided
+ * Updates ticket in top-level supportTickets collection
  */
 export const UpdateTicketSchema = z.object({
   ticketId: NonEmptyString,
-  subject: OptionalNonEmptyString,
-  priority: PrioritySchema.optional(),
+  title: OptionalNonEmptyString,
   description: z.string().optional(), // Can be empty for clearing
-  category: OptionalNonEmptyString,
-  status: TicketStatusSchema.optional(),
-  resolution: z.string().optional(), // Can be empty for clearing
-  assignedTo: OptionalNonEmptyString,
+  category: z.enum(['General', 'Billing', 'Technical', 'Sales', 'Maintenance', 'Emergency']).optional(),
+  status: z.enum(['Open', 'In Progress', 'Awaiting Customer', 'Resolved', 'Closed', 'Cancelled']).optional(),
+  priority: z.enum(['Critical', 'High', 'Medium', 'Low']).optional(),
+  assignedAgentId: OptionalNonEmptyString,
+  assignedAgentName: OptionalNonEmptyString,
+  internalNotes: z.string().optional(),
+  resolvedAt: z.string().optional(), // ISO date string
+  closedAt: z.string().optional(), // ISO date string
 }).refine(
   (data) => 
-    data.subject ||
-    data.priority ||
+    data.title ||
     data.description !== undefined ||
     data.category ||
     data.status ||
-    data.resolution !== undefined ||
-    data.assignedTo,
+    data.priority ||
+    data.assignedAgentId ||
+    data.assignedAgentName ||
+    data.internalNotes !== undefined ||
+    data.resolvedAt ||
+    data.closedAt,
   { message: 'At least one field must be provided for update' }
 );
 

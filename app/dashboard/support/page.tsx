@@ -306,7 +306,7 @@ export default function SupportPage() {
                   Track your open support requests below. You'll receive email updates when we respond.
                 </p>
                 
-                <div className="flex flex-col gap-4 w-full justify-start items-start mt-2">
+                <div className="flex flex-col gap-4 w-full justify-center items-center mt-2">
                   {loadingActive ? (
                     <>
                       {[1, 2, 3].map((i) => (

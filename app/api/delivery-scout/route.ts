@@ -575,17 +575,22 @@ async function handleUpdateSite(
 }
 
 /**
- * Updates an existing ticket in the tickets subcollection
+ * Updates an existing ticket in the top-level supportTickets collection
  * 
  * IDEMPOTENT: Yes - calling multiple times with same data produces same result
  * 
- * @param userId - The user ID
+ * @param userId - The user ID (for authorization check)
  * @param data - Ticket fields to update (requires ticketId)
  * @returns Success response
  * @throws Error if validation fails or update fails
  * 
  * @example
- * handleUpdateTicket('user123', { ticketId: 'ticket789', status: 'resolved', resolution: 'Fixed server config' })
+ * handleUpdateTicket('user123', { 
+ *   ticketId: 'ticket789', 
+ *   status: 'Resolved', 
+ *   priority: 'High',
+ *   internalNotes: 'Fixed server config' 
+ * })
  */
 async function handleUpdateTicket(
   userId: string,
@@ -605,33 +610,73 @@ async function handleUpdateTicket(
     };
   }
 
-  const { ticketId, subject, priority, description, category, status, resolution, assignedTo } = validation.data;
+  const { 
+    ticketId, 
+    title,
+    description,
+    category,
+    status, 
+    priority,
+    assignedAgentId,
+    assignedAgentName,
+    internalNotes,
+    resolvedAt,
+    closedAt
+  } = validation.data;
 
   try {
-    const ticketRef = adminDb.collection('users').doc(userId).collection('tickets').doc(ticketId);
+    // Read from TOP-LEVEL supportTickets collection
+    const ticketRef = adminDb.collection('supportTickets').doc(ticketId);
 
-    // Check if ticket exists
     const ticketDoc = await ticketRef.get();
     if (!ticketDoc.exists) {
-      throw new Error(`Ticket with ID ${ticketId} not found`);
+      return {
+        success: false,
+        error: `Ticket with ID ${ticketId} not found`,
+      };
+    }
+
+    // Verify the ticket belongs to this user
+    const ticketData = ticketDoc.data();
+    if (ticketData?.userId !== userId) {
+      return {
+        success: false,
+        error: 'Unauthorized: Ticket does not belong to this user',
+      };
     }
 
     // Build update object with only provided fields
-    const updateData: any = {
-      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    const updateData: Record<string, any> = {
+      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    if (subject !== undefined) updateData.subject = subject;
-    if (priority !== undefined) updateData.priority = priority;
+    if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (category !== undefined) updateData.category = category;
     if (status !== undefined) updateData.status = status;
-    if (resolution !== undefined) updateData.resolution = resolution;
-    if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
+    if (priority !== undefined) updateData.priority = priority;
+    if (assignedAgentId !== undefined) updateData.assignedAgentId = assignedAgentId;
+    if (assignedAgentName !== undefined) updateData.assignedAgentName = assignedAgentName;
+    if (internalNotes !== undefined) updateData.internalNotes = internalNotes;
+    
+    // Handle status-specific timestamps
+    if (status === 'Resolved') {
+      updateData.resolvedAt = resolvedAt 
+        ? admin.firestore.Timestamp.fromDate(new Date(resolvedAt))
+        : admin.firestore.FieldValue.serverTimestamp();
+    }
+    if (status === 'Closed') {
+      updateData.closedAt = closedAt 
+        ? admin.firestore.Timestamp.fromDate(new Date(closedAt))
+        : admin.firestore.FieldValue.serverTimestamp();
+    }
+    if (status === 'Cancelled') {
+      updateData.cancelledAt = admin.firestore.FieldValue.serverTimestamp();
+    }
 
     await ticketRef.update(updateData);
 
-    console.log('📋 Ticket updated successfully:', { userId, ticketId, updates: Object.keys(validation.data) });
+    console.log('🎫 Ticket updated successfully:', { userId, ticketId, updates: Object.keys(updateData) });
 
     return {
       success: true,
@@ -772,17 +817,22 @@ async function handleAddReport(
 }
 
 /**
- * Creates a new ticket in the tickets subcollection
+ * Creates a new ticket in the top-level supportTickets collection
  * 
  * IDEMPOTENT: No - creates a new document with auto-generated ID each time
  * 
- * @param userId - The user ID
- * @param data - Ticket data (requires subject and priority)
+ * @param userId - The user ID (links ticket to user)
+ * @param data - Ticket data (requires title and description)
  * @returns Success response with auto-generated ticketId
  * @throws Error if validation fails or creation fails
  * 
  * @example
- * handleCreateTicket('user123', { subject: 'Login broken', priority: 'P1', description: 'Cannot sign in' })
+ * handleCreateTicket('user123', { 
+ *   title: 'Login broken', 
+ *   description: 'Cannot sign in',
+ *   priority: 'High',
+ *   category: 'Technical'
+ * })
  */
 async function handleCreateTicket(
   userId: string,
@@ -802,24 +852,54 @@ async function handleCreateTicket(
     };
   }
 
-  const { subject, priority, description, category, status, assignedTo } = validation.data;
+  const { 
+    title, 
+    description, 
+    category, 
+    status, 
+    priority, 
+    channel,
+    assignedAgentId,
+    assignedAgentName,
+    customerEmail,
+    customerName,
+    internalNotes 
+  } = validation.data;
 
   try {
-    const ticketsRef = adminDb.collection('users').doc(userId).collection('tickets');
+    // Write to TOP-LEVEL supportTickets collection
+    const ticketsRef = adminDb.collection('supportTickets');
 
     // Create new ticket document with auto-generated ID
     const newTicketRef = await ticketsRef.add({
-      subject,
-      priority,
-      description: description || '',
-      category: category || '',
-      status: status || 'open',
-      assignedTo: assignedTo || '',
+      userId,  // Link to user
+      createdByUserId: userId,
+      title,
+      description,
+      category: category || 'General',
+      status: status || 'Open',
+      priority: priority || 'Medium',
+      channel: channel || 'Support Hub',
+      assignedAgentId: assignedAgentId || '',
+      assignedAgentName: assignedAgentName || '',
+      customerEmail: customerEmail || '',
+      customerName: customerName || '',
+      internalNotes: internalNotes || '',
+      jsmIssueKey: null,
+      jsmRequestTypeId: null,
+      jsmStatus: null,
+      jsmStatusCategory: null,
+      lastSyncedAt: null,
+      satisfactionRating: null,
+      attachments: [],
+      resolvedAt: null,
+      closedAt: null,
+      cancelledAt: null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.log('📋 Ticket created successfully:', { userId, ticketId: newTicketRef.id });
+    console.log('🎫 Ticket created successfully:', { userId, ticketId: newTicketRef.id });
 
     return {
       success: true,
