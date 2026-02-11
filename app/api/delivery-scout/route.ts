@@ -70,8 +70,45 @@ async function sendSlackNotification(payload: {
 }
 
 // ============================================================================
-// HELPSCOUT API HELPER
+// HELPSCOUT OAUTH2 HELPER
 // ============================================================================
+async function getHelpScoutAccessToken(): Promise<string | null> {
+  const appId = process.env.HELPSCOUT_APP_ID;
+  const appSecret = process.env.HELPSCOUT_APP_SECRET;
+
+  if (!appId || !appSecret) {
+    console.warn('⚠️ HelpScout OAuth credentials not configured');
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://api.helpscout.net/v2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: appId,
+        client_secret: appSecret,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('HelpScout OAuth token request failed:', response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('🔑 HelpScout access token obtained');
+    return data.access_token;
+  } catch (error) {
+    console.error('Error getting HelpScout access token:', error);
+    return null;
+  }
+}
+
 async function createHelpScoutConversation(params: {
   customerEmail: string;
   customerName: string;
@@ -79,22 +116,24 @@ async function createHelpScoutConversation(params: {
   body: string;
   tags?: string[];
 }): Promise<string | null> {
-  const apiKey = process.env.HELPSCOUT_API_KEY;
   const mailboxId = process.env.HELPSCOUT_MAILBOX_ID;
 
-  if (!apiKey || !mailboxId) {
-    console.warn('⚠️ HelpScout credentials not configured, skipping conversation creation');
+  if (!mailboxId) {
+    console.warn('⚠️ HELPSCOUT_MAILBOX_ID not configured');
+    return null;
+  }
+
+  // Get OAuth2 access token
+  const accessToken = await getHelpScoutAccessToken();
+  if (!accessToken) {
     return null;
   }
 
   try {
-    // HelpScout API uses Basic Auth with API key as username and 'X' as password
-    const authHeader = 'Basic ' + Buffer.from(`${apiKey}:X`).toString('base64');
-
     const response = await fetch('https://api.helpscout.net/v2/conversations', {
       method: 'POST',
       headers: {
-        'Authorization': authHeader,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -139,19 +178,16 @@ async function createHelpScoutConversation(params: {
 }
 
 async function addHelpScoutNote(conversationId: string, note: string): Promise<void> {
-  const apiKey = process.env.HELPSCOUT_API_KEY;
-
-  if (!apiKey || !conversationId) {
+  const accessToken = await getHelpScoutAccessToken();
+  if (!accessToken || !conversationId) {
     return;
   }
 
   try {
-    const authHeader = 'Basic ' + Buffer.from(`${apiKey}:X`).toString('base64');
-
     const response = await fetch(`https://api.helpscout.net/v2/conversations/${conversationId}/notes`, {
       method: 'POST',
       headers: {
-        'Authorization': authHeader,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
