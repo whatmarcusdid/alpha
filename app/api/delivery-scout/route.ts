@@ -38,6 +38,159 @@ import {
   validatePayload,
 } from '@/types/delivery-scout';
 
+// ============================================================================
+// SLACK NOTIFICATION HELPER
+// ============================================================================
+async function sendSlackNotification(payload: {
+  text: string;
+  blocks?: unknown[];
+}): Promise<void> {
+  const webhookUrl = process.env.SLACK_SUPPORT_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.warn('⚠️ SLACK_SUPPORT_WEBHOOK_URL not configured, skipping notification');
+    return;
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.error('Slack notification failed:', response.status, await response.text());
+    } else {
+      console.log('📨 Slack notification sent successfully');
+    }
+  } catch (error) {
+    console.error('Error sending Slack notification:', error);
+    // Don't throw - we don't want Slack failure to break ticket creation
+  }
+}
+
+// ============================================================================
+// HELPSCOUT API HELPER
+// ============================================================================
+async function createHelpScoutConversation(params: {
+  customerEmail: string;
+  customerName: string;
+  subject: string;
+  body: string;
+  tags?: string[];
+}): Promise<string | null> {
+  const apiKey = process.env.HELPSCOUT_API_KEY;
+  const mailboxId = process.env.HELPSCOUT_MAILBOX_ID;
+
+  if (!apiKey || !mailboxId) {
+    console.warn('⚠️ HelpScout credentials not configured, skipping conversation creation');
+    return null;
+  }
+
+  try {
+    // HelpScout API uses Basic Auth with API key as username and 'X' as password
+    const authHeader = 'Basic ' + Buffer.from(`${apiKey}:X`).toString('base64');
+
+    const response = await fetch('https://api.helpscout.net/v2/conversations', {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        subject: params.subject,
+        customer: {
+          email: params.customerEmail,
+          firstName: params.customerName.split(' ')[0] || '',
+          lastName: params.customerName.split(' ').slice(1).join(' ') || '',
+        },
+        mailboxId: parseInt(mailboxId),
+        type: 'email',
+        status: 'active',
+        threads: [
+          {
+            type: 'customer',
+            customer: {
+              email: params.customerEmail,
+            },
+            text: params.body,
+          },
+        ],
+        tags: params.tags || [],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('HelpScout conversation creation failed:', response.status, errorText);
+      return null;
+    }
+
+    // HelpScout returns the conversation ID in the Location header
+    const locationHeader = response.headers.get('Location');
+    const conversationId = locationHeader?.split('/').pop() || null;
+
+    console.log('📧 HelpScout conversation created:', conversationId);
+    return conversationId;
+  } catch (error) {
+    console.error('Error creating HelpScout conversation:', error);
+    return null;
+  }
+}
+
+async function addHelpScoutNote(conversationId: string, note: string): Promise<void> {
+  const apiKey = process.env.HELPSCOUT_API_KEY;
+
+  if (!apiKey || !conversationId) {
+    return;
+  }
+
+  try {
+    const authHeader = 'Basic ' + Buffer.from(`${apiKey}:X`).toString('base64');
+
+    const response = await fetch(`https://api.helpscout.net/v2/conversations/${conversationId}/notes`, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: note,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('HelpScout note failed:', response.status);
+    } else {
+      console.log('📝 HelpScout note added to conversation:', conversationId);
+    }
+  } catch (error) {
+    console.error('Error adding HelpScout note:', error);
+  }
+}
+
+async function getUserEmail(userId: string): Promise<{ email: string; name: string } | null> {
+  if (!adminDb) return null;
+
+  try {
+    const userDoc = await adminDb.collection('users').doc(userId).get();
+    if (!userDoc.exists) return null;
+
+    const userData = userDoc.data();
+    return {
+      email: userData?.email || '',
+      name: userData?.fullName || userData?.displayName || '',
+    };
+  } catch (error) {
+    console.error('Error fetching user email:', error);
+    return null;
+  }
+}
+
+// ============================================================================
+// API KEY VALIDATION
+// ============================================================================
+
 /**
  * Validates the API key from the Authorization header
  * 
@@ -600,7 +753,6 @@ async function handleUpdateTicket(
     throw new Error('Firebase Admin not initialized');
   }
 
-  // Validate payload with Zod schema
   const validation = validatePayload(ValidationSchemas.update_ticket, data);
   if (!validation.success) {
     return {
@@ -625,7 +777,6 @@ async function handleUpdateTicket(
   } = validation.data;
 
   try {
-    // Read from TOP-LEVEL supportTickets collection
     const ticketRef = adminDb.collection('supportTickets').doc(ticketId);
 
     const ticketDoc = await ticketRef.get();
@@ -636,37 +787,54 @@ async function handleUpdateTicket(
       };
     }
 
+    const existingTicket = ticketDoc.data();
+
     // Verify the ticket belongs to this user
-    const ticketData = ticketDoc.data();
-    if (ticketData?.userId !== userId) {
+    if (existingTicket?.userId !== userId) {
       return {
         success: false,
         error: 'Unauthorized: Ticket does not belong to this user',
       };
     }
 
-    // Build update object with only provided fields
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    if (title !== undefined) updateData.title = title;
+    // Track changes for Slack notification
+    const changes: string[] = [];
+
+    if (title !== undefined && title !== existingTicket?.title) {
+      updateData.title = title;
+      changes.push(`• Title: ${existingTicket?.title} → ${title}`);
+    }
     if (description !== undefined) updateData.description = description;
-    if (category !== undefined) updateData.category = category;
-    if (status !== undefined) updateData.status = status;
-    if (priority !== undefined) updateData.priority = priority;
+    if (category !== undefined && category !== existingTicket?.category) {
+      updateData.category = category;
+      changes.push(`• Category: ${existingTicket?.category} → ${category}`);
+    }
+    if (status !== undefined && status !== existingTicket?.status) {
+      updateData.status = status;
+      changes.push(`• Status: ${existingTicket?.status} → ${status}`);
+    }
+    if (priority !== undefined && priority !== existingTicket?.priority) {
+      updateData.priority = priority;
+      changes.push(`• Priority: ${existingTicket?.priority} → ${priority}`);
+    }
     if (assignedAgentId !== undefined) updateData.assignedAgentId = assignedAgentId;
-    if (assignedAgentName !== undefined) updateData.assignedAgentName = assignedAgentName;
+    if (assignedAgentName !== undefined && assignedAgentName !== existingTicket?.assignedAgentName) {
+      updateData.assignedAgentName = assignedAgentName;
+      changes.push(`• Assigned to: ${existingTicket?.assignedAgentName || 'Unassigned'} → ${assignedAgentName}`);
+    }
     if (internalNotes !== undefined) updateData.internalNotes = internalNotes;
-    
-    // Handle status-specific timestamps
+
     if (status === 'Resolved') {
-      updateData.resolvedAt = resolvedAt 
+      updateData.resolvedAt = resolvedAt
         ? admin.firestore.Timestamp.fromDate(new Date(resolvedAt))
         : admin.firestore.FieldValue.serverTimestamp();
     }
     if (status === 'Closed') {
-      updateData.closedAt = closedAt 
+      updateData.closedAt = closedAt
         ? admin.firestore.Timestamp.fromDate(new Date(closedAt))
         : admin.firestore.FieldValue.serverTimestamp();
     }
@@ -677,6 +845,56 @@ async function handleUpdateTicket(
     await ticketRef.update(updateData);
 
     console.log('🎫 Ticket updated successfully:', { userId, ticketId, updates: Object.keys(updateData) });
+
+    // Send Slack notification if there are meaningful changes
+    if (changes.length > 0) {
+      const userInfo = await getUserEmail(userId);
+
+      sendSlackNotification({
+        text: '🔄 Support Ticket Updated',
+        blocks: [
+          {
+            type: 'header',
+            text: {
+              type: 'plain_text',
+              text: '🔄 Support Ticket Updated',
+              emoji: true,
+            },
+          },
+          {
+            type: 'section',
+            fields: [
+              { type: 'mrkdwn', text: `*Customer:*\n${userInfo?.name || 'Unknown'}` },
+              { type: 'mrkdwn', text: `*Title:*\n${existingTicket?.title}` },
+              { type: 'mrkdwn', text: `*Ticket ID:*\n${ticketId}` },
+            ],
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*Changes:*\n${changes.join('\n')}`,
+            },
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `<https://my.tradesitegenie.com/admin/tickets/${ticketId}|View in Dashboard>`,
+            },
+          },
+        ],
+      });
+    }
+
+    // Add note to HelpScout if conversation exists
+    if (existingTicket?.helpscoutConversationId && (internalNotes || changes.length > 0)) {
+      const noteText = internalNotes
+        ? `Internal Note: ${internalNotes}\n\nChanges:\n${changes.join('\n')}`
+        : `Ticket Updated:\n${changes.join('\n')}`;
+
+      addHelpScoutNote(existingTicket.helpscoutConversationId, noteText);
+    }
 
     return {
       success: true,
@@ -842,7 +1060,6 @@ async function handleCreateTicket(
     throw new Error('Firebase Admin not initialized');
   }
 
-  // Validate payload with Zod schema
   const validation = validatePayload(ValidationSchemas.create_ticket, data);
   if (!validation.success) {
     return {
@@ -867,12 +1084,16 @@ async function handleCreateTicket(
   } = validation.data;
 
   try {
+    // Fetch customer info from Firestore
+    const userInfo = await getUserEmail(userId);
+    const finalCustomerEmail = customerEmail || userInfo?.email || '';
+    const finalCustomerName = customerName || userInfo?.name || '';
+
     // Write to TOP-LEVEL supportTickets collection
     const ticketsRef = adminDb.collection('supportTickets');
 
-    // Create new ticket document with auto-generated ID
-    const newTicketRef = await ticketsRef.add({
-      userId,  // Link to user
+    const ticketData = {
+      userId,
       createdByUserId: userId,
       title,
       description,
@@ -882,8 +1103,8 @@ async function handleCreateTicket(
       channel: channel || 'Support Hub',
       assignedAgentId: assignedAgentId || '',
       assignedAgentName: assignedAgentName || '',
-      customerEmail: customerEmail || '',
-      customerName: customerName || '',
+      customerEmail: finalCustomerEmail,
+      customerName: finalCustomerName,
       internalNotes: internalNotes || '',
       jsmIssueKey: null,
       jsmRequestTypeId: null,
@@ -897,14 +1118,75 @@ async function handleCreateTicket(
       cancelledAt: null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    const newTicketRef = await ticketsRef.add(ticketData);
+    const ticketId = newTicketRef.id;
+
+    console.log('🎫 Ticket created successfully:', { userId, ticketId });
+
+    // Send Slack notification (non-blocking)
+    sendSlackNotification({
+      text: '🎫 New Support Ticket Created',
+      blocks: [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: '🎫 New Support Ticket Created',
+            emoji: true,
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: `*Customer:*\n${finalCustomerName || 'Unknown'}` },
+            { type: 'mrkdwn', text: `*Email:*\n${finalCustomerEmail || 'N/A'}` },
+            { type: 'mrkdwn', text: `*Title:*\n${title}` },
+            { type: 'mrkdwn', text: `*Priority:*\n${priority || 'Medium'}` },
+            { type: 'mrkdwn', text: `*Category:*\n${category || 'General'}` },
+            { type: 'mrkdwn', text: `*Status:*\n${status || 'Open'}` },
+          ],
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*Description:*\n${description}`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `<https://my.tradesitegenie.com/admin/tickets/${ticketId}|View in Dashboard>`,
+          },
+        },
+      ],
     });
 
-    console.log('🎫 Ticket created successfully:', { userId, ticketId: newTicketRef.id });
+    // Create HelpScout conversation (non-blocking)
+    let helpscoutConversationId: string | null = null;
+    if (finalCustomerEmail) {
+      helpscoutConversationId = await createHelpScoutConversation({
+        customerEmail: finalCustomerEmail,
+        customerName: finalCustomerName,
+        subject: title,
+        body: description,
+        tags: [category || 'General', priority || 'Medium'].filter(Boolean),
+      });
+
+      // Update ticket with HelpScout conversation ID if created
+      if (helpscoutConversationId) {
+        await newTicketRef.update({ helpscoutConversationId });
+      }
+    }
 
     return {
       success: true,
       message: 'Ticket created successfully',
-      ticketId: newTicketRef.id,
+      ticketId,
+      helpscoutConversationId,
     };
   } catch (error) {
     console.error('Error creating ticket:', error);
