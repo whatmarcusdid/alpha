@@ -7,8 +7,10 @@ const notion = new Client({
   auth: process.env.NOTION_API_KEY,
 });
 
-// TSG Sales Pipeline Data Source ID
-const DATA_SOURCE_ID = '2c37eae312ee803dbe79f6842267afce';
+// TSG Sales Pipeline - collection/data source ID (without dashes)
+const DATA_SOURCE_ID = (
+  process.env.NOTION_SALES_PIPELINE_DB_ID || '2c37eae312ee8019b246000bb86549c2'
+).replace(/-/g, '');
 
 export async function addProspectToNotion(formData: {
   firstName: string;
