@@ -829,7 +829,13 @@ When experiencing any error, verify all required environment variables are set:
 ```bash
 # Notifications
 SLACK_WEBHOOK_URL (for new user notifications)
+SLACK_SUPPORT_WEBHOOK_URL (for support ticket create/update notifications)
 NEXT_PUBLIC_ZAPIER_WEBHOOK_URL (for support tickets)
+
+# HelpScout (Delivery Scout ticket integration)
+HELPSCOUT_APP_ID
+HELPSCOUT_APP_SECRET
+HELPSCOUT_MAILBOX_ID
 
 # Delivery Scout
 DELIVERY_SCOUT_API_KEY (for Lindy AI integration)

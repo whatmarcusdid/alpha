@@ -42,8 +42,11 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 - Payment method management (SetupIntents, attach/update)
 - Invoice and transaction retrieval
 - Delivery Scout automation endpoint
+- User settings (timezone, email frequency) - GET/PATCH
+- GDPR data export (JSON download of all user data)
+- Account deletion request (notifies team via Loops + Slack)
 - Webhook processing (Stripe events)
-- Notification dispatch (Slack, email)
+- Notification dispatch (Slack, email, Loops)
 
 **Key Patterns:**
 - Next.js Route Handlers (App Router pattern)
@@ -85,24 +88,26 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 
 ### Firebase/Firestore
 
-**Location:** `/lib/firebase` (client), `/lib/firebase/admin` (server)
+**Location:** `/lib/firebase` (client), `/lib/firebase/admin` (server), `/lib/firebase-admin` (alternative)
 
 **Client SDK (`/lib/firebase.ts`):**
 - Browser-only initialization with environment variables
 - Exports: `auth`, `db`, `app`
 - Used in client components and pages
 
-**Admin SDK (`/lib/firebase/admin.ts`):**
-- Server-side initialization with service account
-- Exports: `adminAuth`, `adminDb`, `adminApp`
-- Used in API routes
+**Admin SDK:**
+- **Primary:** `/lib/firebase/admin.ts` - Exports `adminAuth`, `adminDb`; used by middleware, Delivery Scout, most API routes
+- **Alternative:** `/lib/firebase-admin.ts` - Modular imports (firebase-admin/app, firestore, auth); used by user settings, export, and request-deletion endpoints
+- Both provide server-side Firebase Admin for API routes; never import in client components
 
 **Collections:**
-- `users/{userId}` - User profiles, subscriptions, metrics, company info
-- `users/{userId}/sites/{siteId}` - Customer websites
+- `users/{userId}` - User profiles, subscriptions, metrics, company info, settings
+- `sites/{siteId}` - Customer websites (top-level, has userId field)
 - `users/{userId}/reports/{reportId}` - Performance reports
-- `users/{userId}/tickets/{ticketId}` - Support tickets
+- `supportTickets/{ticketId}` - Support tickets (top-level, has userId field)
 - `pending_subscriptions/{email}` - Temporary subscription storage
+- `dataExports/{exportId}` - Audit log of GDPR data export requests
+- `deletionRequests/{requestId}` - Account deletion request queue
 
 ---
 
@@ -145,10 +150,12 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 
 ### Notifications
 
-**Location:** `/app/api/notifications/*`
+**Location:** `/app/api/notifications/*`, `/app/api/delivery-scout/route.ts`
 
 **Integrations:**
-- **Slack:** New user signup notifications to #tsg-support channel
+- **Slack:** New user signup notifications (`SLACK_WEBHOOK_URL`), support ticket create/update (`SLACK_SUPPORT_WEBHOOK_URL`), account deletion requests
+- **HelpScout:** Conversation creation on ticket create, note sync on ticket update (OAuth2 Client Credentials via `lib/helpscout/client.ts`)
+- **Loops:** Transactional emails for account deletion requests → Help Scout inbox (`LOOPS_API_KEY`, `LOOPS_SUPPORT_TICKET_TEMPLATE_ID`)
 - **Zapier:** (Optional) Support ticket forwarding to Notion
 
 ---
@@ -345,6 +352,7 @@ Claim API
 - **Security details:** See [SECURITY_MODEL.md](./SECURITY_MODEL.md)
 - **Data schemas:** See [DATA_MODELS.md](./DATA_MODELS.md)
 - **API reference:** See [API_INDEX.md](./API_INDEX.md)
+- **User APIs:** [user-settings-api.md](./user-settings-api.md), [gdpr-export-api.md](./gdpr-export-api.md), [account-deletion-api.md](./account-deletion-api.md)
 - **Deployment process:** See [DEPLOYMENT.md](./DEPLOYMENT.md)
 - **Middleware usage:** See [/lib/middleware/USAGE.md](../lib/middleware/USAGE.md)
 - **Environment setup:** See [SETUP.md](./SETUP.md)

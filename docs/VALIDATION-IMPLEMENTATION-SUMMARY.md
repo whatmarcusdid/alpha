@@ -66,7 +66,7 @@ Comprehensive TypeScript types with Zod runtime validation for all 8 Delivery Sc
 | add_site | name, url |
 | update_site | siteId + at least 1 update field |
 | add_report | title, type |
-| create_ticket | subject, priority |
+| create_ticket | title, description |
 | update_ticket | ticketId + at least 1 update field |
 
 ---
@@ -80,8 +80,9 @@ Comprehensive TypeScript types with Zod runtime validation for all 8 Delivery Sc
   "action": "create_ticket",
   "userId": "user123",
   "data": {
-    "subject": "Test",
-    "priority": "HIGH"
+    "title": "Test",
+    "description": "Test description",
+    "priority": "P1"
   }
 }
 ```
@@ -92,7 +93,7 @@ Comprehensive TypeScript types with Zod runtime validation for all 8 Delivery Sc
   "success": false,
   "error": "Validation failed",
   "validationErrors": [
-    "priority: Must be one of: P1, P2, P3, P4"
+    "priority: Must be one of: Critical, High, Medium, Low"
   ]
 }
 ```
@@ -338,7 +339,7 @@ As per requirements:
 | `add_site` | name, url | status, description |
 | `update_site` | siteId + ≥1 update field | - |
 | `add_report` | title, type | content, summary, metrics |
-| `create_ticket` | subject, priority | description, category, status, assignedTo |
+| `create_ticket` | title, description | category, status, priority, channel, assignedAgentId, assignedAgentName |
 | `update_ticket` | ticketId + ≥1 update field | - |
 
 ---
@@ -358,8 +359,8 @@ As per requirements:
 - ✅ No linter errors
 - ✅ All 8 handlers have validation
 - ✅ User-friendly error messages
-- ✅ P4 priority supported
-- ✅ Ticket status uses hyphen format
+- ✅ Low priority supported (Critical, High, Medium, Low)
+- ✅ Ticket status uses title case (Open, In Progress, Resolved, etc.)
 - ✅ Email validation for company info
 - ✅ URL validation for sites and company
 - ✅ Numeric fields validated as non-negative

@@ -10,19 +10,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- (Add new features here)
+- **User Settings API** (`/api/user/settings`) - GET/PATCH for timezone and email notification frequency
+  - Settings page with StickyBottomBar for save/cancel, NotificationToast for feedback
+  - WordPress dashboard URL support ("Go To WordPress Dashboard" link when configured)
+- **GDPR Data Export** (`/api/user/export-data`) - POST to download complete user data as JSON
+  - Includes user, company, subscription, metrics, settings, sites, tickets, reports
+  - Audit logging to `dataExports` collection
+- **Account Deletion Request** (`/api/user/request-deletion`) - POST to submit deletion request
+  - Confirmation modal with optional reason field
+  - Notifies team via Loops (email to Help Scout) and Slack
+  - Logs to `deletionRequests` collection
+- **StickyBottomBar** - Reusable fixed bottom bar component for edit forms (Settings, My Company)
+- **lib/firebase-admin.ts** - Alternative Firebase Admin initialization with modular imports
+- **lib/firestore/settings.ts** - Client-side helpers for user settings (browser-only pattern)
+- **Slack + HelpScout integrations** for Delivery Scout ticket handlers
+  - Slack notifications on ticket create/update (`SLACK_SUPPORT_WEBHOOK_URL`)
+  - HelpScout conversation creation on ticket create
+  - HelpScout note sync on ticket update
+  - Customer email fetched from Firestore user profile when not provided
 
 ### Changed
-- (Add modifications to existing features here)
-
-### Fixed
-- (Add bug fixes here)
-
-### Security
-- (Add security improvements here)
+- **Delivery Scout create_ticket/update_ticket** - Aligned with Support Hub frontend
+  - Collection: `users/{userId}/tickets` → `supportTickets` (top-level, with userId field)
+  - Field names: `subject`→`title`, `lastUpdated`→`lastUpdatedAt`, `assignedTo`→`assignedAgentId`/`assignedAgentName`
+  - Status values: `open`/`in-progress` → `Open`/`In Progress`/`Resolved`/`Closed`/`Cancelled`
+  - Priority values: `P1`/`P2`/`P3`/`P4` → `Critical`/`High`/`Medium`/`Low`
+  - Added: `userId`, `createdByUserId`, `channel` (defaults to Support Hub)
+  - Added ownership verification in update_ticket
+  - Create_ticket now requires `title` and `description` (not subject/priority)
+- **HelpScout authentication** - Switched from API key to OAuth2 Client Credentials
+  - `lib/helpscout/client.ts` now uses `HELPSCOUT_APP_ID`, `HELPSCOUT_APP_SECRET`
+  - Token caching to avoid fetching on every request
 
 ### Docs
-- (Add documentation changes here)
+- Updated API_INDEX.md with User APIs (settings, export-data, request-deletion)
+- Updated DATA_MODELS.md with settings object, dataExports, deletionRequests collections, wordpressCredentials.dashboardUrl
+- Updated ENVIRONMENT_VARIABLES.md with LOOPS_API_KEY, LOOPS_SUPPORT_TICKET_TEMPLATE_ID
+- Updated ARCHITECTURE.md with new API endpoints, Firebase Admin paths, dataExports/deletionRequests
+- Created user-settings-api.md, gdpr-export-api.md, account-deletion-api.md
+- Updated delivery-scout-handlers.md, delivery-scout-quick-reference.md, delivery-scout-api.md
+- Updated DATA_MODELS.md with supportTickets collection schema
+- Updated DEPLOYMENT.md and ENVIRONMENT_VARIABLES.md with new env vars
+- Updated delivery-scout-validation.md with new ticket schemas
+- Updated ARCHITECTURE.md Firestore collections and notifications
+- Updated scripts/test-delivery-scout.ts with new ticket payload format
 
 ---
 

@@ -211,9 +211,10 @@ POST /api/delivery-scout
   "action": "create_ticket",
   "userId": "test-user-delivery-scout",
   "data": {
-    "subject": "Test ticket",
-    "priority": "P2",
-    "description": "Test description"
+    "title": "Test ticket",
+    "description": "Test description",
+    "priority": "High",
+    "category": "Technical"
   }
 }
 
@@ -236,8 +237,9 @@ POST /api/delivery-scout
   "action": "create_ticket",
   "userId": "test-user-delivery-scout",
   "data": {
-    "subject": "Test",
-    "priority": "HIGH"  // Invalid - should be P1-P4
+    "title": "Test",
+    "description": "Test description",
+    "priority": "P1"  // Invalid - should be Critical, High, Medium, Low
   }
 }
 
@@ -246,7 +248,7 @@ POST /api/delivery-scout
   "success": false,
   "error": "Validation failed",
   "validationErrors": [
-    "priority: Must be one of: P1, P2, P3, P4"
+    "priority: Must be one of: Critical, High, Medium, Low"
   ]
 }
 ```

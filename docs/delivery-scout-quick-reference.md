@@ -10,15 +10,15 @@
 | `update_metrics` | ≥1 of: websiteTraffic, siteSpeedSeconds, supportHoursRemaining, maintenanceHoursRemaining | `users/{userId}/metrics` | success |
 | `update_company_info` | ≥1 of: legalName, websiteUrl, address, city, state, zipCode, businessService, serviceArea | `users/{userId}/company` | success |
 | `update_site` | siteId + ≥1 update field | `users/{userId}/sites/{siteId}` | siteId |
-| `update_ticket` | ticketId + ≥1 update field | `users/{userId}/tickets/{ticketId}` | ticketId |
+| `update_ticket` | ticketId + ≥1 update field | `supportTickets/{ticketId}` (top-level) | ticketId |
 
 ### Add Handlers (Not Idempotent ❌)
 
 | Action | Required Fields | Creates | Returns |
 |--------|----------------|---------|---------|
-| `add_site` | name, url | `users/{userId}/sites/{auto-id}` | siteId (new) |
+| `add_site` | name, url | `sites/{auto-id}` (top-level) | siteId (new) |
 | `add_report` | title, type | `users/{userId}/reports/{auto-id}` | reportId (new) |
-| `create_ticket` | subject, priority | `users/{userId}/tickets/{auto-id}` | ticketId (new) |
+| `create_ticket` | title, description | `supportTickets/{auto-id}` (top-level) | ticketId (new) |
 
 ## Quick Examples
 
@@ -35,7 +35,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 curl -X POST http://localhost:3000/api/delivery-scout \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"action":"create_ticket","userId":"user123","data":{"subject":"Issue","priority":"P1"}}'
+  -d '{"action":"create_ticket","userId":"user123","data":{"title":"Issue","description":"Description of the issue","priority":"High"}}'
 ```
 
 ### Add Site
@@ -52,7 +52,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 - All numbers must be ≥ 0
 
 ### Priorities (Tickets)
-- Must be: `P1`, `P2`, or `P3`
+- Must be: `Critical`, `High`, `Medium`, or `Low`
 
 ### Report Types
 - Must be: `monthly`, `quarterly`, `annual`, or `custom`
@@ -68,8 +68,14 @@ admin.firestore.FieldValue.serverTimestamp()
 ```
 
 Fields automatically set:
-- `lastUpdated` (all updates)
+- `lastUpdatedAt` (all updates)
 - `createdAt` (all creates)
+
+## Integrations (Tickets)
+
+**create_ticket** and **update_ticket** integrate with:
+- **Slack:** Sends notifications to `SLACK_SUPPORT_WEBHOOK_URL` channel
+- **HelpScout:** Creates conversation on create; adds note on update (requires `HELPSCOUT_APP_ID`, `HELPSCOUT_APP_SECRET`, `HELPSCOUT_MAILBOX_ID`)
 
 ## Error Responses
 

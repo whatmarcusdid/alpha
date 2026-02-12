@@ -331,6 +331,81 @@ This document catalogs all API routes in the TradeSiteGenie Dashboard, including
 
 ---
 
+## User APIs
+
+| Route | Method | Purpose | Auth Type | Rate Limiting | Source File |
+|-------|--------|---------|-----------|---------------|-------------|
+| `/api/user/settings` | GET | Get user settings (timezone, email frequency) | Firebase Token | generalLimiter (60/min) | `/app/api/user/settings/route.ts` |
+| `/api/user/settings` | PATCH | Update user settings | Firebase Token | generalLimiter (60/min) | `/app/api/user/settings/route.ts` |
+| `/api/user/export-data` | POST | Export all user data (GDPR compliance) | Firebase Token | generalLimiter (60/min) | `/app/api/user/export-data/route.ts` |
+| `/api/user/request-deletion` | POST | Submit account deletion request | Firebase Token | generalLimiter (60/min) | `/app/api/user/request-deletion/route.ts` |
+
+### User Settings
+
+**GET Request:** No body required (userId from auth token)
+
+**GET Response (Success):**
+```typescript
+{
+  timezone: string,           // e.g., "America/New_York"
+  timezoneLabel: string,     // e.g., "Eastern Standard Time (EST)"
+  emailFrequency: 'real-time' | 'daily' | 'weekly' | 'critical',
+  wordpressDashboardUrl?: string | null  // null if not configured
+}
+```
+
+**PATCH Request Schema:**
+```typescript
+{
+  timezoneLabel?: string,     // Required for timezone update - must match allowed values
+  emailFrequency?: string    // 'real-time' | 'daily' | 'weekly' | 'critical'
+}
+```
+
+**PATCH Response (Success):**
+```typescript
+{
+  success: true
+}
+```
+
+**Detailed docs:** [user-settings-api.md](./user-settings-api.md)
+
+---
+
+### Export Data (GDPR)
+
+**Request:** No body required (userId from auth token)
+
+**Response:** JSON file download with `Content-Disposition: attachment; filename="tradesitegenie-data-export-{userId}.json"`
+
+**Export includes:** user, company, subscription, metrics, settings, sites, tickets, reports (all Timestamps converted to ISO strings)
+
+**Detailed docs:** [gdpr-export-api.md](./gdpr-export-api.md)
+
+---
+
+### Request Account Deletion
+
+**Request Schema:**
+```typescript
+{
+  reason?: string  // Optional - reason for leaving
+}
+```
+
+**Response (Success):**
+```typescript
+{
+  success: true,
+  message: string  // "Your account deletion request has been submitted..."
+}
+```
+
+**Detailed docs:** [account-deletion-api.md](./account-deletion-api.md)
+
+---
+
 ## Webhook Endpoints
 
 | Route | Method | Purpose | Auth Type | Rate Limiting | Source File |
@@ -564,6 +639,7 @@ All rate limits are IP-based and use sliding window algorithm via Upstash Redis.
 
 ## Cross-References
 
+- **User API details:** [user-settings-api.md](./user-settings-api.md), [gdpr-export-api.md](./gdpr-export-api.md), [account-deletion-api.md](./account-deletion-api.md)
 - **Middleware usage:** [/lib/middleware/USAGE.md](../lib/middleware/USAGE.md)
 - **Middleware implementation:** [/lib/middleware/IMPLEMENTATION_STATUS.md](../lib/middleware/IMPLEMENTATION_STATUS.md)
 - **Security model:** [SECURITY_MODEL.md](./SECURITY_MODEL.md)

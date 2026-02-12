@@ -235,7 +235,7 @@ These handlers modify existing data in the user document or subcollections.
 
 **Action:** `update_ticket`
 
-**Purpose:** Updates an existing ticket in the tickets subcollection (`users/{userId}/tickets/{ticketId}`)
+**Purpose:** Updates an existing ticket in the top-level `supportTickets` collection (`supportTickets/{ticketId}`)
 
 **Idempotent:** ✅ Yes
 
@@ -243,12 +243,16 @@ These handlers modify existing data in the user document or subcollections.
 ```typescript
 {
   ticketId: string;       // REQUIRED
-  subject?: string;
-  priority?: 'P1' | 'P2' | 'P3';
+  title?: string;
   description?: string;
-  category?: string;
-  status?: 'open' | 'in_progress' | 'resolved' | 'closed';
-  resolution?: string;
+  category?: 'General' | 'Billing' | 'Technical' | 'Sales' | 'Maintenance' | 'Emergency';
+  status?: 'Open' | 'In Progress' | 'Awaiting Customer' | 'Resolved' | 'Closed' | 'Cancelled';
+  priority?: 'Critical' | 'High' | 'Medium' | 'Low';
+  assignedAgentId?: string;
+  assignedAgentName?: string;
+  internalNotes?: string;
+  resolvedAt?: string;    // ISO date string
+  closedAt?: string;      // ISO date string
 }
 ```
 
@@ -263,8 +267,9 @@ These handlers modify existing data in the user document or subcollections.
   "userId": "user123",
   "data": {
     "ticketId": "ticket789",
-    "status": "resolved",
-    "resolution": "Fixed server configuration issue"
+    "status": "Resolved",
+    "priority": "High",
+    "internalNotes": "Fixed server configuration issue"
   }
 }
 ```
@@ -281,7 +286,11 @@ These handlers modify existing data in the user document or subcollections.
 **Error Handling:**
 - Throws error if `ticketId` not provided
 - Throws error if ticket doesn't exist
-- Sets `lastUpdated` to server timestamp
+- Verifies ticket belongs to user (authorization check)
+- Sets `lastUpdatedAt` to server timestamp
+- Sets `resolvedAt`/`closedAt`/`cancelledAt` when status changes
+
+**Integrations:** Sends Slack notification on changes; adds note to HelpScout conversation if linked
 
 ---
 
@@ -424,25 +433,33 @@ These handlers create new documents in subcollections with auto-generated IDs.
 
 **Action:** `create_ticket`
 
-**Purpose:** Creates a new ticket in the tickets subcollection (`users/{userId}/tickets/{auto-id}`)
+**Purpose:** Creates a new ticket in the top-level `supportTickets` collection (`supportTickets/{auto-id}`)
 
 **Idempotent:** ❌ No - creates new document each time
 
 **Payload:**
 ```typescript
 {
-  subject: string;        // REQUIRED
-  priority: 'P1' | 'P2' | 'P3';  // REQUIRED
-  description?: string;
-  category?: string;
-  status?: 'open' | 'in_progress' | 'resolved' | 'closed';
+  title: string;          // REQUIRED
+  description: string;     // REQUIRED
+  category?: 'General' | 'Billing' | 'Technical' | 'Sales' | 'Maintenance' | 'Emergency';
+  status?: 'Open' | 'In Progress' | 'Awaiting Customer' | 'Resolved' | 'Closed' | 'Cancelled';
+  priority?: 'Critical' | 'High' | 'Medium' | 'Low';
+  channel?: 'Support Hub' | 'Email' | 'Phone' | 'Chat';
+  assignedAgentId?: string;
+  assignedAgentName?: string;
+  customerEmail?: string;
+  customerName?: string;
+  internalNotes?: string;
 }
 ```
 
-**Required Fields:** `subject`, `priority`
+**Required Fields:** `title`, `description`
 
 **Validation:**
-- `priority` must be one of: `P1`, `P2`, `P3`
+- `title` and `description` must be non-empty
+- `priority` must be one of: `Critical`, `High`, `Medium`, `Low` (if provided)
+- `status` must be one of: `Open`, `In Progress`, `Awaiting Customer`, `Resolved`, `Closed`, `Cancelled` (if provided)
 
 **Example Request:**
 ```json
@@ -450,10 +467,10 @@ These handlers create new documents in subcollections with auto-generated IDs.
   "action": "create_ticket",
   "userId": "user123",
   "data": {
-    "subject": "Website login page not working",
-    "priority": "P1",
+    "title": "Website login page not working",
     "description": "Users unable to sign in. Seeing 500 error.",
-    "category": "technical"
+    "priority": "High",
+    "category": "Technical"
   }
 }
 ```
@@ -463,27 +480,36 @@ These handlers create new documents in subcollections with auto-generated IDs.
 {
   "success": true,
   "message": "Ticket created successfully",
-  "ticketId": "6wI1mKj7hLl0"
+  "ticketId": "6wI1mKj7hLl0",
+  "helpscoutConversationId": "12345678"
 }
 ```
 
 **Firestore Document Created:**
 ```javascript
 {
-  subject: "Website login page not working",
-  priority: "P1",
+  userId: "user123",
+  createdByUserId: "user123",
+  title: "Website login page not working",
   description: "Users unable to sign in. Seeing 500 error.",
-  category: "technical",
-  status: "open",
+  category: "Technical",
+  status: "Open",
+  priority: "High",
+  channel: "Support Hub",
+  customerEmail: "",  // Fetched from users/{userId} if not provided
+  customerName: "",
   createdAt: <server-timestamp>,
-  lastUpdated: <server-timestamp>
+  lastUpdatedAt: <server-timestamp>
 }
 ```
 
 **Default Values:**
-- `description` defaults to empty string if not provided
-- `category` defaults to empty string if not provided
-- `status` defaults to `'open'` if not provided
+- `category` defaults to `'General'` if not provided
+- `status` defaults to `'Open'` if not provided
+- `priority` defaults to `'Medium'` if not provided
+- `channel` defaults to `'Support Hub'` if not provided
+
+**Integrations:** Sends Slack notification; creates HelpScout conversation (if customer email available); stores `helpscoutConversationId` on ticket
 
 ---
 
@@ -530,7 +556,7 @@ These operations create new documents each time:
 | `update_ticket` | `ticketId` + at least 1 field | Ticket must exist |
 | `add_site` | `name`, `url` | - |
 | `add_report` | `title`, `type` | `type` must be valid enum value |
-| `create_ticket` | `subject`, `priority` | `priority` must be P1/P2/P3 |
+| `create_ticket` | `title`, `description` | `priority` must be Critical/High/Medium/Low |
 
 ### Error Messages
 
@@ -546,7 +572,7 @@ These operations create new documents each time:
 ```json
 {
   "success": false,
-  "error": "priority must be one of: P1, P2, P3"
+  "error": "priority must be one of: Critical, High, Medium, Low"
 }
 ```
 
@@ -605,8 +631,9 @@ curl -X POST http://localhost:3000/api/delivery-scout \
     "action": "create_ticket",
     "userId": "test123",
     "data": {
-      "subject": "Test ticket",
-      "priority": "P2"
+      "title": "Test ticket",
+      "description": "Test description",
+      "priority": "Medium"
     }
   }'
 # Returns: { "success": true, "ticketId": "abc123" }
@@ -619,8 +646,9 @@ curl -X POST http://localhost:3000/api/delivery-scout \
     "action": "create_ticket",
     "userId": "test123",
     "data": {
-      "subject": "Test ticket",
-      "priority": "P2"
+      "title": "Test ticket",
+      "description": "Test description",
+      "priority": "Medium"
     }
   }'
 # Returns: { "success": true, "ticketId": "xyz789" }
@@ -652,11 +680,12 @@ curl -X POST http://localhost:3000/api/delivery-scout \
     "action": "create_ticket",
     "userId": "test123",
     "data": {
-      "subject": "Test",
-      "priority": "HIGH"
+      "title": "Test",
+      "description": "Test description",
+      "priority": "P1"
     }
   }'
-# Expected: 400 with "priority must be one of: P1, P2, P3"
+# Expected: 400 with "priority must be one of: Critical, High, Medium, Low"
 
 # Negative number in metrics
 curl -X POST http://localhost:3000/api/delivery-scout \
@@ -698,9 +727,9 @@ All handlers use `admin.firestore.FieldValue.serverTimestamp()` which ensures:
 | `update_metrics` | ✅ | ❌ | ✅ | ❌ |
 | `update_company_info` | ✅ | ❌ | ✅ | ❌ |
 | `update_site` | ✅ | ❌ | ✅ | ✅ sites |
-| `update_ticket` | ✅ | ❌ | ✅ | ✅ tickets |
+| `update_ticket` | ✅ | ❌ | ✅ | ✅ supportTickets (top-level) |
 | `add_site` | ❌ | ✅ | ❌ | ✅ sites |
 | `add_report` | ❌ | ✅ | ❌ | ✅ reports |
-| `create_ticket` | ❌ | ✅ | ❌ | ✅ tickets |
+| `create_ticket` | ❌ | ✅ | ❌ | ✅ supportTickets (top-level) |
 
 **Total:** 5 idempotent, 3 non-idempotent

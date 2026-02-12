@@ -42,7 +42,7 @@ npm run dev
 | `add_site` | 3 | Success, missing required, invalid URL |
 | `update_site` | 3 | Success, missing ID, not found |
 | `add_report` | 3 | Success, missing/invalid type |
-| `create_ticket` | 4 | Success, validation, P4 support |
+| `create_ticket` | 4 | Success, validation, Low priority |
 | `update_ticket` | 3 | Success, missing ID, not found |
 | `auth` | 2 | Missing/invalid API key |
 
@@ -93,9 +93,9 @@ Failed tests:
 ## Cleanup
 
 **Manual cleanup required** for created resources:
-- Sites in `users/test-user-delivery-scout/sites`
+- Sites in `sites` collection (top-level, filter by userId)
 - Reports in `users/test-user-delivery-scout/reports`
-- Tickets in `users/test-user-delivery-scout/tickets`
+- Tickets in `supportTickets` collection (top-level, filter by userId)
 
 Script outputs IDs of created resources.
 

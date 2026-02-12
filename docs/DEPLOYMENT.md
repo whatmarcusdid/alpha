@@ -123,12 +123,27 @@ Before deploying to production, verify ALL environment variables are configured:
 
 ```bash
 ⚠️ SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+⚠️ SLACK_SUPPORT_WEBHOOK_URL=https://hooks.slack.com/services/...
 ⚠️ DELIVERY_SCOUT_API_KEY=your-generated-api-key
 ```
 
 **Impact if missing:**
-- Slack: New user signup notifications won't send (non-blocking)
+- `SLACK_WEBHOOK_URL`: New user signup notifications won't send (non-blocking)
+- `SLACK_SUPPORT_WEBHOOK_URL`: Support ticket create/update notifications won't send (non-blocking)
 - Delivery Scout: Lindy AI can't update customer data
+
+### HelpScout Integration (OPTIONAL - for ticket create/update)
+
+```bash
+⚠️ HELPSCOUT_APP_ID=your-app-id
+⚠️ HELPSCOUT_APP_SECRET=your-app-secret
+⚠️ HELPSCOUT_MAILBOX_ID=123456
+```
+
+**Impact if missing:**
+- HelpScout conversation creation skipped on ticket create
+- HelpScout note sync skipped on ticket update
+- Uses OAuth2 Client Credentials flow (not Basic Auth)
 
 ---
 

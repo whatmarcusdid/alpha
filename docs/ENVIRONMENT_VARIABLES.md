@@ -83,6 +83,32 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abc...
 | Variable | Purpose | Secret? | Where to Get |
 |----------|---------|---------|--------------|
 | `NEXT_PUBLIC_ZAPIER_WEBHOOK_URL` | Support ticket automation | 🔓 No | Zapier → Webhook Configuration |
+| `SLACK_WEBHOOK_URL` | New user signup notifications | 🔒 Yes | Slack → Incoming Webhooks |
+| `SLACK_SUPPORT_WEBHOOK_URL` | Support ticket create/update notifications | 🔒 Yes | Slack → Incoming Webhooks |
+| `HELPSCOUT_APP_ID` | HelpScout OAuth2 (conversation creation) | 🔒 Yes | HelpScout → Apps → OAuth2 |
+| `HELPSCOUT_APP_SECRET` | HelpScout OAuth2 (conversation creation) | 🔒 Yes | HelpScout → Apps → OAuth2 |
+| `HELPSCOUT_MAILBOX_ID` | HelpScout mailbox for new conversations | 🔒 Yes | HelpScout → Mailboxes |
+| `LOOPS_API_KEY` | Loops transactional emails (account deletion → Help Scout) | 🔒 Yes | Loops → Settings → API |
+| `LOOPS_SUPPORT_TICKET_TEMPLATE_ID` | Loops transactional template for support tickets | 🔒 Yes | Loops → Transactional Emails |
+
+---
+
+### Loops (Transactional Emails)
+
+**Used by:** `/api/user/request-deletion` - Sends account deletion requests to Help Scout inbox
+
+```bash
+LOOPS_API_KEY=your_loops_api_key_here
+LOOPS_SUPPORT_TICKET_TEMPLATE_ID=support-ticket-to-helpscout
+```
+
+**How to get:**
+1. Sign up at https://app.loops.so
+2. Create a transactional email template for support tickets
+3. Copy API key from Settings → API
+4. Use template ID when sending to support@tradesitegenie.com
+
+**Status:** Optional - If not set, account deletion requests are still logged to Firestore and Slack; only the email notification is skipped.
 
 ---
 
@@ -97,6 +123,11 @@ FIREBASE_CLIENT_EMAIL
 FIREBASE_PRIVATE_KEY
 UPSTASH_REDIS_REST_URL
 UPSTASH_REDIS_REST_TOKEN
+HELPSCOUT_APP_ID
+HELPSCOUT_APP_SECRET
+HELPSCOUT_MAILBOX_ID
+LOOPS_API_KEY
+LOOPS_SUPPORT_TICKET_TEMPLATE_ID
 ```
 
 ### Public Client Variables (Safe to expose)
@@ -171,8 +202,9 @@ If you're migrating from pre-Phase 1:
 - **Security Implementation:** [../SECURITY_FIXES_APPLIED.md](../SECURITY_FIXES_APPLIED.md)
 - **Middleware Usage:** [../lib/middleware/USAGE.md](../lib/middleware/USAGE.md)
 - **Main README:** [../README.md](../README.md)
+- **Account Deletion API:** [account-deletion-api.md](./account-deletion-api.md) - Loops env vars usage
 
 ---
 
-**Last Updated:** Phase 1 Security Implementation Complete
+**Last Updated:** February 2026  
 **Next Review:** When adding new external services

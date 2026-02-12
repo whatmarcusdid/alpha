@@ -5,8 +5,11 @@
  * Docs: https://developer.helpscout.com/mailbox-api/
  */
 
-const HELPSCOUT_API_KEY = process.env.HELPSCOUT_API_KEY;
+const HELPSCOUT_APP_ID = process.env.HELPSCOUT_APP_ID;
+const HELPSCOUT_APP_SECRET = process.env.HELPSCOUT_APP_SECRET;
 const HELPSCOUT_MAILBOX_ID = process.env.HELPSCOUT_MAILBOX_ID;
+
+let cachedToken: { token: string; expiresAt: number } | null = null;
 const HELPSCOUT_API_BASE = 'https://api.helpscout.net/v2';
 
 export interface CreateConversationPayload {
@@ -48,14 +51,46 @@ export interface HelpScoutConversation {
 }
 
 /**
- * Get Base64 encoded API key for Basic Auth
+ * Get OAuth2 access token (cached for reuse)
  */
-function getAuthHeader(): string {
-  if (!HELPSCOUT_API_KEY) {
-    throw new Error('HELPSCOUT_API_KEY environment variable is not set');
+async function getAccessToken(): Promise<string> {
+  // Return cached token if still valid (with 5 minute buffer)
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 300000) {
+    return cachedToken.token;
   }
-  const credentials = Buffer.from(`${HELPSCOUT_API_KEY}:X`).toString('base64');
-  return `Basic ${credentials}`;
+
+  if (!HELPSCOUT_APP_ID || !HELPSCOUT_APP_SECRET) {
+    throw new Error('HELPSCOUT_APP_ID and HELPSCOUT_APP_SECRET environment variables are required');
+  }
+
+  const response = await fetch('https://api.helpscout.net/v2/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: HELPSCOUT_APP_ID,
+      client_secret: HELPSCOUT_APP_SECRET,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ Help Scout OAuth error:', response.status, errorText);
+    throw new Error(`Failed to get Help Scout access token: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  // Cache the token (expires_in is in seconds)
+  cachedToken = {
+    token: data.access_token,
+    expiresAt: Date.now() + (data.expires_in * 1000),
+  };
+
+  console.log('✅ Help Scout access token obtained');
+  return cachedToken.token;
 }
 
 /**
@@ -101,7 +136,7 @@ export async function createConversation(
     const response = await fetch(`${HELPSCOUT_API_BASE}/conversations`, {
       method: 'POST',
       headers: {
-        'Authorization': getAuthHeader(),
+        'Authorization': `Bearer ${await getAccessToken()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
@@ -164,7 +199,7 @@ export async function addCustomerReply(
       {
         method: 'POST',
         headers: {
-          'Authorization': getAuthHeader(),
+          'Authorization': `Bearer ${await getAccessToken()}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
@@ -206,7 +241,7 @@ export async function getConversation(
       {
         method: 'GET',
         headers: {
-          'Authorization': getAuthHeader(),
+          'Authorization': `Bearer ${await getAccessToken()}`,
           'Content-Type': 'application/json',
         },
       }

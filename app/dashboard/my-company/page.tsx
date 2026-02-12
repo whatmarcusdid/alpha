@@ -9,6 +9,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import { PageCard } from '@/components/layout/PageCard';
+import { StickyBottomBar } from '@/components/ui/StickyBottomBar';
 
 export default function MyCompanyPage() {
   const router = useRouter();
@@ -414,14 +415,14 @@ export default function MyCompanyPage() {
 
         {/* Edit Mode Action Buttons */}
         {isEditMode && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4">
+          <StickyBottomBar>
             <SecondaryButton onClick={handleCancel}>
               Cancel
             </SecondaryButton>
             <PrimaryButton onClick={handleSave}>
               Save Changes
             </PrimaryButton>
-          </div>
+          </StickyBottomBar>
         )}
       </PageCard>
     </main>

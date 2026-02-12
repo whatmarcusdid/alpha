@@ -38,9 +38,10 @@ Content-Type: application/json
   "action": "create_ticket",
   "userId": "user123",
   "data": {
-    "subject": "Website is down",
-    "priority": "P1",
-    "description": "Users cannot access the site"
+    "title": "Website is down",
+    "description": "Users cannot access the site",
+    "priority": "High",
+    "category": "Technical"
   }
 }
 ```
@@ -108,7 +109,7 @@ Updates an existing site in the sites subcollection.
 ```
 
 #### 5. `update_ticket`
-Updates an existing ticket in the tickets subcollection.
+Updates an existing ticket in the top-level `supportTickets` collection.
 
 **Required:** `ticketId` + at least one field to update
 
@@ -117,7 +118,7 @@ Updates an existing ticket in the tickets subcollection.
 {
   "action": "update_ticket",
   "userId": "user123",
-  "data": { "ticketId": "ticket789", "status": "resolved" }
+  "data": { "ticketId": "ticket789", "status": "Resolved", "priority": "High" }
 }
 ```
 
@@ -156,20 +157,25 @@ Creates a new report in the reports subcollection.
 **Response includes:** `reportId` (auto-generated)
 
 #### 8. `create_ticket`
-Creates a new ticket in the tickets subcollection.
+Creates a new ticket in the top-level `supportTickets` collection. Sends Slack notification and creates HelpScout conversation when configured.
 
-**Required:** `subject`, `priority`
+**Required:** `title`, `description`
 
 **Example:**
 ```json
 {
   "action": "create_ticket",
   "userId": "user123",
-  "data": { "subject": "Login broken", "priority": "P1", "description": "Users can't sign in" }
+  "data": {
+    "title": "Login broken",
+    "description": "Users can't sign in",
+    "priority": "High",
+    "category": "Technical"
+  }
 }
 ```
 
-**Response includes:** `ticketId` (auto-generated)
+**Response includes:** `ticketId` (auto-generated), `helpscoutConversationId` (if HelpScout conversation created)
 
 ## Response Format
 
@@ -215,7 +221,7 @@ Creates a new ticket in the tickets subcollection.
 ```json
 {
   "action": "create_ticket",
-  "data": { "subject": "Test" }
+  "data": { "title": "Test", "description": "Test" }
 }
 ```
 **Response:** 400 with `"Missing or invalid \"userId\" field"`
@@ -241,10 +247,10 @@ Creates a new ticket in the tickets subcollection.
 {
   "action": "create_ticket",
   "userId": "user123",
-  "data": { "description": "Test" }
+  "data": { "title": "Test" }
 }
 ```
-**Response:** 500 with `"subject and priority are required fields"`
+**Response:** 400 with validation error (e.g., `"description: Required"`)
 
 ### 5. Document Not Found
 **Request:**
@@ -288,7 +294,7 @@ Creates a new ticket in the tickets subcollection.
 ```bash
 curl -X POST http://localhost:3000/api/delivery-scout \
   -H "Content-Type: application/json" \
-  -d '{"action":"create_ticket","userId":"test123","data":{"subject":"Test"}}'
+  -d '{"action":"create_ticket","userId":"test123","data":{"title":"Test","description":"Test"}}'
 ```
 **Expected:** 401 Unauthorized
 
@@ -317,9 +323,10 @@ curl -X POST http://localhost:3000/api/delivery-scout \
     "action": "create_ticket",
     "userId": "test-user-123",
     "data": {
-      "subject": "Site down",
-      "priority": "P1",
-      "description": "Users cannot access the site"
+      "title": "Site down",
+      "description": "Users cannot access the site",
+      "priority": "High",
+      "category": "Technical"
     }
   }'
 ```
@@ -375,7 +382,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
   -H "Content-Type: application/json" \
   -d '{
     "action": "create_ticket",
-    "data": {"subject": "Test"}
+    "data": {"title": "Test", "description": "Test"}
   }'
 ```
 **Expected:** 400 with "Missing or invalid \"userId\" field"

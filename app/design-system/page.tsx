@@ -35,6 +35,7 @@ import SupportTicketCard from '@/components/support/SupportTicketCard';
 import type { SupportTicket } from '@/types/support';
 import HorizontalTabs from '@/components/ui/HorizontalTabs';
 import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
+import { StickyBottomBar } from '@/components/ui/StickyBottomBar';
 
 // Define Tier type for upgrade flow
 type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
@@ -2992,6 +2993,51 @@ import { Elements } from '@stripe/react-stripe-js';
 <PageCard className="max-w-4xl">
   <h1>Narrow Content</h1>
 </PageCard>`}
+                </code>
+              </div>
+            </div>
+
+            {/* StickyBottomBar */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Sticky Bottom Bar</h3>
+              <p className="text-gray-600 mb-6">Fixed bottom bar for form edit modes. Displays action buttons (e.g. Cancel, Save Changes) when editing. Used with PageCard on My Company and similar edit-in-place pages.</p>
+              
+              {/* Visual Demo */}
+              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600 mb-4 font-semibold">Preview:</p>
+                <div className="bg-[#F7F6F1] p-4 rounded-lg relative min-h-[120px]">
+                  <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 rounded-b-lg">
+                    <SecondaryButton onClick={() => {}}>Cancel</SecondaryButton>
+                    <PrimaryButton onClick={() => {}}>Save Changes</PrimaryButton>
+                  </div>
+                  <p className="text-sm text-gray-500">Page content above the bar</p>
+                </div>
+              </div>
+              
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Fixed to bottom of viewport</li>
+                  <li>White background with top border</li>
+                  <li>Flex container with justify-end, gap-4</li>
+                  <li>Accepts children (buttons) for flexibility</li>
+                  <li>Use with pb-24 on parent to prevent content overlap</li>
+                </ul>
+              </div>
+              
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { StickyBottomBar } from '@/components/ui/StickyBottomBar';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
+
+// Usage (typically inside PageCard when isEditMode)
+<StickyBottomBar>
+  <SecondaryButton onClick={handleCancel}>Cancel</SecondaryButton>
+  <PrimaryButton onClick={handleSave}>Save Changes</PrimaryButton>
+</StickyBottomBar>`}
                 </code>
               </div>
             </div>

@@ -1,5 +1,6 @@
 export * from './company';
 export * from './profile';
+export * from './settings';
 export * from './reports';
 export * from './sites';
 export * from './support';

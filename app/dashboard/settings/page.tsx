@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getCompanyData, updateCompanyData, CompanyData } from '@/lib/firestore/company';
@@ -8,8 +8,10 @@ import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { DestructiveButton } from '@/components/ui/DestructiveButton';
 import { GoogleIcon, AppleIcon } from '@/components/ui/icons';
-import { Edit2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio';
+import { NotificationToast } from '@/components/ui/NotificationToast';
+import { StickyBottomBar } from '@/components/ui/StickyBottomBar';
+import { AlertTriangle } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -17,6 +19,9 @@ export default function SettingsPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [timeZone, setTimeZone] = useState('Eastern Standard Time (EST)');
   const [emailFrequency, setEmailFrequency] = useState('real-time');
+  const [originalTimeZone, setOriginalTimeZone] = useState('Eastern Standard Time (EST)');
+  const [originalEmailFrequency, setOriginalEmailFrequency] = useState('real-time');
+  const [wordpressDashboardUrl, setWordpressDashboardUrl] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState<CompanyData>({
     legalName: '',
@@ -32,6 +37,17 @@ export default function SettingsPage() {
     serviceArea: ''
   });
   const [originalData, setOriginalData] = useState(formData);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletionReason, setDeletionReason] = useState('');
+  const [isRequestingDeletion, setIsRequestingDeletion] = useState(false);
+  const deleteModalRef = useRef<HTMLDivElement>(null);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+    show: boolean;
+  }>({ type: 'success', message: '', show: false });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -41,17 +57,55 @@ export default function SettingsPage() {
         return;
       }
       setCurrentUser(user);
-      
+
       const companyData = await getCompanyData(user.uid);
       if (companyData) {
         setFormData(companyData);
         setOriginalData(companyData);
       }
-      
+
+      try {
+        const token = await user.getIdToken();
+        const settingsRes = await fetch('/api/user/settings', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (settingsRes.ok) {
+          const data = await settingsRes.json();
+          if (data.timezoneLabel) {
+            setTimeZone(data.timezoneLabel);
+            setOriginalTimeZone(data.timezoneLabel);
+          }
+          if (data.emailFrequency) {
+            setEmailFrequency(data.emailFrequency);
+            setOriginalEmailFrequency(data.emailFrequency);
+          }
+          if (data.wordpressDashboardUrl !== undefined) {
+            setWordpressDashboardUrl(data.wordpressDashboardUrl || null);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading settings:', err);
+      }
+
       setLoading(false);
     };
     checkAuth();
   }, [router]);
+
+  // Focus modal when opened, handle Escape key
+  useEffect(() => {
+    if (showDeleteModal) {
+      deleteModalRef.current?.focus();
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && !isRequestingDeletion) {
+          setShowDeleteModal(false);
+          setDeletionReason('');
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [showDeleteModal, isRequestingDeletion]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -77,8 +131,162 @@ export default function SettingsPage() {
     setIsEditMode(false);
   };
 
+  const hasSettingsChanges =
+    timeZone !== originalTimeZone || emailFrequency !== originalEmailFrequency;
+
+  const handleSaveSettings = async () => {
+    if (!currentUser) return;
+
+    setIsSaving(true);
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/user/settings', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          timezoneLabel: timeZone,
+          emailFrequency: emailFrequency,
+        }),
+      });
+
+      if (res.ok) {
+        setOriginalTimeZone(timeZone);
+        setOriginalEmailFrequency(emailFrequency);
+        setNotification({
+          type: 'success',
+          message: 'Settings saved successfully',
+          show: true,
+        });
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Failed to save settings. Please try again.',
+          show: true,
+        });
+      }
+    } catch {
+      setNotification({
+        type: 'error',
+        message: 'Failed to save settings. Please try again.',
+        show: true,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelSettings = () => {
+    setTimeZone(originalTimeZone);
+    setEmailFrequency(originalEmailFrequency);
+  };
+
+  const handleDownloadData = async () => {
+    if (!currentUser) return;
+
+    setIsExporting(true);
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/user/export-data', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'tradesitegenie-data-export.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setNotification({
+          type: 'success',
+          message: 'Your data export has been downloaded',
+          show: true,
+        });
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Failed to export data. Please try again.',
+          show: true,
+        });
+      }
+    } catch {
+      setNotification({
+        type: 'error',
+        message: 'Failed to export data. Please try again.',
+        show: true,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleRequestDeletion = async () => {
+    if (!currentUser) return;
+
+    setIsRequestingDeletion(true);
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/user/request-deletion', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(deletionReason.trim() ? { reason: deletionReason.trim() } : {}),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        setShowDeleteModal(false);
+        setDeletionReason('');
+        setNotification({
+          type: 'success',
+          message: data.message || "Your account deletion request has been submitted. We'll process it within 48 hours and send you a confirmation email.",
+          show: true,
+        });
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Failed to submit deletion request. Please try again or contact support.',
+          show: true,
+        });
+      }
+    } catch {
+      setNotification({
+        type: 'error',
+        message: 'Failed to submit deletion request. Please try again or contact support.',
+        show: true,
+      });
+    } finally {
+      setIsRequestingDeletion(false);
+    }
+  };
+
+  const handleGoToWordPressDashboard = () => {
+    if (wordpressDashboardUrl) {
+      window.open(wordpressDashboardUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      setNotification({
+        type: 'error',
+        message: 'WordPress dashboard URL not configured. Please contact support.',
+        show: true,
+      });
+    }
+  };
+
   return (
-    <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main
+      className={`max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 ${hasSettingsChanges ? 'pb-24 lg:pb-24' : ''}`}
+    >
       <h1 className="text-3xl font-bold text-[#232521] mb-8">Settings</h1>
       
       <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
@@ -163,13 +371,31 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {hasSettingsChanges && (
+        <StickyBottomBar>
+          <SecondaryButton onClick={handleCancelSettings}>
+            Cancel
+          </SecondaryButton>
+          <PrimaryButton onClick={handleSaveSettings} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </PrimaryButton>
+        </StickyBottomBar>
+      )}
+
       <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
         <h2 className="text-2xl font-bold text-[#232521] mb-4">Privacy</h2>
         <div className="max-w-[600px] mx-auto">
           <div>
             <h3 className="text-lg font-semibold text-[#232521] mb-2">Download Your Data</h3>
             <p className="text-sm text-gray-600 mb-3">Get a copy of all your business information, analytics reports, and account data.</p>
-            <span onClick={() => console.log('Download data clicked')} className="text-[#1B4A41] font-medium hover:underline cursor-pointer">Download My Data</span>
+            <button
+              type="button"
+              onClick={handleDownloadData}
+              disabled={isExporting}
+              className="bg-transparent border-none p-0 text-left text-[#1B4A41] font-medium hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+            >
+              {isExporting ? 'Downloading...' : 'Download My Data'}
+            </button>
           </div>
         </div>
       </div>
@@ -186,7 +412,16 @@ export default function SettingsPage() {
 
           <p className="text-sm text-gray-600 mb-3">You can view or revoke our access anytime. Revoking access will pause your maintenance services until access is restored.</p>
 
-          <span onClick={() => console.log('Go to WP dashboard clicked')} className="text-[#1B4A41] font-medium hover:underline cursor-pointer">Go To WordPress Dashboard</span>
+          <span
+            onClick={handleGoToWordPressDashboard}
+            className={`font-medium ${
+              wordpressDashboardUrl
+                ? 'text-[#1B4A41] hover:underline cursor-pointer'
+                : 'text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            Go To WordPress Dashboard
+          </span>
         </div>
       </div>
 
@@ -226,11 +461,98 @@ export default function SettingsPage() {
         <div className="max-w-[600px] mx-auto">
           <p className="text-sm text-gray-600 mb-3">Permanently delete your TradeSiteGenie account and all associated website data.</p>
           <p className="text-sm font-semibold text-[#232521] mb-4">This action is permanent and cannot be undone.</p>
-          <DestructiveButton onClick={() => console.log('Request account deletion clicked')} className="w-full">
+          <DestructiveButton onClick={() => setShowDeleteModal(true)} className="w-full">
             Request Account Deletion
           </DestructiveButton>
         </div>
       </div>
+
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => {
+            if (!isRequestingDeletion) {
+              setShowDeleteModal(false);
+              setDeletionReason('');
+            }
+          }}
+          role="presentation"
+        >
+          <div
+            ref={deleteModalRef}
+            tabIndex={-1}
+            className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl focus:outline-none"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-modal-title"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="h-6 w-6 text-[#E7000B] flex-shrink-0" />
+              <h2 id="delete-modal-title" className="text-xl font-bold text-[#232521]">
+                Delete Your Account
+              </h2>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <p className="text-sm text-gray-600">
+                This will permanently delete your TradeSiteGenie account and all associated data.
+              </p>
+              <p className="text-sm text-gray-600">
+                This action cannot be undone.
+              </p>
+              <p className="text-sm text-gray-600">
+                Your subscription will be cancelled.
+              </p>
+              <p className="text-sm text-gray-600">
+                All website data, reports, and support history will be removed.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label
+                htmlFor="deletion-reason"
+                className="block text-sm font-medium text-[#232521] mb-2"
+              >
+                Reason for leaving (optional)
+              </label>
+              <textarea
+                id="deletion-reason"
+                value={deletionReason}
+                onChange={(e) => setDeletionReason(e.target.value)}
+                placeholder="Help us improve by sharing why you're leaving..."
+                className="w-full min-h-[80px] px-4 py-2 bg-white border border-[#6F797A] rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#1B4A41]"
+                disabled={isRequestingDeletion}
+              />
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <SecondaryButton
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletionReason('');
+                }}
+                disabled={isRequestingDeletion}
+              >
+                Cancel
+              </SecondaryButton>
+              <DestructiveButton
+                onClick={handleRequestDeletion}
+                disabled={isRequestingDeletion}
+              >
+                {isRequestingDeletion ? 'Submitting...' : 'Delete My Account'}
+              </DestructiveButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <NotificationToast
+        show={notification.show}
+        type={notification.type}
+        message={notification.message}
+        onDismiss={() => setNotification((prev) => ({ ...prev, show: false }))}
+      />
     </main>
   );
 }

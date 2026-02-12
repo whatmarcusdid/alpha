@@ -465,11 +465,11 @@ async function testAddReportValidationInvalidType() {
 
 async function testCreateTicketSuccess() {
   const response = await makeRequest('create_ticket', {
-    subject: 'Test ticket from API validation',
-    priority: 'P2',
+    title: 'Test ticket from API validation',
     description: 'This is a test ticket to validate the API',
-    category: 'testing',
-    assignedTo: 'marcus',
+    priority: 'High',
+    category: 'Technical',
+    assignedAgentName: 'marcus',
   });
   
   assertSuccess(response, 'Create ticket should succeed');
@@ -479,13 +479,14 @@ async function testCreateTicketSuccess() {
   createdResources.ticketIds.push(response.data.ticketId);
 }
 
-async function testCreateTicketValidationEmptySubject() {
+async function testCreateTicketValidationEmptyTitle() {
   const response = await makeRequest('create_ticket', {
-    subject: '',
-    priority: 'P1',
+    title: '',
+    description: 'Valid description',
+    priority: 'High',
   });
   
-  assert(response.data.success === false, 'Should fail for empty subject');
+  assert(response.data.success === false, 'Should fail for empty title');
   assert(
     response.data.validationErrors?.some((e: string) => e.includes('empty')),
     'Should mention empty validation'
@@ -494,24 +495,26 @@ async function testCreateTicketValidationEmptySubject() {
 
 async function testCreateTicketValidationInvalidPriority() {
   const response = await makeRequest('create_ticket', {
-    subject: 'Test ticket',
-    priority: 'HIGH',
+    title: 'Test ticket',
+    description: 'Test description',
+    priority: 'P1',
   });
   
   assert(response.data.success === false, 'Should fail for invalid priority');
   assert(
-    response.data.validationErrors?.some((e: string) => e.includes('P1')),
-    'Should list valid priority values'
+    response.data.validationErrors?.some((e: string) => e.includes('Critical') || e.includes('High')),
+    'Should list valid priority values (Critical, High, Medium, Low)'
   );
 }
 
-async function testCreateTicketP4Priority() {
+async function testCreateTicketLowPriority() {
   const response = await makeRequest('create_ticket', {
-    subject: 'Low priority task',
-    priority: 'P4',
+    title: 'Low priority task',
+    description: 'Task description',
+    priority: 'Low',
   });
   
-  assertSuccess(response, 'Should accept P4 priority');
+  assertSuccess(response, 'Should accept Low priority');
   createdResources.ticketIds.push(response.data.ticketId);
 }
 
@@ -522,8 +525,9 @@ async function testCreateTicketP4Priority() {
 async function testUpdateTicketSuccess() {
   // First create a ticket
   const createResponse = await makeRequest('create_ticket', {
-    subject: 'Ticket to update',
-    priority: 'P3',
+    title: 'Ticket to update',
+    description: 'Initial description',
+    priority: 'Medium',
   });
   
   assertSuccess(createResponse, 'Create ticket for update test should succeed');
@@ -533,8 +537,8 @@ async function testUpdateTicketSuccess() {
   // Now update it
   const updateResponse = await makeRequest('update_ticket', {
     ticketId,
-    status: 'in-progress',
-    assignedTo: 'marcus',
+    status: 'In Progress',
+    assignedAgentName: 'marcus',
   });
   
   assertSuccess(updateResponse, 'Update ticket should succeed');
@@ -543,7 +547,7 @@ async function testUpdateTicketSuccess() {
 
 async function testUpdateTicketValidationMissingId() {
   const response = await makeRequest('update_ticket', {
-    status: 'resolved',
+    status: 'Resolved',
     // Missing ticketId
   });
   
@@ -553,7 +557,7 @@ async function testUpdateTicketValidationMissingId() {
 async function testUpdateTicketNotFound() {
   const response = await makeRequest('update_ticket', {
     ticketId: 'non-existent-ticket-id',
-    status: 'resolved',
+    status: 'Resolved',
   });
   
   assert(response.data.success === false, 'Should fail when ticket not found');
@@ -683,9 +687,9 @@ async function main() {
     
     // Create Ticket
     { name: 'Create Ticket: Success', fn: testCreateTicketSuccess, group: 'create_ticket' },
-    { name: 'Create Ticket: Validation (empty subject)', fn: testCreateTicketValidationEmptySubject, group: 'create_ticket' },
+    { name: 'Create Ticket: Validation (empty title)', fn: testCreateTicketValidationEmptyTitle, group: 'create_ticket' },
     { name: 'Create Ticket: Validation (invalid priority)', fn: testCreateTicketValidationInvalidPriority, group: 'create_ticket' },
-    { name: 'Create Ticket: P4 Priority', fn: testCreateTicketP4Priority, group: 'create_ticket' },
+    { name: 'Create Ticket: Low Priority', fn: testCreateTicketLowPriority, group: 'create_ticket' },
     
     // Update Ticket
     { name: 'Update Ticket: Success', fn: testUpdateTicketSuccess, group: 'update_ticket' },

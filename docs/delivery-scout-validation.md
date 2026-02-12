@@ -73,25 +73,33 @@ All Delivery Scout API operations use **Zod** for runtime validation to ensure d
 
 | Field | Type | Required | Validation |
 |-------|------|----------|------------|
-| `subject` | string | ✅ Yes | Non-empty string |
-| `priority` | enum | ✅ Yes | `P1`, `P2`, `P3`, or `P4` |
-| `description` | string | ❌ No | Any string (can be empty) |
-| `category` | string | ❌ No | Non-empty string if provided |
-| `status` | enum | ❌ No | `open`, `in-progress`, `resolved`, or `closed` |
-| `assignedTo` | string | ❌ No | Non-empty string if provided |
+| `title` | string | ✅ Yes | Non-empty string |
+| `description` | string | ✅ Yes | Non-empty string |
+| `category` | enum | ❌ No | `General`, `Billing`, `Technical`, `Sales`, `Maintenance`, `Emergency` |
+| `status` | enum | ❌ No | `Open`, `In Progress`, `Awaiting Customer`, `Resolved`, `Closed`, `Cancelled` |
+| `priority` | enum | ❌ No | `Critical`, `High`, `Medium`, `Low` |
+| `channel` | enum | ❌ No | `Support Hub`, `Email`, `Phone`, `Chat` |
+| `assignedAgentId` | string | ❌ No | Non-empty string if provided |
+| `assignedAgentName` | string | ❌ No | Non-empty string if provided |
+| `customerEmail` | string | ❌ No | Valid email format |
+| `customerName` | string | ❌ No | Non-empty string if provided |
+| `internalNotes` | string | ❌ No | Any string |
 
 ### Update Ticket (`update_ticket`)
 
 | Field | Type | Required | Validation |
 |-------|------|----------|------------|
 | `ticketId` | string | ✅ Yes | Non-empty string |
-| `subject` | string | ⚠️ At least one | Non-empty string |
-| `priority` | enum | ⚠️ At least one | `P1`, `P2`, `P3`, or `P4` |
+| `title` | string | ⚠️ At least one | Non-empty string if provided |
 | `description` | string | ⚠️ At least one | Any string (can be empty) |
-| `category` | string | ⚠️ At least one | Non-empty string |
-| `status` | enum | ⚠️ At least one | `open`, `in-progress`, `resolved`, or `closed` |
-| `resolution` | string | ⚠️ At least one | Any string (can be empty) |
-| `assignedTo` | string | ⚠️ At least one | Non-empty string |
+| `category` | enum | ⚠️ At least one | `General`, `Billing`, `Technical`, `Sales`, `Maintenance`, `Emergency` |
+| `status` | enum | ⚠️ At least one | `Open`, `In Progress`, `Awaiting Customer`, `Resolved`, `Closed`, `Cancelled` |
+| `priority` | enum | ⚠️ At least one | `Critical`, `High`, `Medium`, `Low` |
+| `assignedAgentId` | string | ⚠️ At least one | Non-empty string if provided |
+| `assignedAgentName` | string | ⚠️ At least one | Non-empty string if provided |
+| `internalNotes` | string | ⚠️ At least one | Any string |
+| `resolvedAt` | string | ⚠️ At least one | ISO date string |
+| `closedAt` | string | ⚠️ At least one | ISO date string |
 
 ---
 
@@ -169,7 +177,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 
 ---
 
-### ❌ Invalid: Empty Subject
+### ❌ Invalid: Empty Title
 
 **Request:**
 ```bash
@@ -180,8 +188,9 @@ curl -X POST http://localhost:3000/api/delivery-scout \
     "action": "create_ticket",
     "userId": "user123",
     "data": {
-      "subject": "",
-      "priority": "P1"
+      "title": "",
+      "description": "Test description",
+      "priority": "High"
     }
   }'
 ```
@@ -192,7 +201,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
   "success": false,
   "error": "Validation failed",
   "validationErrors": [
-    "subject: Cannot be empty"
+    "title: Cannot be empty"
   ]
 }
 ```
@@ -210,8 +219,9 @@ curl -X POST http://localhost:3000/api/delivery-scout \
     "action": "create_ticket",
     "userId": "user123",
     "data": {
-      "subject": "Site down",
-      "priority": "HIGH"
+      "title": "Site down",
+      "description": "Site is unavailable",
+      "priority": "P1"
     }
   }'
 ```
@@ -222,7 +232,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
   "success": false,
   "error": "Validation failed",
   "validationErrors": [
-    "priority: Must be one of: P1, P2, P3, P4"
+    "priority: Must be one of: Critical, High, Medium, Low"
   ]
 }
 ```
@@ -373,7 +383,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 
 ---
 
-### ✅ Valid: Create Ticket with P4 Priority
+### ✅ Valid: Create Ticket with Low Priority
 
 **Request:**
 ```bash
@@ -384,10 +394,10 @@ curl -X POST http://localhost:3000/api/delivery-scout \
     "action": "create_ticket",
     "userId": "user123",
     "data": {
-      "subject": "Update documentation",
-      "priority": "P4",
+      "title": "Update documentation",
       "description": "Add examples to README",
-      "assignedTo": "marcus"
+      "priority": "Low",
+      "assignedAgentName": "marcus"
     }
   }'
 ```
@@ -403,7 +413,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 
 ---
 
-### ✅ Valid: Update Ticket Status to in-progress
+### ✅ Valid: Update Ticket Status to In Progress
 
 **Request:**
 ```bash
@@ -415,8 +425,8 @@ curl -X POST http://localhost:3000/api/delivery-scout \
     "userId": "user123",
     "data": {
       "ticketId": "ticket789",
-      "status": "in-progress",
-      "assignedTo": "marcus"
+      "status": "In Progress",
+      "assignedAgentName": "marcus"
     }
   }'
 ```
@@ -445,8 +455,8 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 - **Type:** Must be actual number, not string
 
 ### Enum Validations
-- **Priority:** Must be exactly `P1`, `P2`, `P3`, or `P4`
-- **Ticket Status:** Must be exactly `open`, `in-progress`, `resolved`, or `closed`
+- **Priority:** Must be exactly `Critical`, `High`, `Medium`, or `Low`
+- **Ticket Status:** Must be exactly `Open`, `In Progress`, `Awaiting Customer`, `Resolved`, `Closed`, or `Cancelled`
 - **Site Status:** Must be exactly `online`, `offline`, or `maintenance`
 - **Report Type:** Must be exactly `monthly`, `quarterly`, `annual`, or `custom`
 
@@ -462,7 +472,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 
 ```bash
 # Test each invalid priority
-for priority in "HIGH" "URGENT" "P0" "P5" "1" "low"; do
+for priority in "HIGH" "URGENT" "P1" "P2" "1" "low"; do
   echo "Testing priority: $priority"
   curl -X POST http://localhost:3000/api/delivery-scout \
     -H "Authorization: Bearer YOUR_API_KEY" \
@@ -471,7 +481,8 @@ for priority in "HIGH" "URGENT" "P0" "P5" "1" "low"; do
       \"action\": \"create_ticket\",
       \"userId\": \"test123\",
       \"data\": {
-        \"subject\": \"Test\",
+        \"title\": \"Test\",
+        \"description\": \"Test description\",
         \"priority\": \"$priority\"
       }
     }"
@@ -479,7 +490,7 @@ for priority in "HIGH" "URGENT" "P0" "P5" "1" "low"; do
 done
 ```
 
-**Expected:** All should return validation error with "Must be one of: P1, P2, P3, P4"
+**Expected:** All should return validation error with "Must be one of: Critical, High, Medium, Low"
 
 ### Test Numeric Validation
 

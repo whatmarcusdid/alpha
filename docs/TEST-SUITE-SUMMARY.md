@@ -27,7 +27,7 @@ A comprehensive Node.js test script that validates all 8 Delivery Scout API oper
 | add_site | ✅ | ✅ (missing req, invalid URL) | - | 3 |
 | update_site | ✅ | ✅ (missing ID) | ✅ (not found) | 3 |
 | add_report | ✅ | ✅ (missing type, invalid type) | - | 3 |
-| create_ticket | ✅ | ✅ (empty subject, invalid priority) | ✅ (P4 support) | 4 |
+| create_ticket | ✅ | ✅ (empty title, invalid priority) | ✅ (Low priority) | 4 |
 | update_ticket | ✅ | ✅ (missing ID) | ✅ (not found) | 3 |
 | **Authentication** | - | ✅ (missing key, invalid key) | - | 2 |
 
@@ -269,9 +269,9 @@ assert(data.error === 'Unauthorized');
 The test script tracks created resources but cannot automatically delete them (API doesn't expose delete operations).
 
 **Manual cleanup required for:**
-- Sites: Check `users/{test-user-id}/sites`
+- Sites: Check `sites` collection (top-level, filter by userId)
 - Reports: Check `users/{test-user-id}/reports`
-- Tickets: Check `users/{test-user-id}/tickets`
+- Tickets: Check `supportTickets` collection (top-level, filter by userId)
 
 **The script outputs created IDs:**
 ```
@@ -287,8 +287,9 @@ Created resources that need manual cleanup:
 
 **Cleanup via Firebase Console:**
 1. Go to Firestore Database
-2. Navigate to `users/test-user-delivery-scout`
-3. Delete subcollections: `sites`, `reports`, `tickets`
+2. For tickets: Open `supportTickets` collection, delete by document ID
+3. For reports: Navigate to `users/test-user-delivery-scout/reports`, delete documents
+4. For sites: Open `sites` collection, filter by userId, delete documents
 
 ---
 
