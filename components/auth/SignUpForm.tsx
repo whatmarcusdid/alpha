@@ -89,26 +89,62 @@ export function SignUpForm() {
         );
       }
       
-      // 4. Send Slack notification for new signup
-      try {
-        await fetch('/api/notifications/new-user', {
+      // 4. Send Growth Engine notifications (non-blocking)
+      // These run in parallel for speed, errors don't block user flow
+
+      const notificationPromises = [
+        // 4a. Existing: New user Slack notification
+        fetch('/api/notifications/new-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: user.uid,
             email: user.email || email,
-            displayName: name || 'New User',
-            tier: (tier || 'essential') as 'essential' | 'advanced' | 'premium',
-            billingCycle: (billingCycle || 'yearly') as 'monthly' | 'yearly',
-            amount: parseFloat(amount || '0'),
+            displayName: name || user.displayName || 'New User',
+            tier: (pendingSubscription?.tier || tier || 'essential') as 'essential' | 'advanced' | 'premium',
+            billingCycle: ((pendingSubscription?.billingCycle || billingCycle) === 'annual'
+              ? 'yearly'
+              : (pendingSubscription?.billingCycle || billingCycle || 'yearly')) as 'monthly' | 'yearly',
+            amount: pendingSubscription?.amount ?? parseFloat(amount || '0'),
           }),
-        });
-        console.log('✅ Slack notification sent for new user:', user.uid);
-      } catch (notificationError) {
-        // Log error but don't block user flow
-        console.error('⚠️ Failed to send Slack notification:', notificationError);
-      }
-      
+        })
+          .then(() => console.log('✅ New user Slack sent'))
+          .catch((err) => console.error('⚠️ New user Slack failed:', err)),
+
+        // 4b. Dashboard Ready email via Loops
+        fetch('/api/notifications/dashboard-ready', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email || email,
+            firstName: (name || user.displayName || '').split(' ')[0] || 'there',
+            planTier:
+              (pendingSubscription?.tier || tier || 'essential').charAt(0).toUpperCase() +
+              (pendingSubscription?.tier || tier || 'essential').slice(1),
+          }),
+        })
+          .then(() => console.log('✅ Dashboard Ready email sent'))
+          .catch((err) => console.error('⚠️ Dashboard Ready email failed:', err)),
+
+        // 4c. Account Created Slack + Notion update
+        fetch('/api/notifications/account-created', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            email: user.email || email,
+            displayName: name || user.displayName || 'New User',
+            tier: pendingSubscription?.tier || tier,
+            billingCycle: pendingSubscription?.billingCycle || billingCycle,
+          }),
+        })
+          .then(() => console.log('✅ Account Created notification sent'))
+          .catch((err) => console.error('⚠️ Account Created notification failed:', err)),
+      ];
+
+      await Promise.allSettled(notificationPromises);
+      console.log('✅ All Growth Engine notifications processed');
+
       // 5. Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
@@ -185,26 +221,62 @@ export function SignUpForm() {
         );
       }
       
-      // 4. Send Slack notification for new signup
-      try {
-        await fetch('/api/notifications/new-user', {
+      // 4. Send Growth Engine notifications (non-blocking)
+      // These run in parallel for speed, errors don't block user flow
+
+      const notificationPromises = [
+        // 4a. Existing: New user Slack notification
+        fetch('/api/notifications/new-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: user.uid,
             email: user.email || '',
             displayName: user.displayName || 'Google User',
-            tier: (tier || 'essential') as 'essential' | 'advanced' | 'premium',
-            billingCycle: (billingCycle || 'yearly') as 'monthly' | 'yearly',
-            amount: parseFloat(amount || '0'),
+            tier: (pendingSubscription?.tier || tier || 'essential') as 'essential' | 'advanced' | 'premium',
+            billingCycle: ((pendingSubscription?.billingCycle || billingCycle) === 'annual'
+              ? 'yearly'
+              : (pendingSubscription?.billingCycle || billingCycle || 'yearly')) as 'monthly' | 'yearly',
+            amount: pendingSubscription?.amount ?? parseFloat(amount || '0'),
           }),
-        });
-        console.log('✅ Slack notification sent for new user:', user.uid);
-      } catch (notificationError) {
-        // Log error but don't block user flow
-        console.error('⚠️ Failed to send Slack notification:', notificationError);
-      }
-      
+        })
+          .then(() => console.log('✅ New user Slack sent'))
+          .catch((err) => console.error('⚠️ New user Slack failed:', err)),
+
+        // 4b. Dashboard Ready email via Loops
+        fetch('/api/notifications/dashboard-ready', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email || '',
+            firstName: (user.displayName || 'Google User').split(' ')[0] || 'there',
+            planTier:
+              (pendingSubscription?.tier || tier || 'essential').charAt(0).toUpperCase() +
+              (pendingSubscription?.tier || tier || 'essential').slice(1),
+          }),
+        })
+          .then(() => console.log('✅ Dashboard Ready email sent'))
+          .catch((err) => console.error('⚠️ Dashboard Ready email failed:', err)),
+
+        // 4c. Account Created Slack + Notion update
+        fetch('/api/notifications/account-created', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || 'Google User',
+            tier: pendingSubscription?.tier || tier,
+            billingCycle: pendingSubscription?.billingCycle || billingCycle,
+          }),
+        })
+          .then(() => console.log('✅ Account Created notification sent'))
+          .catch((err) => console.error('⚠️ Account Created notification failed:', err)),
+      ];
+
+      await Promise.allSettled(notificationPromises);
+      console.log('✅ All Growth Engine notifications processed');
+
       // 5. Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
@@ -281,26 +353,62 @@ export function SignUpForm() {
         );
       }
       
-      // 4. Send Slack notification for new signup
-      try {
-        await fetch('/api/notifications/new-user', {
+      // 4. Send Growth Engine notifications (non-blocking)
+      // These run in parallel for speed, errors don't block user flow
+
+      const notificationPromises = [
+        // 4a. Existing: New user Slack notification
+        fetch('/api/notifications/new-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: user.uid,
             email: user.email || '',
             displayName: user.displayName || 'Apple User',
-            tier: (tier || 'essential') as 'essential' | 'advanced' | 'premium',
-            billingCycle: (billingCycle || 'yearly') as 'monthly' | 'yearly',
-            amount: parseFloat(amount || '0'),
+            tier: (pendingSubscription?.tier || tier || 'essential') as 'essential' | 'advanced' | 'premium',
+            billingCycle: ((pendingSubscription?.billingCycle || billingCycle) === 'annual'
+              ? 'yearly'
+              : (pendingSubscription?.billingCycle || billingCycle || 'yearly')) as 'monthly' | 'yearly',
+            amount: pendingSubscription?.amount ?? parseFloat(amount || '0'),
           }),
-        });
-        console.log('✅ Slack notification sent for new user:', user.uid);
-      } catch (notificationError) {
-        // Log error but don't block user flow
-        console.error('⚠️ Failed to send Slack notification:', notificationError);
-      }
-      
+        })
+          .then(() => console.log('✅ New user Slack sent'))
+          .catch((err) => console.error('⚠️ New user Slack failed:', err)),
+
+        // 4b. Dashboard Ready email via Loops
+        fetch('/api/notifications/dashboard-ready', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email || '',
+            firstName: (user.displayName || 'Apple User').split(' ')[0] || 'there',
+            planTier:
+              (pendingSubscription?.tier || tier || 'essential').charAt(0).toUpperCase() +
+              (pendingSubscription?.tier || tier || 'essential').slice(1),
+          }),
+        })
+          .then(() => console.log('✅ Dashboard Ready email sent'))
+          .catch((err) => console.error('⚠️ Dashboard Ready email failed:', err)),
+
+        // 4c. Account Created Slack + Notion update
+        fetch('/api/notifications/account-created', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || 'Apple User',
+            tier: pendingSubscription?.tier || tier,
+            billingCycle: pendingSubscription?.billingCycle || billingCycle,
+          }),
+        })
+          .then(() => console.log('✅ Account Created notification sent'))
+          .catch((err) => console.error('⚠️ Account Created notification failed:', err)),
+      ];
+
+      await Promise.allSettled(notificationPromises);
+      console.log('✅ All Growth Engine notifications processed');
+
       // 5. Redirect to WordPress credentials page
       router.push(`/checkout/wordpress-credentials?tier=${tier}&amount=${amount}&billingCycle=${billingCycle}`);
     } catch (err: any) {
