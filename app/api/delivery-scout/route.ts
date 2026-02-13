@@ -223,6 +223,28 @@ async function getUserEmail(userId: string): Promise<{ email: string; name: stri
   }
 }
 
+/**
+ * Serializes Firestore document data for JSON response.
+ * Converts Timestamp fields to ISO strings, recurses into nested objects.
+ */
+function serializeFirestoreData(data: any): any {
+  if (!data) return data;
+  const serialized: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value && typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
+      serialized[key] = (value as { toDate: () => Date }).toDate().toISOString();
+    } else if (value && typeof value === 'object' && '_seconds' in value) {
+      const ts = value as { _seconds: number; _nanoseconds?: number };
+      serialized[key] = new Date(ts._seconds * 1000).toISOString();
+    } else if (value && typeof value === 'object' && !Array.isArray(value) && value !== null) {
+      serialized[key] = serializeFirestoreData(value);
+    } else {
+      serialized[key] = value;
+    }
+  }
+  return serialized;
+}
+
 // ============================================================================
 // API KEY VALIDATION
 // ============================================================================
@@ -296,8 +318,12 @@ function validateRequestBody(body: any): string | null {
     return 'Missing or invalid "action" field';
   }
 
-  // userId is optional for create_user action (since we're creating the user)
-  if (body.action !== 'create_user' && (!body.userId || typeof body.userId !== 'string')) {
+  // userId is optional for create_user and lookup_user actions
+  if (
+    body.action !== 'create_user' &&
+    body.action !== 'lookup_user' &&
+    (!body.userId || typeof body.userId !== 'string')
+  ) {
     return 'Missing or invalid "userId" field';
   }
 
@@ -308,6 +334,7 @@ function validateRequestBody(body: any): string | null {
   // Validate action is one of the allowed types
   const validActions: DeliveryScoutAction[] = [
     'create_user',
+    'lookup_user',
     'update_meeting',
     'update_metrics',
     'update_company_info',
@@ -456,6 +483,68 @@ async function handleCreateUser(
   } catch (error) {
     console.error('Error creating user:', error);
     throw new Error('Failed to create user');
+  }
+}
+
+/**
+ * Looks up a user by email and returns their full Firestore document
+ *
+ * READ-ONLY: Does not modify any data
+ * SPECIAL: Does not require userId - looks up by email instead
+ *
+ * @param data - Lookup data (requires email)
+ * @returns Success with user document, or error if not found
+ */
+async function handleLookupUser(data: unknown): Promise<DeliveryScoutResponse> {
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+
+  const validation = validatePayload(ValidationSchemas.lookup_user, data);
+  if (!validation.success) {
+    return {
+      success: false,
+      action: 'lookup_user',
+      error: 'Validation failed',
+      validationErrors: validation.errors,
+    };
+  }
+
+  const normalizedEmail = validation.data.email.toLowerCase().trim();
+
+  try {
+    console.log('[Delivery Scout] User lookup for:', normalizedEmail);
+
+    const snapshot = await adminDb
+      .collection('users')
+      .where('email', '==', normalizedEmail)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return {
+        success: false,
+        action: 'lookup_user',
+        error: `No user found with email: ${normalizedEmail}`,
+      };
+    }
+
+    const doc = snapshot.docs[0];
+    const userId = doc.id;
+    const userData = doc.data();
+    const serialized = serializeFirestoreData(userData);
+
+    return {
+      success: true,
+      action: 'lookup_user',
+      data: {
+        userId,
+        ...serialized,
+      },
+    };
+  } catch (error) {
+    console.error('Error in lookup_user:', error);
+    throw new Error('Failed to lookup user');
   }
 }
 
@@ -1324,6 +1413,11 @@ export async function POST(request: NextRequest) {
       case 'create_user':
         // Special case: create_user doesn't need userId (we're creating it)
         response = await handleCreateUser(data);
+        break;
+
+      case 'lookup_user':
+        // Special case: lookup_user doesn't need userId (we're looking up by email)
+        response = await handleLookupUser(data);
         break;
 
       case 'update_meeting':

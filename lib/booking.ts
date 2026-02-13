@@ -2,6 +2,7 @@
 
 import { adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { sendBookingCompletedNotification } from '@/lib/slack';
 
 /** Serialize Firestore data for client components (Timestamps → ISO strings) */
 function serializeForClient(data: Record<string, unknown> | null): Record<string, unknown> | null {
@@ -31,6 +32,21 @@ export async function saveBookingIntake(formData: any) {
       createdAt: FieldValue.serverTimestamp(),
       status: 'intake-complete',
     });
+
+    // Send Slack notification to #tsg-sales (non-blocking)
+    sendBookingCompletedNotification({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      businessName: formData.businessName,
+      email: formData.email,
+      websiteUrl: formData.websiteUrl,
+      tradeType: formData.tradeType,
+      numEmployees: formData.numEmployees,
+      biggestFrustration: formData.biggestFrustration,
+    }).catch((err) => {
+      console.error('[Booking] Failed to send Slack notification:', err);
+    });
+
     return docRef.id;
   } catch (error) {
     console.error('Error adding document: ', error);

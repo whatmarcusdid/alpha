@@ -84,6 +84,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abc...
 |----------|---------|---------|--------------|
 | `NEXT_PUBLIC_ZAPIER_WEBHOOK_URL` | Support ticket automation | 🔓 No | Zapier → Webhook Configuration |
 | `SLACK_WEBHOOK_URL` | New user signup notifications | 🔒 Yes | Slack → Incoming Webhooks |
+| `SLACK_SALES_WEBHOOK_URL` | Website Game Plan booking notifications (#tsg-sales) | 🔒 Yes | Slack → Incoming Webhooks |
 | `SLACK_SUPPORT_WEBHOOK_URL` | Support ticket create/update notifications | 🔒 Yes | Slack → Incoming Webhooks |
 | `HELPSCOUT_APP_ID` | HelpScout OAuth2 (conversation creation) | 🔒 Yes | HelpScout → Apps → OAuth2 |
 | `HELPSCOUT_APP_SECRET` | HelpScout OAuth2 (conversation creation) | 🔒 Yes | HelpScout → Apps → OAuth2 |
@@ -123,6 +124,17 @@ LOOPS_PASSWORD_RESET_TEMPLATE_ID=your-password-reset-template-id  # For custom p
 
 ---
 
+### Slack (Incoming Webhooks)
+
+**Used by:**
+- `SLACK_WEBHOOK_URL` - New user signup, Stripe payment notifications, weekly sales digest, account-created
+- `SLACK_SUPPORT_WEBHOOK_URL` - Support ticket create/update, account deletion, Delivery Scout ticket handlers
+- `SLACK_SALES_WEBHOOK_URL` - Website Game Plan booking notifications (#tsg-sales)
+
+**Website Game Plan flow:** When a prospect completes the book-call intake form, `lib/booking.ts` calls `sendBookingCompletedNotification()` which posts to #tsg-sales with contact info, business details, and pain point. Requires `SLACK_SALES_WEBHOOK_URL`; if not set, notification is skipped (booking still succeeds).
+
+---
+
 ## 🔐 Security Classifications
 
 ### Server-Only Secrets (Never expose to browser)
@@ -134,6 +146,9 @@ FIREBASE_CLIENT_EMAIL
 FIREBASE_PRIVATE_KEY
 UPSTASH_REDIS_REST_URL
 UPSTASH_REDIS_REST_TOKEN
+SLACK_WEBHOOK_URL
+SLACK_SALES_WEBHOOK_URL
+SLACK_SUPPORT_WEBHOOK_URL
 HELPSCOUT_APP_ID
 HELPSCOUT_APP_SECRET
 HELPSCOUT_MAILBOX_ID

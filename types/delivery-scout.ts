@@ -276,6 +276,17 @@ export const UpdateTicketSchema = z.object({
 
 export type UpdateTicketPayload = z.infer<typeof UpdateTicketSchema>;
 
+/**
+ * Schema for lookup_user action
+ * Required: email
+ * Retrieves user document by email (read-only)
+ */
+export const LookupUserSchema = z.object({
+  email: z.string().email('Valid email required'),
+});
+
+export type LookupUserPayload = z.infer<typeof LookupUserSchema>;
+
 // ============================================================================
 // REQUEST/RESPONSE TYPES
 // ============================================================================
@@ -285,6 +296,7 @@ export type UpdateTicketPayload = z.infer<typeof UpdateTicketSchema>;
  */
 export type DeliveryScoutAction =
   | 'create_user'
+  | 'lookup_user'
   | 'update_meeting'
   | 'update_metrics'
   | 'update_company_info'
@@ -309,7 +321,8 @@ export interface DeliveryScoutRequest {
 export interface DeliveryScoutSuccessResponse {
   success: true;
   message?: string;
-  [key: string]: any; // Allow additional fields like ticketId, siteId, etc.
+  action?: string; // Optional - e.g. "lookup_user" for action-specific responses
+  [key: string]: any; // Allow additional fields like ticketId, siteId, data, etc.
 }
 
 /**
@@ -318,6 +331,7 @@ export interface DeliveryScoutSuccessResponse {
 export interface DeliveryScoutErrorResponse {
   success: false;
   error: string;
+  action?: string; // Optional - e.g. "lookup_user" for action-specific errors
   validationErrors?: string[]; // Array of specific validation error messages
 }
 
@@ -377,6 +391,7 @@ export function validatePayload<T>(
  */
 export const ValidationSchemas = {
   create_user: CreateUserSchema,
+  lookup_user: LookupUserSchema,
   update_meeting: UpdateMeetingSchema,
   update_metrics: UpdateMetricsSchema,
   update_company_info: UpdateCompanyInfoSchema,

@@ -50,6 +50,46 @@ Content-Type: application/json
 
 See [Handler Functions Documentation](./delivery-scout-handlers.md) for detailed information about each handler.
 
+### Lookup Actions (Read-Only)
+
+#### `lookup_user`
+Retrieves a user's full Firestore document by email. Does not require `userId`.
+
+**Required:** `email` (valid email address)
+
+**Example:**
+```json
+{
+  "action": "lookup_user",
+  "data": { "email": "mike@redmapleplumbing.com" }
+}
+```
+
+**Success response:**
+```json
+{
+  "success": true,
+  "action": "lookup_user",
+  "data": {
+    "userId": "abc123xyz",
+    "email": "mike@redmapleplumbing.com",
+    "displayName": "Mike Johnson",
+    "subscription": { "tier": "essential", "status": "active" },
+    "metrics": { "websiteTraffic": 1250 },
+    "company": { "legalName": "Red Maple Plumbing LLC" }
+  }
+}
+```
+
+**Not found response:**
+```json
+{
+  "success": false,
+  "action": "lookup_user",
+  "error": "No user found with email: customer@example.com"
+}
+```
+
 ### Update Actions (Idempotent)
 
 #### 1. `update_meeting`

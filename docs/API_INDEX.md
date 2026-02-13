@@ -288,10 +288,10 @@ This document catalogs all API routes in the TradeSiteGenie Dashboard, including
 **Request Schema:**
 ```typescript
 {
-  action: 'update_meeting' | 'update_metrics' | 'update_company_info' | 
+  action: 'lookup_user' | 'update_meeting' | 'update_metrics' | 'update_company_info' | 
           'update_site' | 'update_ticket' | 'add_site' | 'add_report' | 
           'create_ticket' | 'create_user',  // Required
-  userId: string,                            // Required
+  userId?: string,                           // Optional for lookup_user, create_user
   data: object                               // Required - shape varies by action
 }
 ```
@@ -300,6 +300,7 @@ This document catalogs all API routes in the TradeSiteGenie Dashboard, including
 
 | Action | Purpose | Idempotent | Returns ID |
 |--------|---------|------------|------------|
+| `lookup_user` | Look up user by email (read-only) | ✅ Yes | No |
 | `update_meeting` | Update next meeting info | ✅ Yes | No |
 | `update_metrics` | Update dashboard metrics | ✅ Yes | No |
 | `update_company_info` | Update company details | ✅ Yes | No |
