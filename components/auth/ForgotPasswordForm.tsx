@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { sendPasswordReset } from '@/lib/auth';
 import {
   trackPasswordResetRequested,
   trackPasswordResetEmailSent,
@@ -42,8 +41,7 @@ export function ForgotPasswordForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Client-side validation
+
     if (!formData.email.trim()) {
       setToast({
         show: true,
@@ -63,69 +61,43 @@ export function ForgotPasswordForm() {
     }
 
     setLoading(true);
+    setToast({ ...toast, show: false });
 
     try {
-      // Track password reset attempt
       trackPasswordResetRequested('email');
 
-      console.log('🔍 Starting password reset flow...');
-      console.log('📧 Email entered:', formData.email);
-      
-      const result = await sendPasswordReset(formData.email);
-
-      console.log('🔍 Password reset result:', result);
-
-      if (!result.success && result.error) {
-        throw new Error(result.error);
-      }
-
-      // Always show success message (security: don't reveal if email exists)
-      setEmailSent(true);
-      setToast({
-        show: true,
-        type: 'success',
-        message: 'Check your email',
-        subtitle: 'If an account exists with this email, you will receive password reset instructions.',
+      const response = await fetch('/api/auth/request-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email.trim().toLowerCase() }),
       });
 
-      // Track successful request
-      trackPasswordResetEmailSent();
-      
-      console.log('');
-      console.log('📊 FIREBASE CONSOLE VERIFICATION STEPS:');
-      console.log('1. Open Firebase Console (console.firebase.google.com)');
-      console.log('2. Navigate to Authentication → Usage tab');
-      console.log('3. Check "Authentication activity" for recent spike');
-      console.log('4. Verify email quota hasn\'t been exceeded');
-      console.log('5. Check if email shows in activity log');
-      console.log('');
-      console.log('⚠️  If email doesn\'t arrive within 5 minutes:');
-      console.log('   • Check spam/junk folder');
-      console.log('   • Verify email templates configured in Firebase');
-      console.log('   • Check authorized domains include:', window.location.hostname);
-      console.log('   • Review Firebase email quota (100/day for free tier)');
-      console.log('');
-    } catch (error: any) {
-      // Track failure
-      trackPasswordResetFailed(error?.message || 'Unknown error');
+      const data = await response.json();
 
-      // Handle specific error cases
-      let errorMessage = 'Unable to send reset email';
-      let errorSubtitle = 'Please try again in a few moments.';
-
-      if (error?.message?.includes('network') || error?.message?.includes('Network')) {
-        errorMessage = 'Network error';
-        errorSubtitle = 'Please check your internet connection and try again.';
-      } else if (error?.message?.includes('too-many-requests')) {
-        errorMessage = 'Too many attempts';
-        errorSubtitle = 'Please wait a few minutes before trying again.';
+      if (response.ok) {
+        setEmailSent(true);
+        setToast({
+          show: true,
+          type: 'success',
+          message: 'Check your email',
+          subtitle: 'If an account exists for this email, you will receive password reset instructions shortly.',
+        });
+        trackPasswordResetEmailSent();
+      } else {
+        trackPasswordResetFailed(data.error || 'Unknown error');
+        setToast({
+          show: true,
+          type: 'error',
+          message: data.error || 'Unable to send reset email. Please try again.',
+        });
       }
-
+    } catch (err) {
+      console.error('Password reset request error:', err);
+      trackPasswordResetFailed(err instanceof Error ? err.message : 'Unknown error');
       setToast({
         show: true,
         type: 'error',
-        message: errorMessage,
-        subtitle: errorSubtitle,
+        message: 'An error occurred. Please try again later.',
       });
     } finally {
       setLoading(false);

@@ -91,6 +91,8 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abc...
 | `LOOPS_API_KEY` | Loops transactional emails (payment confirmed, dashboard ready, account deletion) | 🔒 Yes | Loops → Settings → API |
 | `LOOPS_SUPPORT_TICKET_TEMPLATE_ID` | Loops transactional template for support tickets | 🔒 Yes | Loops → Transactional Emails |
 | `NOTION_SALES_PIPELINE_DB_ID` | TSG Sales Pipeline **data source** ID (for payment tracking, weekly digest, book-call prospects) | 🔒 No | Notion → Database → ⋮ → Manage data sources → Copy data source ID |
+| `PASSWORD_RESET_EMAIL_MODE` | Password reset email: `console` (log URL for testing) or `loops` (send via Loops) | 🔓 No | Default: `loops` |
+| `LOOPS_PASSWORD_RESET_TEMPLATE_ID` | Loops transactional template for password reset emails | 🔒 Yes | Loops → Transactional Emails |
 | `CRON_SECRET` | Optional auth for Vercel Cron (e.g. weekly-sales-digest) | 🔒 Yes | Generate secure random string |
 
 ---
@@ -101,11 +103,15 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abc...
 - `/api/user/request-deletion` - Account deletion requests to Help Scout inbox
 - Stripe webhook - Payment Confirmed email after checkout
 - `/api/notifications/dashboard-ready` - Dashboard Ready email after signup
+- `/api/auth/request-password-reset` - Password reset emails (when `PASSWORD_RESET_EMAIL_MODE=loops`)
 
 ```bash
 LOOPS_API_KEY=your_loops_api_key_here
 LOOPS_SUPPORT_TICKET_TEMPLATE_ID=support-ticket-to-helpscout
+LOOPS_PASSWORD_RESET_TEMPLATE_ID=your-password-reset-template-id  # For custom password reset flow
 ```
+
+**Password Reset Mode:** Set `PASSWORD_RESET_EMAIL_MODE=console` to log reset URLs to server console instead of sending emails (useful before Loops template is ready).
 
 **How to get:**
 1. Sign up at https://app.loops.so
@@ -133,6 +139,7 @@ HELPSCOUT_APP_SECRET
 HELPSCOUT_MAILBOX_ID
 LOOPS_API_KEY
 LOOPS_SUPPORT_TICKET_TEMPLATE_ID
+LOOPS_PASSWORD_RESET_TEMPLATE_ID
 CRON_SECRET
 ```
 

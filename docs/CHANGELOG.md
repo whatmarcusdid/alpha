@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Custom Password Reset Flow**
+  - `/api/auth/request-password-reset` - POST to request reset; generates token, stores in Firestore, sends email via Loops (or logs URL in console mode)
+  - `/api/auth/reset-password` - GET to validate token, POST to reset password
+  - `/app/(auth)/reset-password` - Page for setting new password with token from email link
+  - `lib/loops.ts` - `sendPasswordResetEmail()` for Loops transactional emails
+  - Firestore `passwordResets` collection (backend-only, rules block client access)
+  - ForgotPasswordForm now calls new API instead of Firebase `sendPasswordResetEmail`
+
+### Fixed
+- **Book Call Flow**
+  - `lib/booking.ts` - Use Firebase Admin (adminDb) instead of client SDK for server actions; serialize Firestore Timestamps for client components
+  - `app/book-call/schedule/page.tsx` - Fetch via `getBookingIntake` server action instead of client Firestore
+  - `lib/notion.ts` - Use `data_source_id` for Notion pages.create (API 2025-09-03); return `{ success, error }` instead of throwing
+
+### Security
+- **Firestore Rules** - Added `passwordResets` collection with `allow read, write: if false`; excluded from catch-all to prevent client access
+
+### Added (continued)
 - **Growth Engine Automations** - Stripe Payment → Onboarding flow
   - `lib/loops.ts` - Loops API helper for transactional emails (payment confirmed, dashboard ready)
   - `lib/notion-sales.ts` - TSG Sales Pipeline queries and updates (find lead, update payment, update status)
@@ -57,6 +75,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Token caching to avoid fetching on every request
 
 ### Docs
+- Updated API_INDEX.md with Auth APIs (request-password-reset, reset-password)
+- Updated ENVIRONMENT_VARIABLES.md with PASSWORD_RESET_EMAIL_MODE, LOOPS_PASSWORD_RESET_TEMPLATE_ID
+- Updated ARCHITECTURE.md with reset-password page, passwordResets collection, Loops password reset
+- Updated DATA_MODELS.md with passwordResets collection schema
+- Updated SECURITY_MODEL.md with Auth APIs and passwordResets Firestore rules
 - Updated API_INDEX.md with dashboard-ready, account-created, cron/weekly-sales-digest, test/weekly-digest
 - Updated ENVIRONMENT_VARIABLES.md with LOOPS usage, NOTION_SALES_PIPELINE_DB_ID, CRON_SECRET
 - Updated API_INDEX.md with User APIs (settings, export-data, request-deletion)

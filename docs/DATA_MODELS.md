@@ -184,6 +184,36 @@ This document defines the canonical data schemas for TradeSiteGenie Dashboard, f
 
 ---
 
+### Collection: `passwordResets` (Top-Level)
+
+**Path:** `/passwordResets/{token}`
+
+**Document ID:** 64-character hex token (used in reset URL)
+
+**Purpose:** Store password reset tokens for custom reset flow. Backend-only—no client access (Firestore rules block all read/write from client SDK).
+
+**Schema:**
+
+```typescript
+{
+  tokenId: string;                   // REQUIRED - 32-char hex (internal reference)
+  email: string;                     // REQUIRED - User email (lowercase)
+  userId: string;                     // REQUIRED - Firebase Auth UID
+  createdAt: Timestamp;               // REQUIRED - When token was created
+  expiresAt: string;                  // REQUIRED - ISO string, typically 1 hour from creation
+  used: boolean;                     // REQUIRED - false until password reset completes
+  usedAt?: string;                    // OPTIONAL - ISO string when token was used
+}
+```
+
+**Created by:** `/api/auth/request-password-reset` when user requests reset.
+
+**Updated by:** `/api/auth/reset-password` when password is successfully reset (marks `used: true`).
+
+**Security:** Firestore rules deny all client access (`allow read, write: if false`). Only Admin SDK (API routes) can access.
+
+---
+
 ### Subcollection: `users/{userId}/sites`
 
 **Path:** `/users/{userId}/sites/{siteId}`

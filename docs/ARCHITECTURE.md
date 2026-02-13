@@ -26,7 +26,7 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 - Client Components use `useAuth()` context for user state
 
 **Entry Points:**
-- `/app/(auth)/*` - Authentication pages (signin, signup, forgot-password)
+- `/app/(auth)/*` - Authentication pages (signin, signup, forgot-password, reset-password)
 - `/app/dashboard/*` - Protected dashboard pages (transactions, sites, support, etc.)
 - `/app/checkout/*` - Checkout and onboarding flow
 - `/components/*` - Reusable UI components organized by domain
@@ -45,6 +45,7 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 - User settings (timezone, email frequency) - GET/PATCH
 - GDPR data export (JSON download of all user data)
 - Account deletion request (notifies team via Loops + Slack)
+- Password reset flow (request token, validate, reset via Firebase Admin)
 - Webhook processing (Stripe events)
 - Notification dispatch (Slack, email, Loops)
 
@@ -108,6 +109,7 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 - `pending_subscriptions/{email}` - Temporary subscription storage
 - `dataExports/{exportId}` - Audit log of GDPR data export requests
 - `deletionRequests/{requestId}` - Account deletion request queue
+- `passwordResets/{token}` - Password reset tokens (backend-only, no client access)
 
 ---
 
@@ -156,7 +158,7 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 **Integrations:**
 - **Slack:** New user signup notifications (`SLACK_WEBHOOK_URL`), support ticket create/update (`SLACK_SUPPORT_WEBHOOK_URL`), account deletion requests
 - **HelpScout:** Conversation creation on ticket create, note sync on ticket update (OAuth2 Client Credentials via `lib/helpscout/client.ts`)
-- **Loops:** Transactional emails for payment confirmed, dashboard ready, account deletion (`LOOPS_API_KEY`)
+- **Loops:** Transactional emails for payment confirmed, dashboard ready, account deletion, password reset (`LOOPS_API_KEY`, `LOOPS_PASSWORD_RESET_TEMPLATE_ID`)
 - **Notion:** TSG Sales Pipeline for payment tracking and weekly digest metrics (`NOTION_SALES_PIPELINE_DB_ID`)
 - **Zapier:** (Optional) Support ticket forwarding to Notion
 

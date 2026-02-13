@@ -331,6 +331,96 @@ This document catalogs all API routes in the TradeSiteGenie Dashboard, including
 
 ---
 
+## Auth APIs (Public)
+
+| Route | Method | Purpose | Auth Type | Rate Limiting | Source File |
+|-------|--------|---------|-----------|---------------|-------------|
+| `/api/auth/request-password-reset` | POST | Request password reset email | Public | In-memory (5/hour per email) | `/app/api/auth/request-password-reset/route.ts` |
+| `/api/auth/reset-password` | GET | Validate reset token (for page load) | Public | None | `/app/api/auth/reset-password/route.ts` |
+| `/api/auth/reset-password` | POST | Reset password with valid token | Public | None | `/app/api/auth/reset-password/route.ts` |
+
+### Request Password Reset
+
+**Request Schema:**
+```typescript
+{
+  email: string  // Required - normalized (lowercase, trimmed)
+}
+```
+
+**Response (Success - always returned for valid email format):**
+```typescript
+{
+  success: true,
+  message: string  // "If an account exists with this email, you will receive..."
+}
+```
+
+**Response (Error):**
+```typescript
+{
+  success: false,
+  error: string
+}
+```
+
+**Flow:** Validates email, checks user exists in Firebase Auth, generates secure token, stores in Firestore `passwordResets`, sends email via Loops (or logs URL in console mode). Returns success even when user not found (security).
+
+**Environment:** `PASSWORD_RESET_EMAIL_MODE` (console/loops), `LOOPS_PASSWORD_RESET_TEMPLATE_ID`, `LOOPS_API_KEY`
+
+---
+
+### Reset Password (Validate Token)
+
+**Request:** `GET /api/auth/reset-password?token=...`
+
+**Response (Valid):**
+```typescript
+{
+  valid: true,
+  email: string
+}
+```
+
+**Response (Invalid):**
+```typescript
+{
+  valid: false,
+  error: string
+}
+```
+
+---
+
+### Reset Password (Submit)
+
+**Request Schema:**
+```typescript
+{
+  token: string,   // Required - 64-char hex from email link
+  password: string // Required - min 8 characters
+}
+```
+
+**Response (Success):**
+```typescript
+{
+  success: true,
+  message: string
+}
+```
+
+**Response (Error):**
+```typescript
+{
+  error: string
+}
+```
+
+**Flow:** Validates token (exists, not used, not expired), marks used, updates Firebase Auth password. Reverts token if password update fails.
+
+---
+
 ## User APIs
 
 | Route | Method | Purpose | Auth Type | Rate Limiting | Source File |

@@ -2,6 +2,13 @@ rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Password Reset Tokens
+    // SECURITY: No client access allowed - only backend via Admin SDK
+    // This prevents token enumeration, manipulation, and rate limit bypass attacks
+    match /passwordResets/{tokenId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       // This rule allows anyone with your database reference to view, edit,
       // and delete all data in your database. It is useful for getting
@@ -12,7 +19,9 @@ service cloud.firestore {
       // Make sure to write security rules for your app before that time, or
       // else all client requests to your database will be denied until you
       // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 2, 2);
+      // Exclude passwordResets - backend only (request.path[3] is collection name)
+      allow read, write: if request.time < timestamp.date(2026, 2, 2)
+        && request.path[3] != 'passwordResets';
     }
   }
 }

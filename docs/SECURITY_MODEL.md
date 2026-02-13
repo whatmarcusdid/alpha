@@ -16,6 +16,7 @@ TradeSiteGenie Dashboard implements defense-in-depth security with multiple laye
 | **Delivery Scout API** | API Key | `Authorization: Bearer <api-key>` | Manual check in route |
 | **Stripe Webhooks** | Webhook Signature | `Stripe-Signature` header | Verified with Stripe SDK |
 | **Public APIs** | None | N/A | Rate-limited only |
+| **Auth APIs** (password reset) | None | N/A | In-memory: 5 req/hour per email |
 
 ---
 
@@ -646,6 +647,11 @@ console.log('User signed up:', email);  // Email exposed
 - Never store passwords in Firestore
 - Never log passwords
 - Use HTTPS only for password transmission
+
+**Password reset tokens (`passwordResets` collection):**
+- Tokens stored server-side only; Firestore rules block all client access (`allow read, write: if false`)
+- Prevents token enumeration, manipulation, and rate limit bypass
+- All operations via Admin SDK in API routes
 
 ---
 

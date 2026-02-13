@@ -103,3 +103,23 @@ export async function sendDashboardReadyEmail(
     planTier: data.planTier,
   });
 }
+
+/**
+ * Sends the password reset email via Loops.
+ * Uses LOOPS_PASSWORD_RESET_TEMPLATE_ID env var.
+ * Template data variables: resetUrl, firstName (optional)
+ */
+export async function sendPasswordResetEmail(
+  email: string,
+  data: { resetUrl: string; firstName?: string }
+): Promise<LoopsEmailResult> {
+  const templateId = process.env.LOOPS_PASSWORD_RESET_TEMPLATE_ID;
+  if (!templateId) {
+    console.warn('[Loops] LOOPS_PASSWORD_RESET_TEMPLATE_ID not set - skipping password reset email');
+    return { success: false, error: 'LOOPS_PASSWORD_RESET_TEMPLATE_ID not configured' };
+  }
+  return sendLoopsEmail(templateId, email, {
+    resetUrl: data.resetUrl,
+    firstName: data.firstName ?? '',
+  });
+}
