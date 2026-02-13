@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Growth Engine Automations** - Stripe Payment → Onboarding flow
+  - `lib/loops.ts` - Loops API helper for transactional emails (payment confirmed, dashboard ready)
+  - `lib/notion-sales.ts` - TSG Sales Pipeline queries and updates (find lead, update payment, update status)
+  - Enhanced Stripe webhook with Loops, Notion, Slack automations (non-blocking)
+  - `/api/notifications/dashboard-ready` - Dashboard Ready email via Loops after signup
+  - `/api/notifications/account-created` - Account Created Slack + Notion Closed Won update
+  - SignUpForm triggers all three post-signup notifications (new-user, dashboard-ready, account-created)
+- **Weekly Sales Performance Digest**
+  - `lib/weekly-digest/stripe.ts` - Stripe revenue queries
+  - `lib/weekly-digest/notion.ts` - Pipeline metrics from TSG Sales Pipeline
+  - `lib/weekly-digest/slack.ts` - Digest formatting and delivery
+  - `/api/cron/weekly-sales-digest` - Monday 9 AM EST cron (Vercel)
+  - `/api/test/weekly-digest` - Manual test endpoint
+  - `vercel.json` - Cron job configuration
 - **User Settings API** (`/api/user/settings`) - GET/PATCH for timezone and email notification frequency
   - Settings page with StickyBottomBar for save/cancel, NotificationToast for feedback
   - WordPress dashboard URL support ("Go To WordPress Dashboard" link when configured)
@@ -43,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Token caching to avoid fetching on every request
 
 ### Docs
+- Updated API_INDEX.md with dashboard-ready, account-created, cron/weekly-sales-digest, test/weekly-digest
+- Updated ENVIRONMENT_VARIABLES.md with LOOPS usage, NOTION_SALES_PIPELINE_DB_ID, CRON_SECRET
 - Updated API_INDEX.md with User APIs (settings, export-data, request-deletion)
 - Updated DATA_MODELS.md with settings object, dataExports, deletionRequests collections, wordpressCredentials.dashboardUrl
 - Updated ENVIRONMENT_VARIABLES.md with LOOPS_API_KEY, LOOPS_SUPPORT_TICKET_TEMPLATE_ID

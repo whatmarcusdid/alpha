@@ -139,6 +139,7 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 - Verify webhook signatures
 - Update Firestore with subscription changes
 - Handle pending subscriptions for pre-payment signups
+- Growth Engine: On checkout.session.completed, trigger Loops (Payment Confirmed), Notion (lead update), Slack (payment notification)
 
 **Handled Events:**
 - `checkout.session.completed` - Initial subscription creation
@@ -155,7 +156,8 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 **Integrations:**
 - **Slack:** New user signup notifications (`SLACK_WEBHOOK_URL`), support ticket create/update (`SLACK_SUPPORT_WEBHOOK_URL`), account deletion requests
 - **HelpScout:** Conversation creation on ticket create, note sync on ticket update (OAuth2 Client Credentials via `lib/helpscout/client.ts`)
-- **Loops:** Transactional emails for account deletion requests → Help Scout inbox (`LOOPS_API_KEY`, `LOOPS_SUPPORT_TICKET_TEMPLATE_ID`)
+- **Loops:** Transactional emails for payment confirmed, dashboard ready, account deletion (`LOOPS_API_KEY`)
+- **Notion:** TSG Sales Pipeline for payment tracking and weekly digest metrics (`NOTION_SALES_PIPELINE_DB_ID`)
 - **Zapier:** (Optional) Support ticket forwarding to Notion
 
 ---

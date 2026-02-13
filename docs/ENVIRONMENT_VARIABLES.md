@@ -88,14 +88,19 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abc...
 | `HELPSCOUT_APP_ID` | HelpScout OAuth2 (conversation creation) | 🔒 Yes | HelpScout → Apps → OAuth2 |
 | `HELPSCOUT_APP_SECRET` | HelpScout OAuth2 (conversation creation) | 🔒 Yes | HelpScout → Apps → OAuth2 |
 | `HELPSCOUT_MAILBOX_ID` | HelpScout mailbox for new conversations | 🔒 Yes | HelpScout → Mailboxes |
-| `LOOPS_API_KEY` | Loops transactional emails (account deletion → Help Scout) | 🔒 Yes | Loops → Settings → API |
+| `LOOPS_API_KEY` | Loops transactional emails (payment confirmed, dashboard ready, account deletion) | 🔒 Yes | Loops → Settings → API |
 | `LOOPS_SUPPORT_TICKET_TEMPLATE_ID` | Loops transactional template for support tickets | 🔒 Yes | Loops → Transactional Emails |
+| `NOTION_SALES_PIPELINE_DB_ID` | TSG Sales Pipeline **data source** ID (for payment tracking, weekly digest, book-call prospects) | 🔒 No | Notion → Database → ⋮ → Manage data sources → Copy data source ID |
+| `CRON_SECRET` | Optional auth for Vercel Cron (e.g. weekly-sales-digest) | 🔒 Yes | Generate secure random string |
 
 ---
 
 ### Loops (Transactional Emails)
 
-**Used by:** `/api/user/request-deletion` - Sends account deletion requests to Help Scout inbox
+**Used by:** 
+- `/api/user/request-deletion` - Account deletion requests to Help Scout inbox
+- Stripe webhook - Payment Confirmed email after checkout
+- `/api/notifications/dashboard-ready` - Dashboard Ready email after signup
 
 ```bash
 LOOPS_API_KEY=your_loops_api_key_here
@@ -104,11 +109,11 @@ LOOPS_SUPPORT_TICKET_TEMPLATE_ID=support-ticket-to-helpscout
 
 **How to get:**
 1. Sign up at https://app.loops.so
-2. Create a transactional email template for support tickets
+2. Create transactional email templates (payment confirmed, dashboard ready, support tickets)
 3. Copy API key from Settings → API
-4. Use template ID when sending to support@tradesitegenie.com
+4. Use template IDs when sending
 
-**Status:** Optional - If not set, account deletion requests are still logged to Firestore and Slack; only the email notification is skipped.
+**Status:** Optional - If not set, payment confirmation and dashboard ready emails are skipped; account deletion still logged to Firestore and Slack.
 
 ---
 
@@ -128,6 +133,7 @@ HELPSCOUT_APP_SECRET
 HELPSCOUT_MAILBOX_ID
 LOOPS_API_KEY
 LOOPS_SUPPORT_TICKET_TEMPLATE_ID
+CRON_SECRET
 ```
 
 ### Public Client Variables (Safe to expose)

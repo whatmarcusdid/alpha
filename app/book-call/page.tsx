@@ -105,12 +105,11 @@ export default function BookCallPage() {
       sessionStorage.setItem("bookingIntakeId", docId);
 
       // Add to Notion Sales Pipeline (non-blocking)
-      try {
-        await addProspectToNotion(result.data);
+      const notionResult = await addProspectToNotion(result.data);
+      if (notionResult.success) {
         console.log('✅ Added to Notion Sales Pipeline');
-      } catch (notionError) {
-        // Don't block the user flow if Notion fails
-        console.error('⚠️ Notion sync failed (non-blocking):', notionError);
+      } else if (notionResult.error) {
+        console.warn('⚠️ Notion sync skipped:', notionResult.error);
       }
 
       router.push("/book-call/schedule");

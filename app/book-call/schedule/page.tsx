@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, collection } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getBookingIntake } from "@/lib/booking";
 import { BookingLayout } from "@/components/layout/booking-layout";
 import { BookingCard } from "@/components/ui/booking-card";
 import { Button } from "@/components/ui/button";
@@ -22,30 +21,18 @@ export default function SchedulePage() {
         return;
       }
 
-      // Check if Firestore is initialized (browser-only pattern)
-      if (!db) {
-        console.error('Firestore not initialized');
-        setError('Database not available. Please refresh the page.');
-        setLoading(false);
-        return;
-      }
-
       try {
-        // Fetch directly from Firestore client-side
-        // TypeScript: db is guaranteed to be non-null here due to the check above
-        const docRef = doc(collection(db!, "bookingIntakes"), bookingIntakeId);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          setBookingData(docSnap.data());
-          setLoading(false);
+        const data = await getBookingIntake(bookingIntakeId);
+        if (data) {
+          setBookingData(data);
         } else {
           console.error("No booking data found");
           router.push("/book-call");
         }
-      } catch (error) {
-        console.error("Error fetching booking data:", error);
+      } catch (err) {
+        console.error("Error fetching booking data:", err);
         setError('Failed to load booking data. Please try again.');
+      } finally {
         setLoading(false);
       }
     };

@@ -431,6 +431,8 @@ This document catalogs all API routes in the TradeSiteGenie Dashboard, including
 
 **Special behavior:** If user not found during `checkout.session.completed`, creates pending subscription in `pending_subscriptions` collection.
 
+**Growth Engine (post-payment):** On successful payment, triggers Loops (Payment Confirmed email), Notion (lead status update), and Slack (payment notification). Non-blocking.
+
 **Detailed docs:** [pending-subscriptions-system.md](./pending-subscriptions-system.md)
 
 ---
@@ -440,6 +442,8 @@ This document catalogs all API routes in the TradeSiteGenie Dashboard, including
 | Route | Method | Purpose | Auth Type | Rate Limiting | Source File |
 |-------|--------|---------|-----------|---------------|-------------|
 | `/api/notifications/new-user` | POST | Send Slack notification for new user signup | Internal (no auth) | None | `/app/api/notifications/new-user/route.ts` |
+| `/api/notifications/dashboard-ready` | POST | Send Dashboard Ready email via Loops after signup | Internal (no auth) | None | `/app/api/notifications/dashboard-ready/route.ts` |
+| `/api/notifications/account-created` | POST | Send Account Created Slack + update Notion to Closed Won | Internal (no auth) | None | `/app/api/notifications/account-created/route.ts` |
 
 ### New User Notification
 
@@ -469,11 +473,24 @@ This document catalogs all API routes in the TradeSiteGenie Dashboard, including
 
 ---
 
+## Cron Endpoints
+
+| Route | Method | Purpose | Auth Type | Rate Limiting | Source File |
+|-------|--------|---------|-----------|---------------|-------------|
+| `/api/cron/weekly-sales-digest` | GET | Weekly Sales Digest (Stripe + Notion → Slack) | Bearer CRON_SECRET | None | `/app/api/cron/weekly-sales-digest/route.ts` |
+
+**Schedule:** Monday 9 AM EST (via Vercel Cron, `vercel.json`)
+
+**Authentication:** Optional `Authorization: Bearer ${CRON_SECRET}` header
+
+---
+
 ## Test/Debug Endpoints
 
 | Route | Method | Purpose | Auth Type | Rate Limiting | Source File |
 |-------|--------|---------|-----------|---------------|-------------|
 | `/api/hello` | GET | Health check endpoint | Public | None | `/app/api/hello/route.ts` |
+| `/api/test/weekly-digest` | POST/GET | Manual trigger for Weekly Sales Digest | Public | None | `/app/api/test/weekly-digest/route.ts` |
 | `/api/test-sentry-error` | GET | Test Sentry error tracking | Public | None | `/app/api/test-sentry-error/route.ts` |
 | `/api/sentry-example-api` | GET | Example Sentry integration | Public | None | `/app/api/sentry-example-api/route.ts` |
 | `/api/get-og-image` | GET | Generate Open Graph image | Public | None | `/app/api/get-og-image/route.ts` |
