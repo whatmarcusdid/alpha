@@ -156,7 +156,7 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 **Location:** `/app/api/notifications/*`, `/app/api/delivery-scout/route.ts`
 
 **Integrations:**
-- **Slack:** New user signup notifications (`SLACK_WEBHOOK_URL`), support ticket create/update (`SLACK_SUPPORT_WEBHOOK_URL`), account deletion requests
+- **Slack:** New user signup (`SLACK_WEBHOOK_URL`), support ticket create/update (`SLACK_SUPPORT_WEBHOOK_URL`), Website Game Plan bookings (`SLACK_SALES_WEBHOOK_URL` → #tsg-sales), account deletion requests
 - **HelpScout:** Conversation creation on ticket create, note sync on ticket update (OAuth2 Client Credentials via `lib/helpscout/client.ts`)
 - **Loops:** Transactional emails for payment confirmed, dashboard ready, account deletion, password reset (`LOOPS_API_KEY`, `LOOPS_PASSWORD_RESET_TEMPLATE_ID`)
 - **Notion:** TSG Sales Pipeline for payment tracking and weekly digest metrics (`NOTION_SALES_PIPELINE_DB_ID`)

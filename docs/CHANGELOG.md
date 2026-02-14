@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Website Game Plan → Slack Sales Notification**
+  - `lib/slack.ts` - Slack helper with `sendSlackSalesNotification`, `sendBookingCompletedNotification`
+  - `lib/booking.ts` - Calls Slack notification (non-blocking) when booking intake completes
+  - `SLACK_SALES_WEBHOOK_URL` - Posts to #tsg-sales with contact, business, and pain point details
+- **Delivery Scout `lookup_user` action**
+  - Look up user by email (read-only); returns full Firestore document with serialized Timestamps
+  - Does not require `userId`; uses `data.email` instead
+  - `serializeFirestoreData` helper for JSON-safe Timestamp conversion
 - **Custom Password Reset Flow**
   - `/api/auth/request-password-reset` - POST to request reset; generates token, stores in Firestore, sends email via Loops (or logs URL in console mode)
   - `/api/auth/reset-password` - GET to validate token, POST to reset password
@@ -75,6 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Token caching to avoid fetching on every request
 
 ### Docs
+- Updated API_INDEX.md with lookup_user action, SLACK_SALES_WEBHOOK_URL
+- Updated delivery-scout-api.md with lookup_user section
 - Updated API_INDEX.md with Auth APIs (request-password-reset, reset-password)
 - Updated ENVIRONMENT_VARIABLES.md with PASSWORD_RESET_EMAIL_MODE, LOOPS_PASSWORD_RESET_TEMPLATE_ID
 - Updated ARCHITECTURE.md with reset-password page, passwordResets collection, Loops password reset

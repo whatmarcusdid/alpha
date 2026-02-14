@@ -1,12 +1,13 @@
 # Delivery Scout Handler Functions Documentation
 
-This document provides detailed information about the 8 Firestore handler functions implemented for the Delivery Scout API.
+This document provides detailed information about the Delivery Scout API handler functions, including lookup, update, and add operations.
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Update Handlers](#update-handlers)
-3. [Add Handlers](#add-handlers)
+2. [Lookup Handlers](#lookup-handlers)
+3. [Update Handlers](#update-handlers)
+4. [Add Handlers](#add-handlers)
 4. [Idempotency](#idempotency)
 5. [Validation Rules](#validation-rules)
 6. [Testing Examples](#testing-examples)
@@ -22,6 +23,69 @@ All handlers follow these patterns:
 - ✅ Validate required fields before writing
 - ✅ Return auto-generated IDs for add operations
 - ✅ Throw clear errors for validation failures
+
+---
+
+## Lookup Handlers
+
+These handlers retrieve data (read-only, no Firestore writes).
+
+### `handleLookupUser`
+
+**Action:** `lookup_user`
+
+**Purpose:** Retrieves a user's full Firestore document by email. Does not require `userId`.
+
+**Idempotent:** ✅ Yes (read-only)
+
+**Payload:**
+```typescript
+{
+  email: string;  // Valid email required
+}
+```
+
+**Required Fields:** `email`
+
+**Example Request:**
+```json
+{
+  "action": "lookup_user",
+  "data": {
+    "email": "mike@redmapleplumbing.com"
+  }
+}
+```
+
+**Example Success Response:**
+```json
+{
+  "success": true,
+  "action": "lookup_user",
+  "data": {
+    "userId": "abc123xyz",
+    "email": "mike@redmapleplumbing.com",
+    "displayName": "Mike Johnson",
+    "subscription": { "tier": "essential", "status": "active" },
+    "metrics": { "websiteTraffic": 1250 },
+    "company": { "legalName": "Red Maple Plumbing LLC" }
+  }
+}
+```
+
+**Example Not Found Response:**
+```json
+{
+  "success": false,
+  "action": "lookup_user",
+  "error": "No user found with email: customer@example.com"
+}
+```
+
+**Firestore Operations:**
+- Queries `users` collection: `where('email', '==', normalizedEmail).limit(1)`
+- Email is normalized to lowercase before query
+- Timestamp fields are serialized to ISO strings for JSON response
 
 ---
 

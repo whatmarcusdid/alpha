@@ -126,10 +126,10 @@ export default function DashboardPage() {
     <main className="bg-transparent max-w-[1440px] mx-auto py-8 pb-24 lg:pb-32">
       <div className="bg-white rounded-lg p-8 min-h-[calc(100vh-theme(spacing.32))]">
         
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start justify-between gap-5 mb-8">
           <div>
-            <p className="text-lg font-bold leading-tight tracking-tight text-[#545552] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{dateStr}</p>
-            <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-[#232521]">
+            <p className="text-[18px] md:text-lg font-bold leading-tight tracking-tight text-[#545552] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{dateStr}</p>
+            <h1 className="text-[28px] md:text-4xl font-extrabold leading-tight tracking-tight text-[#232521]">
               {greeting} {userName}
             </h1>
           </div>
@@ -150,7 +150,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           {metrics.map((metric, index) => {
             const borderColor = getMetricColor(metric.type, metric.value);
             return (
@@ -159,7 +159,7 @@ export default function DashboardPage() {
                 className="bg-white rounded-lg p-6 border border-[#6F797A]/40"
                 style={{ borderTopWidth: '4px', borderTopColor: borderColor }}
               >
-                <p className="text-5xl font-extrabold leading-tight tracking-tight text-[#232521] mb-2">{metric.value}</p>
+                <p className="text-[32px] md:text-5xl font-extrabold leading-tight tracking-tight text-[#232521] mb-2">{metric.value}</p>
                 <p className="text-[15px] font-medium leading-tight tracking-tight text-gray-600">{metric.label}</p>
               </div>
             );

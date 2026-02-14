@@ -36,6 +36,7 @@ import type { SupportTicket } from '@/types/support';
 import HorizontalTabs from '@/components/ui/HorizontalTabs';
 import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
 import { StickyBottomBar } from '@/components/ui/StickyBottomBar';
+import { AllPagesOverlay } from '@/components/ui/AllPagesOverlay';
 
 // Define Tier type for upgrade flow
 type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
@@ -61,6 +62,9 @@ export default function DesignSystemPage() {
 
   // State for Horizontal Tabs demo
   const [activeTab, setActiveTab] = useState('active');
+
+  // State for AllPagesOverlay demo
+  const [isAllPagesOverlayOpen, setIsAllPagesOverlayOpen] = useState(false);
 
   // Mock data for UpcomingMeetingCard
   const mockMeeting: Meeting = {
@@ -3192,7 +3196,7 @@ export default function BookingPage() {
                       { name: 'My Company', icon: Building },
                       { name: 'Sites', icon: MonitorSmartphone },
                       { name: 'Reports', icon: BarChart3 },
-                      { name: 'More', icon: Menu }
+                      { name: 'See All', icon: Menu }
                     ].map((item, idx) => {
                       const Icon = item.icon;
                       return (
@@ -3218,7 +3222,7 @@ export default function BookingPage() {
                   <li>TSGLogo component from @/components/ui/logo</li>
                   <li>Responsive: desktop top bar (hidden lg:block), mobile bottom nav (lg:hidden)</li>
                   <li>Main nav items: Home, My Company, Sites, Reports</li>
-                  <li>"More" menu dropdown with Support and Transactions</li>
+                  <li>"See All" button opens AllPagesOverlay with full navigation grid (Home, Company, Sites, Reports, Support, Transactions, My Profile, Settings)</li>
                   <li>User dropdown with profile info and sign out</li>
                   <li>Settings icon button (linked to /dashboard/settings)</li>
                   <li>Active state: bg-[#D9D5C5]/40 text-[#1B4A41]</li>
@@ -3245,6 +3249,49 @@ export default function DashboardLayout({ children }) {
     </div>
   );
 }`}
+                </code>
+              </div>
+            </div>
+
+            {/* AllPagesOverlay */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">All Pages Overlay</h3>
+              <p className="text-gray-600 mb-6">Bottom sheet overlay that opens when the &quot;See All&quot; button is clicked on mobile DashboardNav. Displays a grid of all navigation links (Home, Company, Sites, Reports, Support, Transactions, My Profile, Settings) with icons. Closes via X button, backdrop click, or Escape key.</p>
+              
+              {/* Interactive Demo */}
+              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600 mb-4 font-semibold">Interactive Demo:</p>
+                <div className="flex justify-center">
+                  <PrimaryButton onClick={() => setIsAllPagesOverlayOpen(true)}>
+                    Open All Pages Overlay
+                  </PrimaryButton>
+                </div>
+                <AllPagesOverlay isOpen={isAllPagesOverlayOpen} onClose={() => setIsAllPagesOverlayOpen(false)} />
+              </div>
+              
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>Slides up from bottom with rounded top corners</li>
+                  <li>Header: X close button (left), &quot;All Pages&quot; title (centered)</li>
+                  <li>4–5 column grid of nav items with icon above text</li>
+                  <li>Items: Home, Company, Sites, Reports, Support, Transactions, My Profile, Settings</li>
+                  <li>Active route highlighted with bg-[#D9D5C5]/40 text-[#1B4A41]</li>
+                  <li>Closes on X click, backdrop click, or Escape key</li>
+                  <li>Scrollable content when many items (max-h-[70vh])</li>
+                </ul>
+              </div>
+              
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { AllPagesOverlay } from '@/components/ui/AllPagesOverlay';
+
+// Usage (e.g. in DashboardNav when "See All" is clicked)
+const [showAllPages, setShowAllPages] = useState(false);
+
+<AllPagesOverlay isOpen={showAllPages} onClose={() => setShowAllPages(false)} />`}
                 </code>
               </div>
             </div>
