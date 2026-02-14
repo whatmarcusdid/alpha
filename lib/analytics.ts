@@ -35,6 +35,13 @@ if (typeof window !== 'undefined') {
         track_pageview: false,
         persistence: 'localStorage',
         ignore_dnt: false,
+
+        // Session Replay Configuration
+        record_sessions_percent: 100, // Start at 100% for testing, reduce later
+        record_mask_all_text: true, // Mask all text by default (privacy)
+        record_mask_all_inputs: true, // Mask all inputs by default (privacy)
+        record_block_selector: 'img, video', // Block images/videos from replay
+        record_idle_timeout_ms: 1800000, // End replay after 30 min of inactivity
       });
     } catch (error) {
       console.error('⚠️ Mixpanel initialization error:', error);
