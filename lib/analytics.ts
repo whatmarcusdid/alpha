@@ -19,7 +19,7 @@ export interface AnalyticsBaseProperties {
 }
 
 // Mixpanel instance (null on server)
-let mixpanel: { init: (token: string) => void; track: (event: string, props?: Record<string, unknown>) => void; identify: (id: string) => void; people: { set: (props: Record<string, unknown>) => void } } | null = null;
+let mixpanel: { init: (token: string, config?: Record<string, unknown>) => void; track: (event: string, props?: Record<string, unknown>) => void; identify: (id: string) => void; people: { set: (props: Record<string, unknown>) => void } } | null = null;
 
 // Initialize Mixpanel in browser only
 if (typeof window !== 'undefined') {
@@ -30,19 +30,21 @@ if (typeof window !== 'undefined') {
       // Access the default export first, then initialize
       mixpanel = mixpanelModule.default || mixpanelModule;
 
-      mixpanel.init(token, {
-        debug: process.env.NODE_ENV === 'development',
-        track_pageview: false,
-        persistence: 'localStorage',
-        ignore_dnt: false,
+      if (mixpanel) {
+        mixpanel.init(token, {
+          debug: process.env.NODE_ENV === 'development',
+          track_pageview: false,
+          persistence: 'localStorage',
+          ignore_dnt: false,
 
-        // Session Replay Configuration
-        record_sessions_percent: 100, // Start at 100% for testing, reduce later
-        record_mask_all_text: true, // Mask all text by default (privacy)
-        record_mask_all_inputs: true, // Mask all inputs by default (privacy)
-        record_block_selector: 'img, video', // Block images/videos from replay
-        record_idle_timeout_ms: 1800000, // End replay after 30 min of inactivity
-      });
+          // Session Replay Configuration
+          record_sessions_percent: 100, // Start at 100% for testing, reduce later
+          record_mask_all_text: true, // Mask all text by default (privacy)
+          record_mask_all_inputs: true, // Mask all inputs by default (privacy)
+          record_block_selector: 'img, video', // Block images/videos from replay
+          record_idle_timeout_ms: 1800000, // End replay after 30 min of inactivity
+        });
+      }
     } catch (error) {
       console.error('⚠️ Mixpanel initialization error:', error);
     }
