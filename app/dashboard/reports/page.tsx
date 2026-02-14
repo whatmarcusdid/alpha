@@ -83,22 +83,22 @@ export default function ReportsPage() {
   });
 
   return (
-    <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="max-w-[1440px] mx-auto px-0 py-8">
       <PageCard>
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex justify-between items-start mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[#232521]">Reports</h1>
             <p className="text-sm text-gray-600 mt-1">
               {sortedReports.length} result{sortedReports.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col items-start justify-start space-x-2 w-full">
             <label htmlFor="filter" className="text-sm font-medium text-gray-700">Filter by:</label>
             <select
               id="filter"
               value={filter}
               onChange={(e) => setFilter(e.target.value as 'all' | 'performance' | 'traffic')}
-              className="min-h-[40px] px-4 py-2 border border-gray-300 rounded-lg bg-white"
+              className="min-h-[40px] w-full px-4 py-2 border border-gray-300 rounded-lg bg-white ml-0"
             >
               <option value="all">Show All</option>
               <option value="performance">Performance Reports</option>
@@ -107,9 +107,10 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="min-w-full border border-gray-200 rounded-lg">
-            <div className="w-full bg-[#F7F6F1] px-6 py-3 grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
+        <div className="w-full -mx-4 sm:mx-0">
+          <div className="overflow-x-auto">
+            <div className="min-w-[800px] border border-gray-200 rounded-lg">
+              <div className="w-full min-w-full bg-[#F7F6F1] px-6 py-3 grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
               <button
                 onClick={() => handleSort('title')}
                 className="col-span-5 text-left hover:text-[#1b4a41] transition-colors flex items-center gap-1"
@@ -141,7 +142,7 @@ export default function ReportsPage() {
               </button>
               
               <div className="col-span-3 text-right">Action</div>
-            </div>
+              </div>
             
             {loading ? (
               <div className="text-center py-16 text-gray-600">Loading reports...</div>
@@ -153,20 +154,20 @@ export default function ReportsPage() {
                 </p>
               </div>
             ) : (
-              <div>
+              <div className="w-full min-w-full">
                 {sortedReports.map((report) => (
-                  <div key={report.id} className="w-full px-6 py-4 grid grid-cols-12 gap-4 items-center border-b border-gray-200 last:border-b-0 hover:bg-[#F2F0E7] transition-colors">
+                  <div key={report.id} className="w-full min-w-full px-6 py-4 grid grid-cols-12 gap-4 items-center border-b border-gray-200 last:border-b-0 hover:bg-[#F2F0E7] transition-colors">
                     <div className="col-span-5 flex items-center space-x-4">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                          <DocumentTextIcon className="h-6 w-6 text-gray-600" />
                       </div>
-                      <div>
-                        <p className="font-semibold text-[#232521]">{report.title}</p>
-                        <p className="text-sm text-gray-600">{report.subtitle}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[#232521] truncate">{report.title}</p>
+                        <p className="text-sm text-gray-600 truncate">{report.subtitle}</p>
                       </div>
                     </div>
-                    <div className="col-span-2 text-sm text-gray-600">{formatDate(report.createdDate)}</div>
-                    <div className="col-span-2 text-sm text-gray-600">{formatDate(report.updatedDate)}</div>
+                    <div className="col-span-2 text-sm text-gray-600 whitespace-nowrap">{formatDate(report.createdDate)}</div>
+                    <div className="col-span-2 text-sm text-gray-600 whitespace-nowrap">{formatDate(report.updatedDate)}</div>
                     <div className="col-span-3 text-right">
                       <button 
                         onClick={() => handleDownload({
@@ -183,6 +184,7 @@ export default function ReportsPage() {
                 ))}
               </div>
             )}
+            </div>
           </div>
         </div>
       </PageCard>

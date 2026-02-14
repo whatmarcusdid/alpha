@@ -346,7 +346,7 @@ export default function TransactionsPage() {
             </div>
           ) : (
             // Transactions table
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-lg border border-gray-200">
               <TransactionsTable 
                 transactions={sortedTransactions}
                 sortOrder={transactionSortOrder}

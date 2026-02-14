@@ -65,7 +65,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   };
 
   return (
-    <div className="bg-white w-full">
+    <div className="w-full -mx-4 sm:mx-0">
+      <div className="overflow-x-auto">
+        <div className="min-w-[900px] bg-white">
       {/* Table Header */}
       <div className="bg-[#F7F6F1] flex items-center gap-6 px-5 py-1 w-full rounded-tl rounded-tr">
         {/* Order ID - Always visible */}
@@ -184,6 +186,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
           </p>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 };
