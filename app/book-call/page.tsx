@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { z, ZodIssue } from "zod";
 import { BookingLayout } from "@/components/layout/booking-layout";
 import { BookingCard } from "@/components/ui/booking-card";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveBookingIntake } from "@/lib/booking";
 import { addProspectToNotion } from "@/lib/notion";
+import { trackGamePlanCallLandingViewed } from "@/lib/analytics";
+import { useAuth } from "@/contexts/AuthContext";
 
 const bookingIntakeSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -28,6 +30,8 @@ type BookingIntakeData = z.infer<typeof bookingIntakeSchema>;
 
 export default function BookCallPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState<Partial<BookingIntakeData>>({
     firstName: "",
     lastName: "",
@@ -40,6 +44,23 @@ export default function BookCallPage() {
   });
   const [errors, setErrors] = useState<ZodIssue[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Mixpanel: track landing page view (once per page load, after auth settles)
+  const hasTrackedLandingRef = useRef(false);
+  useEffect(() => {
+    if (authLoading || hasTrackedLandingRef.current) return;
+    hasTrackedLandingRef.current = true;
+    const leadSource = searchParams?.get('source') || 'direct';
+    const bookingFlowType = user ? 'logged_in_dashboard' : 'anonymous_site';
+    trackGamePlanCallLandingViewed({
+      lead_source: leadSource,
+      booking_flow_type: bookingFlowType,
+    });
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('booking_flow_type', bookingFlowType);
+      sessionStorage.setItem('lead_source', leadSource);
+    }
+  }, [searchParams, user, authLoading]);
 
   const tradeOptions = [
     "Plumbing only",

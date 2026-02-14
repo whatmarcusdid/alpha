@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getBookingIntake } from "@/lib/booking";
+import { trackGamePlanCallScheduleSubmitted } from "@/lib/analytics";
 import { BookingLayout } from "@/components/layout/booking-layout";
 import { BookingCard } from "@/components/ui/booking-card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,13 @@ export default function SchedulePage() {
   };
 
   const handleConfirm = () => {
-    // Always allow navigation - assume user has booked
+    // Mixpanel: track schedule submission (user clicked Confirm after selecting slot)
+    const leadSource = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('lead_source') : null;
+    trackGamePlanCallScheduleSubmitted({
+      selected_datetime: new Date().toISOString(),
+      trade_type: bookingData?.tradeType || 'not_specified',
+      lead_source: leadSource || 'direct',
+    });
     router.push("/book-call/confirmation");
   };
 

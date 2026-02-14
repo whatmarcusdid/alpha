@@ -1,9 +1,23 @@
 'use client';
 
+import { useEffect, useRef } from "react";
 import { BookingLayout } from "@/components/layout/booking-layout";
 import { BookingCard } from "@/components/ui/booking-card";
+import { trackGamePlanCallConfirmationViewed } from "@/lib/analytics";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ConfirmationPage() {
+  const { user, loading: authLoading } = useAuth();
+
+  // Mixpanel: track confirmation page view (once per page load, after auth settles)
+  const hasTrackedRef = useRef(false);
+  useEffect(() => {
+    if (authLoading || hasTrackedRef.current) return;
+    hasTrackedRef.current = true;
+    trackGamePlanCallConfirmationViewed({
+      booking_flow_type: user ? 'logged_in_dashboard' : 'anonymous_site',
+    });
+  }, [user, authLoading]);
   return (
     <BookingLayout>
       <BookingCard>

@@ -24,6 +24,8 @@ import SupportTicketCard from '@/components/support/SupportTicketCard';
 import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
 import TicketDetailModal from '@/components/support/TicketDetailModal';
 import { getActiveTickets, getPastTickets } from '@/lib/firestore/support';
+import { getUserSubscription } from '@/lib/firestore';
+import { trackSupportTicketCreated } from '@/lib/analytics';
 import type { SupportTicket } from '@/types/support';
 
 const CATEGORY_OPTIONS: { value: TicketCategory; label: string; description: string }[] = [
@@ -64,6 +66,7 @@ export default function SupportPage() {
     message: string;
     subtitle?: string;
   }>({ show: false, type: 'success', message: '' });
+  const [subscriptionTier, setSubscriptionTier] = useState<string | undefined>();
 
   const tabs: TabItem[] = [
     { id: 'request', label: 'Support Request' },
@@ -85,6 +88,16 @@ export default function SupportPage() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    async function loadSubscription() {
+      if (user?.uid) {
+        const sub = await getUserSubscription(user.uid);
+        setSubscriptionTier(sub?.tier);
+      }
+    }
+    loadSubscription();
+  }, [user?.uid]);
 
   const fetchActiveTickets = useCallback(async () => {
     if (!user) return;
@@ -253,6 +266,20 @@ export default function SupportPage() {
         return;
       }
 
+      // Map urgency to priority: low->low, normal->medium, high->high, urgent->critical
+      const priorityMap: Record<TicketUrgency, string> = {
+        low: 'low',
+        normal: 'medium',
+        high: 'high',
+        urgent: 'critical',
+      };
+
+      trackSupportTicketCreated({
+        ticket_priority: priorityMap[urgency],
+        ticket_category: category,
+        user_plan_tier: subscriptionTier,
+      });
+
       setNotification({
         show: true,
         type: 'success',
@@ -286,7 +313,7 @@ export default function SupportPage() {
         onDismiss={() => setNotification({ show: false, type: 'success', message: '' })}
       />
 
-      <main className="min-h-screen bg-[#F7F6F1] px-4 sm:px-6 lg:px-8 py-8">
+      <main className="min-h-screen bg-[#F7F6F1] px-0 pt-8 pb-20">
         <PageCard>
           <h1 className="text-2xl font-bold text-[#232521] mb-6">Support Hub</h1>
 

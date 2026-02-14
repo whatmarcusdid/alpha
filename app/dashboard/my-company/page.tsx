@@ -137,7 +137,7 @@ export default function MyCompanyPage() {
   }
 
   return (
-    <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
+    <main className="max-w-[1440px] mx-auto py-8 pb-24 lg:pb-8">
       <NotificationToast
         show={notification.show}
         type={notification.type}

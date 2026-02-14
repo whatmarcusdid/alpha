@@ -109,6 +109,7 @@ export async function getUserSubscription(userId: string) {
 
     if (userDoc.exists()) {
       const data = userDoc.data();
+      const createdAt = data.createdAt?.toDate?.();
       return {
         tier: data.subscription?.tier || 'essential',
         renewalDate: data.subscription?.renewalDate || null,
@@ -117,6 +118,7 @@ export async function getUserSubscription(userId: string) {
         billingCycle: data.subscription?.billingCycle || 'yearly',
         expiresAt: data.subscription?.expiresAt || null,
         canceledAt: data.subscription?.canceledAt || null,
+        createdAt: createdAt ? createdAt.toISOString() : null,
       };
     }
 

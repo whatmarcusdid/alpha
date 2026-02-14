@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { identifyUser } from '@/lib/analytics';
 
 // --- Browser-only Firebase Pattern ---
 // This ensures Firebase auth functions are only imported and used on the client-side.
@@ -45,6 +46,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(false);
     }
   }, []);
+
+  // Mixpanel identity management - identify user on login/signup
+  useEffect(() => {
+    if (user?.uid) {
+      identifyUser(user.uid);
+    }
+  }, [user?.uid]);
 
   const value = { user, loading };
 

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { TertiaryButton } from '@/components/ui/TertiaryButton';
-import { getUserMetrics, getUserCompany } from '@/lib/firestore';
+import { getUserMetrics, getUserCompany, getUserSubscription } from '@/lib/firestore';
 import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
 import { getUserSupportTickets } from '@/lib/firestore/supportTickets';
 import { getMeetings } from '@/lib/firestore/meetings';
@@ -14,6 +14,7 @@ import { SupportTicket } from '@/types/supportTicket';
 import { Meeting } from '@/types/user';
 import { UpcomingMeetingCard } from '@/components/dashboard/UpcomingMeetingCard';
 import { NoMeetingsCard } from '@/components/dashboard/NoMeetingsCard';
+import { trackDashboardViewed, trackFirstDashboardViewed, trackSupportHoursViewed, trackSiteMetricsViewed } from '@/lib/analytics';
 
 // Add a top-level log in the component:
 console.log("Dashboard loaded - testing Cursor!");
@@ -66,8 +67,9 @@ export default function DashboardPage() {
         const name = email.split('@')[0];
         setUserName(name.charAt(0).toUpperCase() + name.slice(1));
         
-        const [userMetrics, ticketsResult, meetingsResult, companyData] = await Promise.all([
+        const [userMetrics, subscriptionData, ticketsResult, meetingsResult, companyData] = await Promise.all([
           getUserMetrics(user.uid),
+          getUserSubscription(user.uid),
           getUserSupportTickets(user.uid, { status: 'open' }),
           getMeetings(user.uid),
           getUserCompany(user.uid)
@@ -96,6 +98,29 @@ export default function DashboardPage() {
                 .sort((a, b) => (a.date as any).toDate().getTime() - (b.date as any).toDate().getTime());
             setUpcomingMeetings(futureMeetings);
         }
+
+        // Mixpanel: track dashboard view (once per page load)
+        const navigationEntryPoint = typeof document !== 'undefined' && document.referrer ? 'navigation' : 'direct';
+        const tier = subscriptionData?.tier;
+        trackDashboardViewed({
+          navigation_entry_point: navigationEntryPoint,
+          user_plan_tier: tier,
+        });
+        // First-time users: account created within last 24 hours
+        const createdAt = subscriptionData?.createdAt ? new Date(subscriptionData.createdAt) : null;
+        const isFirstTime = createdAt && (Date.now() - createdAt.getTime()) < 24 * 60 * 60 * 1000;
+        if (isFirstTime) {
+          trackFirstDashboardViewed({ user_plan_tier: tier });
+        }
+        // Support hours and site metrics are displayed in the metrics grid
+        trackSupportHoursViewed({
+          support_hours_remaining: userMetrics.supportHoursRemaining,
+          user_plan_tier: tier,
+        });
+        trackSiteMetricsViewed({
+          feature_name: 'site_metrics',
+          user_plan_tier: tier,
+        });
 
         setLoading(false);
       }

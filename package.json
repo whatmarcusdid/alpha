@@ -32,6 +32,7 @@
     "firebase": "^12.7.0",
     "firebase-admin": "^13.6.0",
     "lucide-react": "^0.561.0",
+    "mixpanel-browser": "^2.74.0",
     "next": "^16.1.1",
     "react": "^19.2.1",
     "react-calendly": "^4.4.0",

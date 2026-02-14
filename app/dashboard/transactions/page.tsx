@@ -10,6 +10,7 @@ import { NotificationToast } from '@/components/ui/NotificationToast';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { TransactionsTable, Transaction } from '@/components/transactions/TransactionsTable';
+import { trackBillingPageViewed } from '@/lib/analytics';
 
 type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
 
@@ -62,6 +63,17 @@ export default function TransactionsPage() {
       router.push('/login');
     }
   }, [authLoading, user, router]);
+
+  // Mixpanel: track billing page view (once per page load, after subscription loads)
+  const hasTrackedBillingRef = React.useRef(false);
+  useEffect(() => {
+    if (!isLoadingSubscription && !hasTrackedBillingRef.current) {
+      hasTrackedBillingRef.current = true;
+      trackBillingPageViewed({
+        user_plan_tier: currentTier,
+      });
+    }
+  }, [currentTier, isLoadingSubscription]);
 
   // Fetch user's subscription data from Firestore
   useEffect(() => {
@@ -401,6 +413,7 @@ export default function TransactionsPage() {
                     }}
                     onUpdatePaymentClick={handleUpdatePaymentMethod}
                     currentPaymentMethod={paymentMethod ? `${paymentMethod.brand.charAt(0).toUpperCase() + paymentMethod.brand.slice(1)} •••• ${paymentMethod.last4}` : 'No payment method on file'}
+                    currentTier={currentTier}
                 />
             </>
         )

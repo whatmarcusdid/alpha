@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getCompanyData, updateCompanyData, CompanyData } from '@/lib/firestore/company';
+import { getUserSubscription } from '@/lib/firestore';
+import { trackSettingsPageViewed } from '@/lib/analytics';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { DestructiveButton } from '@/components/ui/DestructiveButton';
@@ -48,6 +50,7 @@ export default function SettingsPage() {
     message: string;
     show: boolean;
   }>({ type: 'success', message: '', show: false });
+  const [subscription, setSubscription] = useState<{ tier?: string } | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -62,6 +65,11 @@ export default function SettingsPage() {
       if (companyData) {
         setFormData(companyData);
         setOriginalData(companyData);
+      }
+
+      const subscriptionData = await getUserSubscription(user.uid);
+      if (subscriptionData) {
+        setSubscription({ tier: subscriptionData.tier });
       }
 
       try {
@@ -91,6 +99,17 @@ export default function SettingsPage() {
     };
     checkAuth();
   }, [router]);
+
+  // Mixpanel: track settings page view (once per page load)
+  const hasTrackedSettingsRef = useRef(false);
+  useEffect(() => {
+    if (!loading && !hasTrackedSettingsRef.current) {
+      hasTrackedSettingsRef.current = true;
+      trackSettingsPageViewed({
+        user_plan_tier: subscription?.tier,
+      });
+    }
+  }, [loading, subscription?.tier]);
 
   // Focus modal when opened, handle Escape key
   useEffect(() => {
@@ -285,7 +304,7 @@ export default function SettingsPage() {
 
   return (
     <main
-      className={`max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 ${hasSettingsChanges ? 'pb-24 lg:pb-24' : ''}`}
+      className={`max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-[108px] ${hasSettingsChanges ? 'pb-24 lg:pb-24' : ''}`}
     >
       <h1 className="text-3xl font-bold text-[#232521] mb-8">Settings</h1>
       
