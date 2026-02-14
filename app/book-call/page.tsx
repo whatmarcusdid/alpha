@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z, ZodIssue } from "zod";
 import { BookingLayout } from "@/components/layout/booking-layout";
@@ -28,7 +28,7 @@ const bookingIntakeSchema = z.object({
 
 type BookingIntakeData = z.infer<typeof bookingIntakeSchema>;
 
-export default function BookCallPage() {
+function BookCallContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -412,5 +412,21 @@ export default function BookCallPage() {
       </p>
       </BookingCard>
     </BookingLayout>
+  );
+}
+
+export default function BookCallPage() {
+  return (
+    <Suspense fallback={
+      <BookingLayout>
+        <BookingCard>
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B4A41]" />
+          </div>
+        </BookingCard>
+      </BookingLayout>
+    }>
+      <BookCallContent />
+    </Suspense>
   );
 }
