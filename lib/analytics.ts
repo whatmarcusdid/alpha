@@ -224,3 +224,32 @@ export function trackGamePlanCallConfirmationViewed(props?: AnalyticsBasePropert
   if (typeof window === 'undefined' || !mixpanel) return;
   mixpanel.track('GamePlanCall_Confirmation_Viewed', withBaseProps(props, { booking_flow_type: props?.booking_flow_type }));
 }
+
+// =============================================================================
+// GENERIC & PASSWORD TRACKING
+// =============================================================================
+
+/** Generic track event function */
+export function trackEvent(eventName: string, properties?: Record<string, unknown>): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  mixpanel.track(eventName, properties || {});
+}
+
+/** Password reset: user requested reset (email not included for privacy) */
+export function trackPasswordResetRequested(_properties?: { email?: string } | string): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  mixpanel.track('Password_Reset_Requested', {});
+}
+
+/** Password reset: email sent successfully */
+export function trackPasswordResetEmailSent(properties?: Record<string, unknown>): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  mixpanel.track('Password_Reset_Email_Sent', properties || {});
+}
+
+/** Password reset: request failed */
+export function trackPasswordResetFailed(properties?: { error_type?: string } | string): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  const props = typeof properties === 'string' ? { error_type: properties } : (properties || {});
+  mixpanel.track('Password_Reset_Failed', props);
+}
