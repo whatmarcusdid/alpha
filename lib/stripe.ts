@@ -8,7 +8,7 @@ export const PRICING = {
   essential: {
     name: 'Essential',
     annual: 899,
-    stripePriceId: 'price_1So9MuPTDVjQnuCnpaIYQQtA',
+    stripePriceId: 'price_1S8hrpAFl7pIsUOsWA9XFhQJ',
     features: [
       'Ongoing Security Monitoring & Backups',
       '4 Annual support hours',
@@ -23,7 +23,7 @@ export const PRICING = {
   advanced: {
     name: 'Advanced',
     annual: 1799,
-    stripePriceId: 'price_1So9NMPTDVjQnuCnLeL0VrEW',
+    stripePriceId: 'price_1SlR6lAFl7pIsUOs2C9HqP3f',
     features: [
       'Ongoing Security Monitoring & Backups',
       '8 Annual support hours',
@@ -38,7 +38,7 @@ export const PRICING = {
   premium: {
     name: 'Premium',
     annual: 2999,
-    stripePriceId: 'price_1So9NkPTDVjQnuCn8f6PywGQ',
+    stripePriceId: 'price_1SlR6lAFl7pIsUOssc19PMYR',
     features: [
       'Ongoing Security Monitoring & Backups',
       '20 Annual support hours',

@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className="bg-[#F7F6F1]">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <AuthProvider>
           {children}

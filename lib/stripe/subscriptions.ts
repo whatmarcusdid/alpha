@@ -2,9 +2,9 @@
 import { db } from '@/lib/firebase';
 import { doc, collection, onSnapshot, getDoc } from 'firebase/firestore';
 
-export const ESSENTIAL_ANNUAL = 'price_1SlRWtPTDVjQnuCna5gO5flD';
-export const ADVANCED_ANNUAL = 'price_1SlRXePTDVjQnuCnoZ3hUSSU';
-export const PREMIUM_ANNUAL = 'price_1SlRXePTDVjQnuCn0TzxnI4Z';
+export const ESSENTIAL_ANNUAL = 'price_1S8hrpAFl7pIsUOsWA9XFhQJ';
+export const ADVANCED_ANNUAL = 'price_1SlR6lAFl7pIsUOs2C9HqP3f';
+export const PREMIUM_ANNUAL = 'price_1SlR6lAFl7pIsUOssc19PMYR';
 export const SAFETY_NET_ANNUAL = 'price_1SlRYNPTDVjQnuCnm9lCoiQT';
 
 export interface Subscription {

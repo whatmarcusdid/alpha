@@ -4,9 +4,9 @@ import { validateRequestBody, checkoutSchema } from '@/lib/validation';
 
 // Map tier names to Stripe Price IDs
 const PRICE_IDS = {
-  essential: 'price_1So9MuPTDVjQnuCnpaIYQQtA',
-  advanced: 'price_1So9NMPTDVjQnuCnLeL0VrEW',
-  premium: 'price_1So9NkPTDVjQnuCn8f6PywGQ',
+  essential: 'price_1S8hrpAFl7pIsUOsWA9XFhQJ',
+  advanced: 'price_1SlR6lAFl7pIsUOs2C9HqP3f',
+  premium: 'price_1SlR6lAFl7pIsUOssc19PMYR',
   'safety-net': 'price_1SlRYNPTDVjQnuCnm9lCoiQT',
 } as const;
 
