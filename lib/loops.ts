@@ -19,10 +19,14 @@ export interface LoopsEmailResult {
 }
 
 export interface PaymentConfirmedData {
-  firstName: string;
-  planTier: string; // "Essential", "Advanced", "Premium"
-  amountPaid: string; // "$539.00" (pre-formatted)
-  billingCycle: string; // "Annual", "Quarterly", "Monthly"
+  amount: string;
+  receipt_number: string;
+  invoice_number: string;
+  payment_method: string;
+  total_amount: string;
+  paid_amount: string;
+  invoiceUrl: string;
+  receiptUrl: string;
 }
 
 export interface DashboardReadyData {
@@ -84,10 +88,14 @@ export async function sendPaymentConfirmedEmail(
   data: PaymentConfirmedData
 ): Promise<LoopsEmailResult> {
   return sendLoopsEmail(PAYMENT_CONFIRMED_TEMPLATE_ID, email, {
-    firstName: data.firstName,
-    planTier: data.planTier,
-    amountPaid: data.amountPaid,
-    billingCycle: data.billingCycle,
+    amount: data.amount,
+    receipt_number: data.receipt_number,
+    invoice_number: data.invoice_number,
+    payment_method: data.payment_method,
+    total_amount: data.total_amount,
+    paid_amount: data.paid_amount,
+    invoiceUrl: data.invoiceUrl,
+    receiptUrl: data.receiptUrl,
   });
 }
 
@@ -122,4 +130,95 @@ export async function sendPasswordResetEmail(
     resetUrl: data.resetUrl,
     firstName: data.firstName ?? '',
   });
+}
+
+/**
+ * Sends the payment failed transactional email.
+ * Uses LOOPS_PAYMENT_FAILED_TEMPLATE_ID env var.
+ */
+export async function sendPaymentFailedEmail(
+  email: string,
+  data: {
+    total_amount: string;
+    attempted_date: string;
+    card_brand: string;
+    card_last_4: string;
+    plan_name: string;
+    updatePaymentUrl: string;
+  }
+): Promise<LoopsEmailResult> {
+  const templateId = process.env.LOOPS_PAYMENT_FAILED_TEMPLATE_ID;
+  if (!templateId) {
+    console.warn('[Loops] LOOPS_PAYMENT_FAILED_TEMPLATE_ID not set - skipping payment failed email');
+    return { success: false, error: 'LOOPS_PAYMENT_FAILED_TEMPLATE_ID not configured' };
+  }
+  return sendLoopsEmail(templateId, email, data);
+}
+
+/**
+ * Sends the plan change confirmation email.
+ * Uses LOOPS_PLAN_CHANGE_TEMPLATE_ID env var.
+ */
+export async function sendPlanChangeEmail(
+  email: string,
+  data: {
+    previous_plan_name: string;
+    new_plan_name: string;
+    effective_date: string;
+    new_amount: string;
+    billing_interval: string;
+    new_support_hours: string;
+    new_maintenance_hours: string;
+    customerPortalUrl: string;
+  }
+): Promise<LoopsEmailResult> {
+  const templateId = process.env.LOOPS_PLAN_CHANGE_TEMPLATE_ID;
+  if (!templateId) {
+    console.warn('[Loops] LOOPS_PLAN_CHANGE_TEMPLATE_ID not set - skipping plan change email');
+    return { success: false, error: 'LOOPS_PLAN_CHANGE_TEMPLATE_ID not configured' };
+  }
+  return sendLoopsEmail(templateId, email, data);
+}
+
+/**
+ * Sends the subscription canceled email.
+ * Uses LOOPS_SUBSCRIPTION_CANCELED_TEMPLATE_ID env var.
+ */
+export async function sendSubscriptionCanceledEmail(
+  email: string,
+  data: {
+    plan_name: string;
+    cancellation_date: string;
+    end_date: string;
+  }
+): Promise<LoopsEmailResult> {
+  const templateId = process.env.LOOPS_SUBSCRIPTION_CANCELED_TEMPLATE_ID;
+  if (!templateId) {
+    console.warn('[Loops] LOOPS_SUBSCRIPTION_CANCELED_TEMPLATE_ID not set - skipping subscription canceled email');
+    return { success: false, error: 'LOOPS_SUBSCRIPTION_CANCELED_TEMPLATE_ID not configured' };
+  }
+  return sendLoopsEmail(templateId, email, data);
+}
+
+/**
+ * Sends the refund issued email.
+ * Uses LOOPS_REFUND_ISSUED_TEMPLATE_ID env var.
+ */
+export async function sendRefundIssuedEmail(
+  email: string,
+  data: {
+    refund_amount: string;
+    refund_reason: string;
+    original_charge_date: string;
+    refund_date: string;
+    card_brand: string;
+    card_last_4: string;
+  }
+): Promise<LoopsEmailResult> {
+  const templateId = process.env.LOOPS_REFUND_ISSUED_TEMPLATE_ID;
+  if (!templateId) {
+    console.warn('[Loops] LOOPS_REFUND_ISSUED_TEMPLATE_ID not set - skipping refund issued email');
+    return { success: false, error: 'LOOPS_REFUND_ISSUED_TEMPLATE_ID not configured' };
+  }
+  return sendLoopsEmail(templateId, email, data);
 }
