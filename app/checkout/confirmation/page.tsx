@@ -60,7 +60,7 @@ function ConfirmationContent() {
 
       try {
         console.log('Fetching session details from API...');
-        const response = await fetch('/api/stripe/get-session-details', {
+        const response = await fetch('/api/stripe/get-session-amount', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId }),
