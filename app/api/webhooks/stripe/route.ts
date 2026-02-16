@@ -196,9 +196,13 @@ async function handleInvoicePaymentFailed(event: Stripe.Event): Promise<void> {
     };
 
     const customer = fullInvoice.customer as Stripe.Customer | null;
+    if (customer?.deleted) {
+      console.log('Customer was deleted, skipping payment failed email');
+      return;
+    }
     const customerEmail = customer?.email;
     if (!customerEmail) {
-      console.error('[Loops] Invoice payment failed: no customer email for invoice', invoice.id);
+      console.warn(`No email found for customer (invoice ${invoice.id}), skipping payment failed email notification`);
       return;
     }
 
@@ -265,7 +269,14 @@ async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
   const stripe = getStripe();
   try {
     const customer = await stripe.customers.retrieve(subscription.customer as string);
-    if (customer.deleted || !customer.email) return;
+    if (customer.deleted) {
+      console.log('Customer was deleted, skipping plan change email');
+      return;
+    }
+    if (!customer.email) {
+      console.warn(`No email found for customer ${subscription.customer}, skipping plan change email notification`);
+      return;
+    }
 
     const previousProductId = previousAttributes.items?.data?.[0]?.price?.product;
     let previousPlanName = 'Previous Plan';
@@ -318,7 +329,14 @@ async function handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {
 
   try {
     const customer = await stripe.customers.retrieve(subscription.customer as string);
-    if (customer.deleted || !customer.email) return;
+    if (customer.deleted) {
+      console.log('Customer was deleted, skipping subscription canceled email');
+      return;
+    }
+    if (!customer.email) {
+      console.warn(`No email found for customer ${subscription.customer}, skipping subscription canceled email notification`);
+      return;
+    }
 
     const price = subscription.items.data[0]?.price;
     const productId = price && (typeof price.product === 'string' ? price.product : price.product?.id);
@@ -355,7 +373,14 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
     if (!customerId) return;
 
     const customer = await stripe.customers.retrieve(customerId);
-    if (customer.deleted || !customer.email) return;
+    if (customer.deleted) {
+      console.log('Customer was deleted, skipping refund issued email');
+      return;
+    }
+    if (!customer.email) {
+      console.warn(`No email found for customer ${customerId}, skipping refund issued email notification`);
+      return;
+    }
 
     const paymentMethod = charge.payment_method_details?.card;
 
@@ -469,22 +494,20 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
   if (userSnapshot.empty) {
     // No user found - this is expected for "pay first, signup later" flow
     // Store in pending_subscriptions collection for later linking
-    
-    // Get customer email from Stripe
+
+    // Get customer from Stripe
     const customer = await getStripe().customers.retrieve(customerId);
-    const customerEmail = (customer as Stripe.Customer).email;
-    
-    if (!customerEmail) {
-      Sentry.captureMessage('Webhook: No email found for customer', {
-        level: 'error',
-        extra: { customerId, sessionId: session.id },
-      });
-      console.error(`No email found for Stripe customer: ${customerId}`);
+    if (customer.deleted) {
+      console.log('Customer was deleted, skipping checkout processing');
       return;
     }
-    
-    // Normalize email (lowercase, trimmed)
-    const normalizedEmail = customerEmail.toLowerCase().trim();
+
+    const customerEmail = (customer as Stripe.Customer).email;
+    const normalizedEmail = customerEmail ? customerEmail.toLowerCase().trim() : '';
+
+    if (!normalizedEmail) {
+      console.warn(`No email found for customer ${customerId}, skipping email/Notion/Slack (storing with customerId)`);
+    }
     
     // Get subscription details
     const subscriptionId = session.subscription as string;
@@ -501,10 +524,11 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
       };
     }
     
-    // Store in pending_subscriptions collection
-    const pendingRef = adminDb.collection('pending_subscriptions').doc(normalizedEmail);
+    // Store in pending_subscriptions collection (use customerId as doc key when no email)
+    const pendingDocId = normalizedEmail || customerId;
+    const pendingRef = adminDb.collection('pending_subscriptions').doc(pendingDocId);
     await pendingRef.set({
-      email: normalizedEmail,
+      email: normalizedEmail || null,
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       stripeSessionId: session.id,
@@ -516,91 +540,93 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
       status: 'pending', // Will be 'claimed' after user signs up
     });
     
-    console.log(`✅ Stored pending subscription for email: ${normalizedEmail}`);
+    console.log(`✅ Stored pending subscription for ${normalizedEmail ? `email: ${normalizedEmail}` : `customerId: ${customerId}`}`);
 
     // ========================================
-    // GROWTH ENGINE: Post-Payment Automations
+    // GROWTH ENGINE: Post-Payment Automations (skip when no email)
     // ========================================
 
-    const customerName = (customer as Stripe.Customer).name;
-    const firstName = extractFirstName(customerName);
-    const tier = session.metadata?.tier || 'essential';
-    const billingCycle = session.metadata?.billingCycle || 'annual';
-    const amount = session.amount_total ? session.amount_total / 100 : 0;
+    if (normalizedEmail) {
+      const customerName = (customer as Stripe.Customer).name;
+      const firstName = extractFirstName(customerName);
+      const tier = session.metadata?.tier || 'essential';
+      const billingCycle = session.metadata?.billingCycle || 'annual';
+      const amount = session.amount_total ? session.amount_total / 100 : 0;
 
-    const displayTier = tier.charAt(0).toUpperCase() + tier.slice(1);
-    const displayBillingCycle = billingCycle.charAt(0).toUpperCase() + billingCycle.slice(1);
+      const displayTier = tier.charAt(0).toUpperCase() + tier.slice(1);
+      const displayBillingCycle = billingCycle.charAt(0).toUpperCase() + billingCycle.slice(1);
 
-    // 1. Send Payment Confirmed email via Loops (non-blocking)
-    try {
-      const paymentData = await buildPaymentConfirmedData(session, normalizedEmail);
-      const fallbackData = {
-        amount: formatCurrency(session.amount_total || 0),
-        receipt_number: '',
-        invoice_number: '',
-        payment_method: 'Card',
-        total_amount: formatCurrency(session.amount_total || 0),
-        paid_amount: formatCurrency(session.amount_total || 0),
-        invoiceUrl: '',
-        receiptUrl: '',
+      // 1. Send Payment Confirmed email via Loops (non-blocking)
+      try {
+        const paymentData = await buildPaymentConfirmedData(session, normalizedEmail);
+        const fallbackData = {
+          amount: formatCurrency(session.amount_total || 0),
+          receipt_number: '',
+          invoice_number: '',
+          payment_method: 'Card',
+          total_amount: formatCurrency(session.amount_total || 0),
+          paid_amount: formatCurrency(session.amount_total || 0),
+          invoiceUrl: '',
+          receiptUrl: '',
+        };
+        const emailResult = await sendPaymentConfirmedEmail(
+          normalizedEmail,
+          paymentData ?? fallbackData
+        );
+
+        if (emailResult.success) {
+          console.log(`✅ [Loops] Payment confirmed email sent to: ${normalizedEmail}`);
+        } else {
+          console.error(`⚠️ [Loops] Failed to send email: ${emailResult.error}`);
+        }
+      } catch (emailError) {
+        console.error('⚠️ [Loops] Email error (non-blocking):', emailError);
+      }
+
+      // 2. Update Notion lead status (non-blocking)
+      let notionResult: { success: boolean; found: boolean; businessName?: string; pageUrl?: string; error?: string } = {
+        success: false,
+        found: false,
+        businessName: 'Unknown Business',
+        pageUrl: undefined,
       };
-      const emailResult = await sendPaymentConfirmedEmail(
-        normalizedEmail,
-        paymentData ?? fallbackData
-      );
+      try {
+        notionResult = await updateLeadWithPayment({
+          email: normalizedEmail,
+          status: 'Won - Awaiting Signup',
+          paymentAmount: amount,
+          paymentDate: new Date().toISOString(),
+          subscriptionTier: displayTier,
+          billingCycle: displayBillingCycle,
+          stripeCustomerId: customerId,
+        });
 
-      if (emailResult.success) {
-        console.log(`✅ [Loops] Payment confirmed email sent to: ${normalizedEmail}`);
-      } else {
-        console.error(`⚠️ [Loops] Failed to send email: ${emailResult.error}`);
+        if (notionResult.success) {
+          console.log(`✅ [Notion] Updated lead: ${notionResult.businessName}`);
+        } else if (!notionResult.found) {
+          console.log(`ℹ️ [Notion] Lead not found for: ${normalizedEmail} (direct purchase)`);
+        } else {
+          console.error(`⚠️ [Notion] Update failed: ${notionResult.error}`);
+        }
+      } catch (notionError) {
+        console.error('⚠️ [Notion] Error (non-blocking):', notionError);
       }
-    } catch (emailError) {
-      console.error('⚠️ [Loops] Email error (non-blocking):', emailError);
-    }
 
-    // 2. Update Notion lead status (non-blocking)
-    let notionResult: { success: boolean; found: boolean; businessName?: string; pageUrl?: string; error?: string } = {
-      success: false,
-      found: false,
-      businessName: 'Unknown Business',
-      pageUrl: undefined,
-    };
-    try {
-      notionResult = await updateLeadWithPayment({
-        email: normalizedEmail,
-        status: 'Won - Awaiting Signup',
-        paymentAmount: amount,
-        paymentDate: new Date().toISOString(),
-        subscriptionTier: displayTier,
-        billingCycle: displayBillingCycle,
-        stripeCustomerId: customerId,
-      });
-
-      if (notionResult.success) {
-        console.log(`✅ [Notion] Updated lead: ${notionResult.businessName}`);
-      } else if (!notionResult.found) {
-        console.log(`ℹ️ [Notion] Lead not found for: ${normalizedEmail} (direct purchase)`);
-      } else {
-        console.error(`⚠️ [Notion] Update failed: ${notionResult.error}`);
+      // 3. Send Slack notification (non-blocking)
+      try {
+        await sendPaymentSlackNotification({
+          email: normalizedEmail,
+          businessName: notionResult.businessName || 'Unknown Business',
+          tier: displayTier,
+          billingCycle: displayBillingCycle,
+          amount,
+          notionUrl: notionResult.pageUrl,
+          stripeCustomerId: customerId,
+        });
+        console.log(`✅ [Slack] Payment notification sent`);
+      } catch (slackError) {
+        console.error('⚠️ [Slack] Notification error (non-blocking):', slackError);
       }
-    } catch (notionError) {
-      console.error('⚠️ [Notion] Error (non-blocking):', notionError);
-    }
-
-    // 3. Send Slack notification (non-blocking)
-    try {
-      await sendPaymentSlackNotification({
-        email: normalizedEmail,
-        businessName: notionResult.businessName || 'Unknown Business',
-        tier: displayTier,
-        billingCycle: displayBillingCycle,
-        amount,
-        notionUrl: notionResult.pageUrl,
-        stripeCustomerId: customerId,
-      });
-      console.log(`✅ [Slack] Payment notification sent`);
-    } catch (slackError) {
-      console.error('⚠️ [Slack] Notification error (non-blocking):', slackError);
     }
 
     // ========================================
@@ -609,7 +635,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
 
     Sentry.captureMessage('Webhook: Stored pending subscription', {
       level: 'info',
-      extra: { email: normalizedEmail, customerId, subscriptionId },
+      extra: { email: normalizedEmail || undefined, customerId, subscriptionId },
     });
 
     return;
@@ -639,8 +665,15 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
   // ========================================
 
   const customer = await getStripe().customers.retrieve(customerId);
+  if (customer.deleted) {
+    console.log('Customer was deleted, skipping email notification');
+  }
   const customerEmail = (customer as Stripe.Customer).email;
   const normalizedEmail = customerEmail ? customerEmail.toLowerCase().trim() : '';
+
+  if (!normalizedEmail) {
+    console.warn(`No email found for customer ${customerId}, skipping email notification`);
+  }
 
   if (normalizedEmail) {
     const customerName = (customer as Stripe.Customer).name;
