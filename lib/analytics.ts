@@ -38,11 +38,26 @@ if (typeof window !== 'undefined') {
           ignore_dnt: false,
 
           // Session Replay Configuration
-          record_sessions_percent: 100, // Start at 100% for testing, reduce later
-          record_mask_all_text: true, // Mask all text by default (privacy)
-          record_mask_all_inputs: true, // Mask all inputs by default (privacy)
-          record_block_selector: 'img, video', // Block images/videos from replay
-          record_idle_timeout_ms: 1800000, // End replay after 30 min of inactivity
+          record_sessions_percent: 100,
+          record_mask_all_text: false, // Unmask page text for better replay context
+          record_mask_all_inputs: false, // Unmask safe inputs (password/email/tel always masked by Mixpanel)
+          record_unmask_input_selector: [
+            '[name="legalName"]',
+            '[name="websiteUrl"]',
+            '[name="address"]',
+            '[name="address2"]',
+            '[name="city"]',
+            '[name="state"]',
+            '[name="zipCode"]',
+            '[name="businessService"]',
+            '[name="serviceArea"]',
+            'textarea', // Support message textareas
+          ],
+          record_mask_text_selector: ['.user-email', '.customer-email', '.sensitive-data'],
+          record_block_selector: 'img, video, iframe[src*="stripe"]', // Block Stripe iframes and payment elements
+          record_idle_timeout_ms: 30000, // End replay after 30 sec of inactivity
+          record_max_ms: 1800000, // Max 30 min per session
+          record_collect_fonts: false,
         });
       }
     } catch (error) {
