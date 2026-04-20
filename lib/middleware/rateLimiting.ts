@@ -110,6 +110,15 @@ export const deliveryScoutLimiter = redis
     })
   : null;
 
+// Genie Site Audit (public): 20 requests per hour per IP
+export const auditRateLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(20, '1 h'),
+      prefix: 'audit_ip',
+    })
+  : null;
+
 /**
  * Extract client identifier (IP address) from request
  * 

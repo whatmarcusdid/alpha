@@ -78,3 +78,69 @@ export async function addProspectToNotion(formData: {
     return { success: false, error: message };
   }
 }
+
+export async function createAuditLeadRecord(params: {
+  firstName: string;
+  businessName: string;
+  email: string;
+  websiteUrl: string;
+  speedGrade: string;
+  securityGrade: string;
+  uxGrade: string;
+  uxScore: number;
+  uxPillarScores: { understand: number; see: number; know: number };
+  source: 'public_audit';
+}): Promise<void> {
+  const apiKey = process.env.NOTION_API_KEY;
+  if (!apiKey) {
+    console.warn('[Notion] NOTION_API_KEY not set - skipping audit lead sync');
+    return;
+  }
+
+  const notion = new Client({ auth: apiKey });
+  const { understand, see, know } = params.uxPillarScores;
+  const uxDetail = `U:${understand} S:${see} K:${know} Score:${params.uxScore}/9`;
+
+  try {
+    await notion.pages.create({
+      parent: {
+        type: 'data_source_id',
+        data_source_id: DATA_SOURCE_ID,
+      },
+      properties: {
+        'Company Name': {
+          title: [{ text: { content: params.businessName } }],
+        },
+        'First Name': {
+          rich_text: [{ text: { content: params.firstName } }],
+        },
+        'Email': {
+          email: params.email,
+        },
+        'Website URL': {
+          url: params.websiteUrl,
+        },
+        'Speed Grade': {
+          rich_text: [{ text: { content: params.speedGrade } }],
+        },
+        'Security Grade': {
+          rich_text: [{ text: { content: params.securityGrade } }],
+        },
+        'UX Grade': {
+          rich_text: [{ text: { content: params.uxGrade } }],
+        },
+        'UX Detail': {
+          rich_text: [{ text: { content: uxDetail } }],
+        },
+        'Source': {
+          rich_text: [{ text: { content: 'Genie Site Audit' } }],
+        },
+      },
+    });
+
+    console.log('[Notion] Audit lead added to Sales Pipeline:', params.email);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Notion] Error creating audit lead record:', message);
+  }
+}

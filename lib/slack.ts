@@ -141,3 +141,77 @@ export async function sendBookingCompletedNotification(
     console.log('[Slack] Booking notification sent to #tsg-sales:', data.email);
   }
 }
+
+// --- Genie Site Audit Lead Notification ---
+
+export async function sendAuditLeadNotification(params: {
+  firstName: string;
+  businessName: string;
+  email: string;
+  websiteUrl: string;
+  speedGrade: string;
+  securityGrade: string;
+  uxGrade: string;
+  uxPillarScores: { understand: number; see: number; know: number };
+}): Promise<void> {
+  const webhookUrl = process.env.SLACK_SALES_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.warn('[Slack] SLACK_SALES_WEBHOOK_URL not configured, skipping');
+    return;
+  }
+
+  const displayUrl = params.websiteUrl.startsWith('http')
+    ? params.websiteUrl
+    : `https://${params.websiteUrl}`;
+
+  const { understand, see, know } = params.uxPillarScores;
+
+  const payload: SlackWebhookPayload = {
+    text: `🔍 New Audit Lead: ${params.businessName} — ${params.email}`,
+    blocks: [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: '🔍 New Audit Lead',
+          emoji: true,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*${params.businessName}* (${params.firstName})\n${params.email}\n${displayUrl}`,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `Speed: *${params.speedGrade}* | Security: *${params.securityGrade}* | UX: *${params.uxGrade}* (U:${understand} S:${see} K:${know})`,
+        },
+      },
+    ],
+  };
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!response.ok) {
+      console.error(
+        '[Slack] Sales webhook error:',
+        response.status,
+        await response.text()
+      );
+      return;
+    }
+    console.log('[Slack] Audit lead notification sent:', params.email);
+  } catch (error) {
+    console.error('[Slack] Audit lead notification error:', error);
+  }
+}

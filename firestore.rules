@@ -9,6 +9,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // auditLeads — server-only via Admin SDK
+    // No client reads or writes permitted
+    match /auditLeads/{auditId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       // This rule allows anyone with your database reference to view, edit,
       // and delete all data in your database. It is useful for getting

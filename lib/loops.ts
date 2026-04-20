@@ -222,3 +222,59 @@ export async function sendRefundIssuedEmail(
   }
   return sendLoopsEmail(templateId, email, data);
 }
+
+/**
+ * Sends the Genie Site Audit PDF as a Loops transactional email with attachment.
+ * Uses LOOPS_AUDIT_REPORT_TEMPLATE_ID. Never throws; logs and returns on failure.
+ */
+export async function sendAuditReportEmail(params: {
+  email: string;
+  firstName: string;
+  businessName: string;
+  pdfBuffer: Buffer;
+}): Promise<void> {
+  const apiKey = process.env.LOOPS_API_KEY;
+  const templateId = process.env.LOOPS_AUDIT_REPORT_TEMPLATE_ID;
+  if (!apiKey || !templateId) {
+    console.warn(
+      '[Loops] LOOPS_API_KEY or LOOPS_AUDIT_REPORT_TEMPLATE_ID not set - skipping audit report email'
+    );
+    return;
+  }
+
+  const base64PdfData = params.pdfBuffer.toString('base64');
+  const filename = `${params.businessName.replace(/[^a-z0-9]/gi, '-')}-Site-Audit.pdf`;
+
+  try {
+    const response = await fetch(LOOPS_API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        transactionalId: templateId,
+        email: params.email,
+        dataVariables: {
+          firstName: params.firstName,
+          businessName: params.businessName,
+        },
+        attachments: [
+          {
+            filename,
+            contentType: 'application/pdf',
+            data: base64PdfData,
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!response.ok) {
+      console.error('Loops', response.status);
+      return;
+    }
+  } catch (error) {
+    console.error('Loops audit report email failed:', error);
+  }
+}

@@ -4,6 +4,8 @@ interface PrimaryButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   href?: string;
+  target?: string;
+  rel?: string;
   disabled?: boolean;
   className?: string;
   type?: 'button' | 'submit' | 'reset';
@@ -13,6 +15,8 @@ export function PrimaryButton({
   children,
   onClick,
   href,
+  target,
+  rel,
   disabled = false,
   className = '',
   type = 'button',
@@ -25,7 +29,7 @@ export function PrimaryButton({
   // If href is provided, render as Link
   if (href && !disabled) {
     return (
-      <Link href={href} className={combinedStyles}>
+      <Link href={href} className={combinedStyles} target={target} rel={rel}>
         {children}
       </Link>
     );
