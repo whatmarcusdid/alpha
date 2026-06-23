@@ -1,119 +1,83 @@
 import { describe, expect, it } from 'vitest';
 
 import { gradeSecurity } from '@/lib/grading/gradeSecurity';
-
-const clean = {
-  safeBrowsingFlagged: false,
-  sucuriFlagged: false,
-  missingHeadersCount: 0,
-  outdatedCms: false,
-};
+import type { SecurityFlag } from '@/lib/types/audit';
 
 describe('gradeSecurity', () => {
-  describe('F override when Safe Browsing or Sucuri flags a site', () => {
-    it('returns F when Safe Browsing flagged and other signals are clean', () => {
-      expect(
-        gradeSecurity({
-          ...clean,
-          safeBrowsingFlagged: true,
-        }).letterGrade
-      ).toBe('F');
-    });
+  describe('tier1 flags', () => {
+    it('returns F and tier1 when any tier1 flag is present', () => {
+      const tier1Flags: SecurityFlag[] = [
+        'malware_detected',
+        'blacklisted',
+        'phishing_detected',
+        'unwanted_software_detected',
+        'no_https',
+      ];
 
-    it('returns F when Sucuri flagged and other signals are clean', () => {
-      expect(
-        gradeSecurity({
-          ...clean,
-          sucuriFlagged: true,
-        }).letterGrade
-      ).toBe('F');
-    });
-
-    it('returns F and includes both vendor messages when both are flagged', () => {
-      const { letterGrade, flags } = gradeSecurity({
-        ...clean,
-        safeBrowsingFlagged: true,
-        sucuriFlagged: true,
-      });
-      expect(letterGrade).toBe('F');
-      expect(
-        flags.some((f) => f.includes('Google has flagged this site'))
-      ).toBe(true);
-      expect(
-        flags.some((f) => f.includes('security blacklist'))
-      ).toBe(true);
+      for (const flag of tier1Flags) {
+        expect(gradeSecurity([flag])).toEqual({ grade: 'F', flagTier: 'tier1' });
+      }
     });
   });
 
-  describe('letter grade from computed score (no blacklist flags)', () => {
-    it('returns A when score is 100 (no missing headers, CMS current)', () => {
-      expect(gradeSecurity(clean).letterGrade).toBe('A');
+  describe('tier2 flags', () => {
+    it('returns D and tier2 when only invalid_ssl is present', () => {
+      expect(gradeSecurity(['invalid_ssl'])).toEqual({
+        grade: 'D',
+        flagTier: 'tier2',
+      });
     });
 
-    it('returns B when score is 80 (2 missing headers)', () => {
+    it('returns F and tier2 when invalid_ssl plus 4+ advisory flags', () => {
       expect(
-        gradeSecurity({ ...clean, missingHeadersCount: 2 }).letterGrade
-      ).toBe('B');
-    });
-
-    it('returns C when score is 50 (3 missing headers + outdated CMS)', () => {
-      expect(
-        gradeSecurity({
-          ...clean,
-          missingHeadersCount: 3,
-          outdatedCms: true,
-        }).letterGrade
-      ).toBe('C');
-    });
-
-    it('returns D when score is 30 (5 missing headers + outdated CMS)', () => {
-      expect(
-        gradeSecurity({
-          ...clean,
-          missingHeadersCount: 5,
-          outdatedCms: true,
-        }).letterGrade
-      ).toBe('D');
-    });
-
-    it('returns F when score is 20 (6 missing headers + outdated CMS)', () => {
-      expect(
-        gradeSecurity({
-          ...clean,
-          missingHeadersCount: 6,
-          outdatedCms: true,
-        }).letterGrade
-      ).toBe('F');
+        gradeSecurity([
+          'invalid_ssl',
+          'missing_security_headers',
+          'outdated_cms',
+          'http_redirect_missing',
+          'mixed_content',
+        ])
+      ).toEqual({ grade: 'F', flagTier: 'tier2' });
     });
   });
 
-  describe('flags array content', () => {
-    it('returns an empty flags array when everything is clean', () => {
-      expect(gradeSecurity(clean).flags).toEqual([]);
+  describe('advisory-only flags', () => {
+    it('returns A and none when no flags', () => {
+      expect(gradeSecurity([])).toEqual({ grade: 'A', flagTier: 'none' });
     });
 
-    it('includes the outdated CMS message when outdatedCms is true', () => {
-      const { flags } = gradeSecurity({ ...clean, outdatedCms: true });
-      expect(
-        flags.some((f) => f.includes('CMS software is out of date'))
-      ).toBe(true);
-    });
-
-    it('includes the missing-headers count when headers are missing', () => {
-      const { flags } = gradeSecurity({ ...clean, missingHeadersCount: 3 });
-      expect(
-        flags.some((f) => f.includes('Missing 3 security header(s)'))
-      ).toBe(true);
-    });
-
-    it('includes the Safe Browsing message when safeBrowsingFlagged is true', () => {
-      const { flags } = gradeSecurity({
-        ...clean,
-        safeBrowsingFlagged: true,
+    it('returns B with one advisory flag', () => {
+      expect(gradeSecurity(['missing_security_headers'])).toEqual({
+        grade: 'B',
+        flagTier: 'advisory',
       });
+    });
+
+    it('returns C with two advisory flags', () => {
       expect(
-        flags.some((f) => f.includes('Google has flagged this site'))
-      ).toBe(true);
+        gradeSecurity(['missing_security_headers', 'outdated_cms'])
+      ).toEqual({ grade: 'C', flagTier: 'advisory' });
+    });
+
+    it('returns D with three advisory flags', () => {
+      expect(
+        gradeSecurity([
+          'missing_security_headers',
+          'outdated_cms',
+          'http_redirect_missing',
+        ])
+      ).toEqual({ grade: 'D', flagTier: 'advisory' });
+    });
+
+    it('returns F with four or more advisory flags', () => {
+      expect(
+        gradeSecurity([
+          'missing_security_headers',
+          'outdated_cms',
+          'http_redirect_missing',
+          'mixed_content',
+        ])
+      ).toEqual({ grade: 'F', flagTier: 'advisory' });
     });
   });
 });

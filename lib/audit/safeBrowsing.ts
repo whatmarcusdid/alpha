@@ -1,8 +1,5 @@
-import type { SecurityGradeInput } from '@/lib/grading';
-
 /**
- * Safe Browsing lookup; combine `flagged` with Sucuri output to build
- * {@link SecurityGradeInput} in the audit route.
+ * Safe Browsing lookup; combine `flagged` with Sucuri output in the audit route.
  */
 
 export type SafeBrowsingResult =

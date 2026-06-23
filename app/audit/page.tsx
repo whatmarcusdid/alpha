@@ -1,13 +1,15 @@
 'use client';
 
-import { Inter, Schibsted_Grotesk } from 'next/font/google';
+import { Inter } from 'next/font/google';
+import { ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+
 import { AuditLoadingAnimation } from '@/components/audit/AuditLoadingAnimation';
 import { AuditRateLimitOverlay } from '@/components/audit/AuditRateLimitOverlay';
 import { AuditResults } from '@/components/audit/AuditResults';
 import { Input } from '@/components/ui/input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { AuditResult } from '@/lib/types/audit';
-import { useState } from 'react';
 
 type AuditView = 'form' | 'loading' | 'results';
 
@@ -39,15 +41,9 @@ function isAuditSuccessPayload(
   return data !== null && typeof data === 'object';
 }
 
-const interKicker = Inter({
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['600'],
-  display: 'swap',
-});
-
-const schibstedGroteskGrades = Schibsted_Grotesk({
-  subsets: ['latin'],
-  weight: ['800'],
+  weight: ['400', '600'],
   display: 'swap',
 });
 
@@ -151,7 +147,7 @@ export default function AuditPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className={`flex min-h-screen flex-col ${view === 'form' ? 'bg-[#E5E7EB]' : 'bg-white'}`}>
       {showRateLimitOverlay && (
         <>
           <div className="fixed inset-0 z-30 bg-white/60 backdrop-blur-sm backdrop-grayscale" />
@@ -163,37 +159,34 @@ export default function AuditPage() {
           />
         </>
       )}
-      <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center border-b border-gray-100 bg-white px-6">
-        <div className="flex items-center">
-          <img
-            src="/images/tsg-logo.svg"
-            alt="TradeSiteGenie"
-            width={204}
-            height={31}
-            className="h-8 w-auto shrink-0 object-contain object-left"
-          />
-        </div>
-      </header>
 
       {view === 'form' && (
-        <div className="flex h-[calc(100vh-3.5rem)] min-h-0 flex-1 flex-col overflow-hidden md:flex-row md:pr-[50vw]">
-          <div className="w-full h-full min-h-0 overflow-y-auto px-8 py-12 md:px-16 flex flex-col items-center">
-            <div className="w-full max-w-[520px]">
-              <p
-                className={`${interKicker.className} mb-4 bg-[linear-gradient(270deg,#0284C7_0%,#4F46E5_100%)] bg-clip-text text-[18px] font-semibold uppercase leading-[150%] text-transparent [-webkit-text-fill-color:transparent]`}
-              >
-                GENIE SITE AUDIT
-              </p>
-              <h1 className="mb-3 text-5xl font-extrabold leading-tight tracking-tight text-gray-900">
-                Is your website helping or hurting your business?
-              </h1>
-              <p className="mb-8 text-lg leading-relaxed text-gray-500">
-                Get your Speed, Security + UX grade in 60 seconds.
-              </p>
+        <div className={`${inter.className} flex flex-1 flex-col px-8 pb-[80px] pt-10 md:px-16 lg:px-[140px]`}>
+          <div className="mb-[120px] flex items-center gap-2">
+            <ShieldCheck className="size-6 shrink-0 text-[#1d4ed8]" aria-hidden />
+            <span className="text-[25px] font-normal uppercase leading-[1.5] text-[#030712]">
+              Book Service
+            </span>
+          </div>
 
-              <div className="mb-10 flex items-center gap-3">
+          <div className="mx-auto flex w-full max-w-[1160px] flex-col justify-start gap-16 lg:flex-row lg:items-start">
+            <div className="flex w-full flex-col gap-10 lg:flex-1">
+              <div className="flex flex-col gap-3">
+                <p className="text-base font-semibold uppercase leading-[1.5] text-[#1d4ed8]">
+                  Site Audit
+                </p>
+                <h1 className="text-[40px] font-extrabold leading-[1.2] tracking-[-0.4px] text-[#172554] md:text-[48px] md:tracking-[-0.48px] lg:text-[60px] lg:tracking-[-0.6px]">
+                  Is your website helping or hurting your business?
+                </h1>
+                <p className="text-base leading-[1.5] text-[#52525b] lg:text-lg">
+                  Get your Speed, Security + SEO & AI Visibility grade in 60
+                  seconds.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4">
                 {avatarFailed ? (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-600">
+                  <div className="flex size-16 shrink-0 items-center justify-center rounded-full border-[3px] border-white bg-gray-200 text-sm font-semibold text-gray-600 shadow-[6px_6px_16px_rgba(85,85,85,0.1)]">
                     MW
                   </div>
                 ) : (
@@ -202,16 +195,16 @@ export default function AuditPage() {
                     alt=""
                     width={64}
                     height={64}
-                    className="h-16 w-16 rounded-full object-cover"
+                    className="size-16 shrink-0 rounded-full border-[3px] border-white object-cover shadow-[6px_6px_16px_rgba(85,85,85,0.1)]"
                     onError={() => setAvatarFailed(true)}
                   />
                 )}
-                <div className="flex flex-col">
-                  <span className="text-lg font-bold leading-relaxed text-gray-900">
+                <div className="flex min-w-0 flex-col gap-2">
+                  <span className="text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#030712] md:text-xl md:tracking-[-0.2px]">
                     Marcus White
                   </span>
-                  <span className="text-base leading-relaxed text-gray-500">
-                    Founder, TradeSiteGenie
+                  <span className="text-base leading-[1.5] text-[#52525b] lg:text-lg">
+                    Founder, Book Service
                   </span>
                 </div>
               </div>
@@ -219,12 +212,12 @@ export default function AuditPage() {
 
             <form
               onSubmit={handleSubmit}
-              className="flex w-full max-w-[520px] flex-col gap-5"
+              className="flex w-full shrink-0 flex-col gap-5 lg:w-[480px]"
             >
               <div>
                 <label
                   htmlFor="audit-firstName"
-                  className="mb-1 block text-sm font-semibold leading-relaxed tracking-tight text-gray-700"
+                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]"
                 >
                   First name
                 </label>
@@ -237,12 +230,13 @@ export default function AuditPage() {
                   onChange={(e) =>
                     setFormValues((v) => ({ ...v, firstName: e.target.value }))
                   }
+                  className="rounded-md border-[rgba(111,121,122,0.4)] px-5"
                 />
               </div>
               <div>
                 <label
                   htmlFor="audit-businessName"
-                  className="mb-1 block text-sm font-semibold leading-relaxed tracking-tight text-gray-700"
+                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]"
                 >
                   Business name
                 </label>
@@ -255,12 +249,13 @@ export default function AuditPage() {
                   onChange={(e) =>
                     setFormValues((v) => ({ ...v, businessName: e.target.value }))
                   }
+                  className="rounded-md border-[rgba(111,121,122,0.4)] px-5"
                 />
               </div>
               <div>
                 <label
                   htmlFor="audit-email"
-                  className="mb-1 block text-sm font-semibold leading-relaxed tracking-tight text-gray-700"
+                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]"
                 >
                   Email address
                 </label>
@@ -273,12 +268,13 @@ export default function AuditPage() {
                   onChange={(e) =>
                     setFormValues((v) => ({ ...v, email: e.target.value }))
                   }
+                  className="rounded-md border-[rgba(111,121,122,0.4)] px-5"
                 />
               </div>
               <div>
                 <label
                   htmlFor="audit-websiteUrl"
-                  className="mb-1 block text-sm font-semibold leading-relaxed tracking-tight text-gray-700"
+                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]"
                 >
                   Website URL
                 </label>
@@ -291,11 +287,12 @@ export default function AuditPage() {
                   onChange={(e) =>
                     setFormValues((v) => ({ ...v, websiteUrl: e.target.value }))
                   }
+                  className="rounded-md border-[rgba(111,121,122,0.4)] px-5"
                 />
               </div>
 
               {error ? (
-                <p className="mt-1 text-sm text-red-500" role="alert">
+                <p className="text-sm text-red-500" role="alert">
                   {error}
                 </p>
               ) : null}
@@ -303,137 +300,22 @@ export default function AuditPage() {
               <PrimaryButton
                 type="submit"
                 disabled={submitting}
-                className="mt-6 w-full min-h-[40px] py-4 text-sm font-bold uppercase tracking-widest"
+                className="min-h-[40px] w-full rounded-lg !bg-[#1d4ed8] px-6 py-2.5 text-base font-semibold uppercase !text-white hover:!bg-[#1e40af]"
               >
-                RUN MY FREE AUDIT
+                Run My Free Audit
               </PrimaryButton>
 
-              <p className="mx-auto mt-3 w-full max-w-[520px] text-center text-[15px] font-medium leading-relaxed text-gray-400">
-                No login required. Results in under 60 seconds. Your PDF report will be
-                emailed to you automatically.
+              <p className="text-center text-sm leading-[1.5] tracking-[-0.14px] text-[#52525b]">
+                No login required. Results in under 60 seconds. Your PDF report
+                will be emailed to you automatically.
               </p>
             </form>
-          </div>
-
-          <div
-            className="hidden md:flex md:w-1/2 fixed top-[3.5rem] right-0 h-[calc(100vh-3.5rem)] overflow-hidden justify-start items-start"
-            style={{ background: '#F5F0E4' }}
-            aria-hidden
-          >
-            {/* Glow 1 - bottom left */}
-            <div className="absolute pointer-events-none" style={{
-              width: '32rem', height: '32rem',
-              left: '-8rem', bottom: '-8rem',
-              borderRadius: '999px',
-              filter: 'blur(70px)',
-              zIndex: 0,
-              background: 'radial-gradient(circle, rgba(125, 117, 255, 0.28) 0%, rgba(125, 117, 255, 0) 70%)'
-            }} />
-
-            {/* Glow 2 - top right */}
-            <div className="absolute pointer-events-none" style={{
-              width: '24rem', height: '24rem',
-              right: '2rem', top: '3rem',
-              borderRadius: '999px',
-              filter: 'blur(70px)',
-              zIndex: 0,
-              background: 'radial-gradient(circle, rgba(134, 200, 255, 0.22) 0%, rgba(134, 200, 255, 0) 72%)'
-            }} />
-
-            {/* 3D Object */}
-            <img
-              src="/images/3D_Object.svg"
-              alt=""
-              aria-hidden="true"
-              className="absolute pointer-events-none"
-              style={{
-                width: '125%',
-                maxWidth: 'none',
-                left: '-10%',
-                top: '50%',
-                transform: 'translateY(-50%) rotate(-15deg)',
-                zIndex: 1,
-                opacity: 0.9,
-                position: 'absolute'
-              }}
-            />
-
-            {/* Veil - softens object behind card */}
-            <div className="absolute inset-0 pointer-events-none" style={{
-              zIndex: 2,
-              background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.18), transparent 60%)'
-            }} />
-
-            {/* Glass card */}
-            <div
-              className="absolute flex flex-col items-center justify-center gap-6 rounded-2xl p-8"
-              style={{
-                top: '50%', left: '50%',
-                transform: 'translate(-42%, -44%)',
-                width: '100%',
-                maxWidth: '520px',
-                zIndex: 3,
-                border: '1px solid rgba(255,255,255,0.50)',
-                background: 'rgba(0,0,0,0)',
-                backdropFilter: 'blur(20px) saturate(150%)',
-                WebkitBackdropFilter: 'blur(20px) saturate(150%)',
-                boxShadow: '0 8px 32px rgba(15,23,42,0.08)'
-              }}
-            >
-              <div className="flex w-full items-start justify-between gap-4">
-                <div className="flex min-w-0 flex-col gap-2">
-                  <span className="text-2xl font-extrabold leading-tight tracking-tight text-gray-900">
-                    Mike&apos;s Pressure Washing
-                  </span>
-                  <p className="text-lg leading-relaxed text-gray-600">
-                    mikespressurewashing.com
-                  </p>
-                </div>
-                <span className="shrink-0 text-sm text-gray-500">Apr 2</span>
-              </div>
-
-              <div className="grid w-full grid-cols-3 gap-4">
-                <div className="rounded-lg bg-white/50 p-3 text-center shadow-sm ring-1 ring-white/60">
-                  <div className={`${schibstedGroteskGrades.className} text-[80px] font-extrabold leading-none text-amber-500`}>C</div>
-                  <div className="mt-1 text-left text-base leading-relaxed text-gray-500">SPEED</div>
-                  <div className="mt-0.5 text-left text-xs text-gray-500">Score: 48/100</div>
-                </div>
-                <div className="rounded-lg bg-white/50 p-3 text-center shadow-sm ring-1 ring-white/60">
-                  <div className={`${schibstedGroteskGrades.className} text-[80px] font-extrabold leading-none text-green-600`}>A</div>
-                  <div className="mt-1 text-left text-base leading-relaxed text-gray-500">SECURITY</div>
-                  <div className="mt-0.5 text-left text-xs text-gray-500">No flags</div>
-                </div>
-                <div className="rounded-lg bg-white/50 p-3 text-center shadow-sm ring-1 ring-white/60">
-                  <div className={`${schibstedGroteskGrades.className} text-[80px] font-extrabold leading-none text-amber-500`}>C</div>
-                  <div className="mt-1 text-left text-base leading-relaxed text-gray-500">USER EXPERIENCE</div>
-                  <div className="mt-0.5 text-left text-xs text-gray-500">No flags</div>
-                </div>
-              </div>
-
-              <div className="flex w-full flex-col gap-2">
-                <p className="text-lg font-bold text-gray-800">Top issues found</p>
-                <ul className="flex flex-col gap-1.5">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-400" />
-                    <span className="text-[15px] font-medium leading-tight tracking-tight text-gray-600">Images not compressed (LCP: 4.2s)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-400" />
-                    <span className="text-[15px] font-medium leading-tight tracking-tight text-gray-600">No caching policy on static assets</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-400" />
-                    <span className="text-[15px] font-medium leading-tight tracking-tight text-gray-600">Render-blocking JavaScript detected</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
           </div>
         </div>
       )}
 
       {view === 'loading' && (
-        <div className="flex min-h-[calc(100vh-3.5rem)] flex-1 flex-col bg-white">
+        <div className="flex min-h-screen flex-1 flex-col bg-white">
           <AuditLoadingAnimation
             websiteUrl={formValues.websiteUrl}
             apiComplete={apiComplete}
@@ -441,7 +323,6 @@ export default function AuditPage() {
           />
         </div>
       )}
-
     </div>
   );
 }

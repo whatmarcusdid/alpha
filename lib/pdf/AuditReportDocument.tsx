@@ -1,27 +1,34 @@
 import {
   Document,
+  Link,
   Page,
   StyleSheet,
   Text,
   View,
 } from '@react-pdf/renderer';
 
+import type { Grade, SecurityFlag, SecurityFlagTier } from '@/lib/types/audit';
+import {
+  SEO_SIGNAL_DISPLAY_NAMES,
+  type SeoFailingSignalKey,
+} from '@/lib/types/seoSignals';
+
 export type AuditReportData = {
   businessName: string;
   websiteUrl: string;
   auditDate: string;
-  speedGrade: string;
+  speedGrade: Grade | 'N/A';
   speedScore: number;
   speedTopIssues: string[];
   speedNarrative: string;
-  securityGrade: string;
-  securityFlags: string[];
+  securityGrade: Grade | 'N/A';
+  securityFlags: SecurityFlag[];
+  securityFlagTier: SecurityFlagTier;
   securityNarrative: string;
-  uxGrade: string;
-  uxScore: number;
-  uxPillarScores: { understand: number; see: number; know: number };
-  uxFailingSignals: string[];
-  uxNarrative: string;
+  seoGrade: Grade | 'N/A';
+  seoScore: number;
+  seoFailingSignals: SeoFailingSignalKey[];
+  seoNarrative: string;
   pricingUrl: string;
 };
 
@@ -145,10 +152,10 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     marginBottom: 16,
   },
-  planLine: {
+  ctaLink: {
     fontSize: 11,
-    marginBottom: 6,
-    color: '#1f2937',
+    color: '#1B4A41',
+    textDecoration: 'underline',
   },
   backFooter: {
     marginTop: 24,
@@ -179,8 +186,8 @@ function GradeSummaryBlock({
 }
 
 export function AuditReportDocument({ data }: AuditReportDocumentProps) {
-  const { understand, see, know } = data.uxPillarScores;
-  const isUxNa = data.uxGrade === 'N/A';
+  const isSeoNa = data.seoGrade === 'N/A';
+  const siteFixUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/book-service/select`;
 
   return (
     <Document>
@@ -201,7 +208,7 @@ export function AuditReportDocument({ data }: AuditReportDocumentProps) {
         <View style={styles.row}>
           <GradeSummaryBlock grade={data.speedGrade} label="SPEED" />
           <GradeSummaryBlock grade={data.securityGrade} label="SECURITY" />
-          <GradeSummaryBlock grade={data.uxGrade} label="USER EXPERIENCE" />
+          <GradeSummaryBlock grade={data.seoGrade} label="SEO & AI VISIBILITY" />
         </View>
       </Page>
 
@@ -247,49 +254,50 @@ export function AuditReportDocument({ data }: AuditReportDocumentProps) {
         )}
       </Page>
 
-      {/* 5. UX */}
+      {/* 5. SEO & AI Visibility */}
       <Page size="A4" style={styles.page} wrap>
-        <Text style={styles.sectionHeading}>First-Impression UX</Text>
-        {isUxNa ? (
-          <Text style={styles.body}>{data.uxNarrative}</Text>
+        <Text style={styles.sectionHeading}>SEO & AI Visibility</Text>
+        {isSeoNa ? (
+          <Text style={styles.body}>
+            {data.seoNarrative || 'SEO audit pending.'}
+          </Text>
         ) : (
           <>
-            <Text style={styles.body}>
-              {data.uxGrade} — Score: {data.uxScore}/9
+            <Text style={[styles.body, { fontFamily: 'Helvetica-Bold' }]}>
+              {data.seoGrade}
             </Text>
             <Text style={styles.body}>
-              Understand: {understand}/3 | See: {see}/3 | Know: {know}/3
+              {data.seoScore}/9 checks passed
             </Text>
-            <Text style={styles.body}>{data.uxNarrative}</Text>
-            {data.uxFailingSignals.length > 0 ? (
+            <Text style={styles.body}>{data.seoNarrative}</Text>
+            {data.seoFailingSignals.length > 0 ? (
               <>
                 <Text style={styles.subHeading}>Areas to improve:</Text>
-                {data.uxFailingSignals.map((line, i) => (
-                  <Text key={`ux-${i}`} style={styles.bullet}>
-                    • {line}
+                {data.seoFailingSignals.map((signalKey, i) => (
+                  <Text key={`seo-${i}`} style={styles.bullet}>
+                    • {SEO_SIGNAL_DISPLAY_NAMES[signalKey]}
                   </Text>
                 ))}
               </>
-            ) : null}
+            ) : (
+              <Text style={styles.body}>✓ No major SEO issues detected.</Text>
+            )}
           </>
         )}
       </Page>
 
       {/* 6. Back / CTA */}
       <Page size="A4" style={styles.page}>
-        <Text style={styles.backHeading}>Ready to fix this?</Text>
-        <Text style={styles.backBody}>
-          The Genie Site Care Plan handles everything in this report — and keeps
-          it fixed month after month.
-        </Text>
-        <Text style={styles.planLine}>Essential — $489/year</Text>
-        <Text style={styles.planLine}>Advanced — $1,389/year</Text>
-        <Text style={styles.planLine}>
-          Lifetime — $2,489/year (limited to 20 clients)
-        </Text>
-        <Text style={[styles.backBody, { marginTop: 12 }]}>
-          Get started at: {data.pricingUrl}
-        </Text>
+        <View>
+          <Text style={styles.backHeading}>Don&apos;t leave these issues sitting</Text>
+          <Text style={styles.backBody}>
+            The Book Service Site Fix tackles each of these one by one, in
+            priority order.
+          </Text>
+          <Link src={siteFixUrl} style={styles.ctaLink}>
+            View Your Site Fix Options
+          </Link>
+        </View>
         <Text style={styles.backFooter}>
           TradeSiteGenie · my.tradesitegenie.com
         </Text>

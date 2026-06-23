@@ -1,60 +1,34 @@
-import type { LetterGrade } from '@/lib/types/audit';
+import {
+  SecurityFlag,
+  SecurityFlagTier,
+  Grade,
+  TIER1_FLAGS,
+  TIER2_FLAGS,
+} from '@/lib/types/audit';
 
-export type SecurityGradeInput = {
-  safeBrowsingFlagged: boolean;
-  sucuriFlagged: boolean;
-  missingHeadersCount: number; // 0–6
-  outdatedCms: boolean;
-};
-
-export type SecurityGradeResult = {
-  letterGrade: LetterGrade;
-  flags: string[]; // plain-language descriptions of what failed
-};
-
-function letterFromSecurityScore(score: number): LetterGrade {
-  if (score >= 90) return 'A';
-  if (score >= 75) return 'B';
-  if (score >= 50) return 'C';
-  if (score >= 25) return 'D';
-  return 'F';
-}
-
-function collectFlags(input: SecurityGradeInput): string[] {
-  const flags: string[] = [];
-
-  if (input.safeBrowsingFlagged) {
-    flags.push('Google has flagged this site as unsafe');
-  }
-  if (input.sucuriFlagged) {
-    flags.push('Site appears on one or more security blacklists');
-  }
-  if (input.outdatedCms) {
-    flags.push('CMS software is out of date and may be vulnerable');
-  }
-  if (input.missingHeadersCount > 0) {
-    const n = input.missingHeadersCount;
-    flags.push(
-      `Missing ${n} security header(s) that protect against common attacks`
-    );
+export function gradeSecurity(flags: SecurityFlag[]): {
+  grade: Grade;
+  flagTier: SecurityFlagTier;
+} {
+  if (flags.some(f => TIER1_FLAGS.has(f))) {
+    return { grade: 'F', flagTier: 'tier1' };
   }
 
-  return flags;
-}
+  const hasTier2 = flags.some(f => TIER2_FLAGS.has(f));
+  const advisoryCount = flags.filter(
+    f => !TIER1_FLAGS.has(f) && !TIER2_FLAGS.has(f)
+  ).length;
 
-export function gradeSecurity(input: SecurityGradeInput): SecurityGradeResult {
-  if (input.safeBrowsingFlagged || input.sucuriFlagged) {
+  if (hasTier2) {
     return {
-      letterGrade: 'F',
-      flags: collectFlags(input),
+      grade: advisoryCount >= 4 ? 'F' : 'D',
+      flagTier: 'tier2',
     };
   }
 
-  const score =
-    100 - input.missingHeadersCount * 10 - (input.outdatedCms ? 20 : 0);
-
-  return {
-    letterGrade: letterFromSecurityScore(score),
-    flags: collectFlags(input),
-  };
+  if (advisoryCount === 0) return { grade: 'A', flagTier: 'none' };
+  if (advisoryCount === 1) return { grade: 'B', flagTier: 'advisory' };
+  if (advisoryCount === 2) return { grade: 'C', flagTier: 'advisory' };
+  if (advisoryCount === 3) return { grade: 'D', flagTier: 'advisory' };
+  return { grade: 'F', flagTier: 'advisory' };
 }

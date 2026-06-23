@@ -1,5 +1,7 @@
 'use client';
 
+import { ShieldCheck } from 'lucide-react';
+import { Inter, Schibsted_Grotesk } from 'next/font/google';
 import { useEffect, useRef, useState } from 'react';
 
 export interface AuditLoadingAnimationProps {
@@ -8,7 +10,19 @@ export interface AuditLoadingAnimationProps {
   onAnimationComplete: () => void;
 }
 
-type ScanKind = 'speed' | 'security' | 'ux';
+type ScanKind = 'speed' | 'security' | 'seo';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  display: 'swap',
+});
+
+const schibstedGrotesk = Schibsted_Grotesk({
+  subsets: ['latin'],
+  weight: ['800'],
+  display: 'swap',
+});
 
 function cardStateForStage(
   kind: ScanKind,
@@ -23,7 +37,7 @@ function cardStateForStage(
     if (stage === 1) return 'spinner';
     return 'check';
   }
-  // ux
+  // seo
   if (stage <= 1) return 'placeholder';
   if (stage === 2) return 'spinner';
   return 'check';
@@ -33,41 +47,16 @@ function SpinnerBlock() {
   return (
     <div className="flex items-center gap-2">
       <div className="size-[18px] animate-spin">
-        <svg
-          viewBox="0 0 21 21"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="size-full"
+        <img
+          src="/images/audit/loading-spinner.svg"
+          alt=""
           aria-hidden
-        >
-          {/* Track ring */}
-          <circle cx="10.5" cy="10.5" r="9" stroke="#EDECFC" strokeWidth="3" />
-          {/* Gradient arc */}
-          <circle
-            cx="10.5"
-            cy="10.5"
-            r="9"
-            stroke="url(#spinnerGrad)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeDasharray="28 56"
-          />
-          <defs>
-            <linearGradient
-              id="spinnerGrad"
-              x1="0"
-              y1="0"
-              x2="21"
-              y2="0"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop offset="0" stopColor="#EDECFC" />
-              <stop offset="1" stopColor="#171544" />
-            </linearGradient>
-          </defs>
-        </svg>
+          className="size-full"
+        />
       </div>
-      <span className="text-[15px] font-medium tracking-[-0.15px] text-[#232521]">
+      <span
+        className={`${inter.className} text-[15px] font-medium tracking-[-0.15px] text-[#232521]`}
+      >
         Scanning
       </span>
     </div>
@@ -97,9 +86,9 @@ function PlaceholderBar() {
 }
 
 const SCANS: { kind: ScanKind; label: string }[] = [
-  { kind: 'speed', label: 'Speed' },
-  { kind: 'security', label: 'Security' },
-  { kind: 'ux', label: 'User Experience' },
+  { kind: 'speed', label: 'SPEED' },
+  { kind: 'security', label: 'SECURITY' },
+  { kind: 'seo', label: 'SEO & AI VISIBILITY' },
 ];
 
 export function AuditLoadingAnimation({
@@ -136,56 +125,70 @@ export function AuditLoadingAnimation({
     onAnimationComplete();
   }, [stage, apiComplete, onAnimationComplete]);
 
-  const displayHost = websiteUrl.replace(/^https?:\/\//i, '').toUpperCase();
+  const displayHost = websiteUrl
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/+$/, '');
 
   return (
-    <div className="flex w-full flex-1 flex-col bg-white">
-      <div className="mx-auto w-full max-w-3xl px-6 pt-16">
-        <p className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-widest text-blue-600">
-          <span>GENIE SITE AUDIT</span>
-          <span aria-hidden>•</span>
-          <span>{displayHost}</span>
-        </p>
-        <h2 className="mb-2 text-4xl font-extrabold text-[#1a1f5e]">
-          Analyzing your site...
-        </h2>
-        <p className="mb-10 text-base text-gray-500">
-          Your grades will appear as each scan completes.
-        </p>
-
-        <div className="grid grid-cols-3 gap-4">
-          {SCANS.map(({ kind, label }) => {
-            const state = cardStateForStage(kind, stage);
-            return (
-              <div
-                key={kind}
-                className="flex h-[124px] flex-col items-center justify-center gap-4 rounded-xl bg-gray-100 p-5"
-              >
-                <span className="text-base font-semibold uppercase text-[#545552]">
-                  {label}
-                </span>
-                <div className="flex items-center justify-center">
-                  {state === 'spinner' ? (
-                    <SpinnerBlock />
-                  ) : state === 'check' ? (
-                    <CheckmarkIcon />
-                  ) : (
-                    <PlaceholderBar />
-                  )}
-                </div>
-              </div>
-            );
-          })}
+    <div className={`${inter.className} flex w-full flex-1 flex-col bg-white`}>
+      <div className="mx-auto flex w-full flex-1 flex-col items-center gap-16 px-8 pb-[120px] pt-10 md:px-16 lg:px-[140px]">
+        <div className="flex w-full shrink-0 items-center gap-2">
+          <ShieldCheck className="size-6 shrink-0 text-[#1d4ed8]" aria-hidden />
+          <span className="text-[25px] font-normal uppercase leading-[1.5] text-[#030712]">
+            Book Service
+          </span>
         </div>
 
-        <div
-          className={`mt-8 text-center transition-opacity duration-500 ${
-            showWaitMessage && !apiComplete ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <p className="text-sm text-gray-400">
-            Still analyzing — this can take up to 60 seconds for some sites. Hang tight.
-          </p>
+        <div className="flex w-full flex-col gap-10 lg:w-[800px]">
+          <div className="flex flex-col gap-3">
+            <p className="text-base font-semibold uppercase leading-[1.5] text-[#1d4ed8]">
+              Site Audit • {displayHost}
+            </p>
+            <h2
+              className={`${schibstedGrotesk.className} text-[36px] font-extrabold leading-[1.2] tracking-[-0.36px] text-[#171544] md:text-[44px] md:tracking-[-0.44px] lg:text-[52px] lg:tracking-[-0.52px]`}
+            >
+              Analyzing your site…
+            </h2>
+            <p className="text-base leading-[1.5] text-[#232521] lg:text-lg">
+              Your grades will appear as each scan completes.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-6 md:flex-row">
+            {SCANS.map(({ kind, label }) => {
+              const state = cardStateForStage(kind, stage);
+              return (
+                <div
+                  key={kind}
+                  className="flex h-[124px] w-full flex-col items-center justify-center gap-4 rounded-xl border-[3px] border-[#e5e7eb] bg-white p-5 md:flex-1"
+                >
+                  <span className="text-center text-base font-semibold uppercase leading-[1.5] text-[#545552]">
+                    {label}
+                  </span>
+                  <div className="flex items-center justify-center">
+                    {state === 'spinner' ? (
+                      <SpinnerBlock />
+                    ) : state === 'check' ? (
+                      <CheckmarkIcon />
+                    ) : (
+                      <PlaceholderBar />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div
+            className={`text-center transition-opacity duration-500 ${
+              showWaitMessage && !apiComplete ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <p className="text-sm text-gray-400">
+              Still analyzing — this can take up to 60 seconds for some sites.
+              Hang tight.
+            </p>
+          </div>
         </div>
       </div>
     </div>

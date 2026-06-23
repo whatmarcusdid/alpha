@@ -151,8 +151,8 @@ export async function sendAuditLeadNotification(params: {
   websiteUrl: string;
   speedGrade: string;
   securityGrade: string;
-  uxGrade: string;
-  uxPillarScores: { understand: number; see: number; know: number };
+  seoGrade: string;
+  seoScore: number;
 }): Promise<void> {
   const webhookUrl = process.env.SLACK_SALES_WEBHOOK_URL;
   if (!webhookUrl) {
@@ -164,7 +164,7 @@ export async function sendAuditLeadNotification(params: {
     ? params.websiteUrl
     : `https://${params.websiteUrl}`;
 
-  const { understand, see, know } = params.uxPillarScores;
+  const { seoScore } = params;
 
   const payload: SlackWebhookPayload = {
     text: `🔍 New Audit Lead: ${params.businessName} — ${params.email}`,
@@ -188,7 +188,7 @@ export async function sendAuditLeadNotification(params: {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `Speed: *${params.speedGrade}* | Security: *${params.securityGrade}* | UX: *${params.uxGrade}* (U:${understand} S:${see} K:${know})`,
+          text: `Speed: *${params.speedGrade}* | Security: *${params.securityGrade}* | SEO: *${params.seoGrade}* (Score:${seoScore}/9)`,
         },
       },
     ],

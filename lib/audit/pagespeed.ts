@@ -1,7 +1,12 @@
 import type { SpeedGradeInput } from '@/lib/grading';
 
+export type PsiAudits = Record<
+  string,
+  { score: number | null; displayValue?: string }
+>;
+
 export type PageSpeedResult =
-  | { success: true; data: SpeedGradeInput }
+  | { success: true; data: SpeedGradeInput; audits: PsiAudits }
   | { success: false; error: string };
 
 const PROVIDER = 'PageSpeed Insights';
@@ -72,8 +77,32 @@ function readNumeric(audit: unknown): number | undefined {
   return typeof raw === 'number' && Number.isFinite(raw) ? raw : undefined;
 }
 
+function extractAudits(audits: unknown): PsiAudits {
+  if (!isRecord(audits)) {
+    return {};
+  }
+
+  const result: PsiAudits = {};
+  for (const [auditId, audit] of Object.entries(audits)) {
+    if (!isRecord(audit)) {
+      continue;
+    }
+    const scoreRaw = audit.score;
+    const score =
+      scoreRaw === null
+        ? null
+        : typeof scoreRaw === 'number' && Number.isFinite(scoreRaw)
+          ? scoreRaw
+          : null;
+    const displayValue =
+      typeof audit.displayValue === 'string' ? audit.displayValue : undefined;
+    result[auditId] = { score, displayValue };
+  }
+  return result;
+}
+
 function extractSpeedGradeInput(payload: unknown):
-  | { ok: true; value: SpeedGradeInput }
+  | { ok: true; value: SpeedGradeInput; audits: PsiAudits }
   | { ok: false } {
   if (!isRecord(payload)) {
     return { ok: false };
@@ -127,6 +156,7 @@ function extractSpeedGradeInput(payload: unknown):
       tbt,
       cls,
     },
+    audits: extractAudits(audits),
   };
 }
 
@@ -193,5 +223,5 @@ export async function fetchPageSpeed(url: string): Promise<PageSpeedResult> {
     return { success: false, error: SAFE_PARSE };
   }
 
-  return { success: true, data: extracted.value };
+  return { success: true, data: extracted.value, audits: extracted.audits };
 }

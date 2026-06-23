@@ -1,4 +1,4 @@
-import type { LetterGrade } from '@/lib/types/audit';
+import type { Grade } from '@/lib/types/audit';
 
 export type SpeedGradeInput = {
   performanceScore: number; // 0–100 from PageSpeed Insights
@@ -8,12 +8,12 @@ export type SpeedGradeInput = {
 };
 
 export type SpeedGradeResult = {
-  letterGrade: LetterGrade;
+  letterGrade: Grade;
   performanceScore: number;
   topIssues: string[]; // 0–3 plain-language issue strings
 };
 
-function letterFromPerformanceScore(score: number): LetterGrade {
+function letterFromPerformanceScore(score: number): Grade {
   if (score >= 90) return 'A';
   if (score >= 75) return 'B';
   if (score >= 50) return 'C';

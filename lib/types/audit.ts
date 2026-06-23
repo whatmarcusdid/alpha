@@ -1,20 +1,40 @@
 import { Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
 
-export type LetterGrade = 'A' | 'B' | 'C' | 'D' | 'F';
+import type { SeoFailingSignalKey } from '@/lib/types/seoSignals';
+import type { SpeedTopIssueKey } from '@/lib/audit/speedTopIssues';
 
-export type UXPillarScores = {
-  understand: number; // 0–3
-  see: number; // 0–3
-  know: number; // 0–3
-};
+export type { SpeedTopIssueKey } from '@/lib/audit/speedTopIssues';
 
-/** Plain-language paragraphs; may be deterministic fallbacks if Gemini failed — never undefined. */
-export type AuditNarratives = {
-  speed: string;
-  security: string;
-  ux: string;
-};
+export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
+
+export type ClientGrade = Grade | 'N/A';
+
+export type SecurityFlag =
+  | 'malware_detected'
+  | 'blacklisted'
+  | 'phishing_detected'
+  | 'unwanted_software_detected'
+  | 'no_https'
+  | 'invalid_ssl'
+  | 'missing_security_headers'
+  | 'outdated_cms'
+  | 'http_redirect_missing'
+  | 'mixed_content';
+
+export type SecurityFlagTier = 'none' | 'advisory' | 'tier2' | 'tier1';
+
+export const TIER1_FLAGS = new Set<SecurityFlag>([
+  'malware_detected',
+  'blacklisted',
+  'phishing_detected',
+  'unwanted_software_detected',
+  'no_https',
+]);
+
+export const TIER2_FLAGS = new Set<SecurityFlag>([
+  'invalid_ssl',
+]);
 
 export type AuditInput = {
   firstName: string;
@@ -33,47 +53,78 @@ export const AuditInputSchema = z.object({
 });
 
 export type AuditLeadDoc = {
-  businessName: string;
+  // Identity
+  auditLeadId: string;
   firstName: string;
+  businessName: string;
   email: string;
   websiteUrl: string;
-  speedGrade: LetterGrade | 'N/A';
-  speedScore: number;
-  securityGrade: LetterGrade | 'N/A';
-  securityFlags: string[];
-  uxGrade: LetterGrade | 'N/A';
-  uxScore: number;
-  uxPillarScores: UXPillarScores;
-  uxFailingSignals: string[];
-  aiNarrative: AuditNarratives;
-  timestamp: Timestamp;
   source: 'public_audit';
+  schemaVersion: 'v2';
+
+  // Audit metadata
+  timestamp: Timestamp;
+  auditStatus: 'completed' | 'partial';
+
+  // Speed
+  speedGrade: Grade;
+  speedScore: number;
+  speedTopIssues: SpeedTopIssueKey[];
+  speedNarrative: string;
+  speedStatus: 'completed' | 'failed';
+
+  // Security
+  securityGrade: Grade;
+  securityFlags: SecurityFlag[];
+  securityFlagTier: SecurityFlagTier;
+  securityNarrative: string;
+  securityStatus: 'completed' | 'failed';
+
+  // SEO
+  seoGrade: Grade;
+  seoScore: number;
+  seoFailingSignals: SeoFailingSignalKey[];
+  seoNarrative: string;
+  seoStatus: 'completed' | 'failed';
+
+  // Downstream linkage
+  orderId?: string;
+  claimedByUserId?: string;
 };
 
 export type AuditResult = {
-  businessName: string;
+  auditLeadId: string;
+  firstName: string;
   websiteUrl: string;
-  speedGrade: LetterGrade | 'N/A';
-  speedScore: number;
-  speedTopIssues: string[];
-  securityGrade: LetterGrade | 'N/A';
-  securityFlags: string[];
-  uxGrade: LetterGrade | 'N/A';
-  uxScore: number;
-  uxPillarScores: UXPillarScores;
-  uxFailingSignals: string[];
-  aiNarrative: AuditNarratives;
+  auditStatus: 'completed' | 'partial';
+
+  speed: {
+    grade: ClientGrade;
+    score: number;
+    topIssues: SpeedTopIssueKey[];
+    narrative: string;
+    status: 'completed' | 'failed';
+  };
+
+  security: {
+    grade: ClientGrade;
+    flags: SecurityFlag[];
+    flagTier: SecurityFlagTier;
+    narrative: string;
+    status: 'completed' | 'failed';
+  };
+
+  seo: {
+    grade: ClientGrade;
+    score: number;
+    failingSignals: SeoFailingSignalKey[];
+    narrative: string;
+    status: 'completed' | 'failed';
+  };
 };
 
-export type GeminiUXResponse = {
-  understand: number;
-  see: number;
-  know: number;
-  failingSignals: string[];
-};
-
-function effectiveGradeRank(grade: LetterGrade | 'N/A'): number {
-  const g: LetterGrade = grade === 'N/A' ? 'C' : grade;
+function effectiveGradeRank(grade: ClientGrade): number {
+  const g: Grade = grade === 'N/A' ? 'C' : grade;
   switch (g) {
     case 'A':
       return 5;
@@ -95,13 +146,13 @@ function effectiveGradeRank(grade: LetterGrade | 'N/A'): number {
 export function getResultsHeadline(
   firstName: string,
   grades: {
-    speedGrade: LetterGrade | 'N/A';
-    securityGrade: LetterGrade | 'N/A';
-    uxGrade: LetterGrade | 'N/A';
+    speedGrade: ClientGrade;
+    securityGrade: ClientGrade;
+    seoGrade: ClientGrade;
   }
 ): string {
-  const { speedGrade, securityGrade, uxGrade } = grades;
-  const all = [speedGrade, securityGrade, uxGrade];
+  const { speedGrade, securityGrade, seoGrade } = grades;
+  const all = [speedGrade, securityGrade, seoGrade];
 
   if (all.some((g) => g === 'F')) {
     return `${firstName}, your website is working against you.`;
@@ -111,10 +162,10 @@ export function getResultsHeadline(
     const goodGrades = all.filter((g) => g === 'A' || g === 'B');
     if (goodGrades.length === 2) {
       const badIndex = all.findIndex((g) => g === 'D');
-      const category = badIndex === 0 ? 'speed' : badIndex === 1 ? 'security' : 'first impression';
+      const category = badIndex === 0 ? 'speed' : badIndex === 1 ? 'security' : 'SEO visibility';
       const goodCategories =
-        badIndex === 0 ? 'your security and first impression are solid'
-        : badIndex === 1 ? 'your speed and first impression are solid'
+        badIndex === 0 ? 'your security and SEO visibility are solid'
+        : badIndex === 1 ? 'your speed and SEO visibility are solid'
         : 'your speed and security are solid';
       return `${firstName}, ${goodCategories} — but your ${category} is costing you leads.`;
     }

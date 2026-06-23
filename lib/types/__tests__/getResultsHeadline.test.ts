@@ -4,11 +4,11 @@ import { getResultsHeadline } from '@/lib/types/audit';
 
 describe('getResultsHeadline', () => {
   describe('all grades A or B', () => {
-    it('uses the “great shape” line when speed is A, security is A, and UX is B', () => {
+    it('uses the “great shape” line when speed is A, security is A, and SEO is B', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'A',
         securityGrade: 'A',
-        uxGrade: 'B',
+        seoGrade: 'B',
       });
       expect(h).toContain('in great shape');
     });
@@ -19,7 +19,7 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'C',
         securityGrade: 'A',
-        uxGrade: 'A',
+        seoGrade: 'A',
       });
       expect(h).toContain('needs some work');
     });
@@ -28,7 +28,7 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'A',
         securityGrade: 'C',
-        uxGrade: 'B',
+        seoGrade: 'B',
       });
       expect(h).toContain('needs some work');
     });
@@ -37,7 +37,7 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'N/A',
         securityGrade: 'A',
-        uxGrade: 'A',
+        seoGrade: 'A',
       });
       expect(h).toContain('needs some work');
     });
@@ -46,7 +46,7 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'N/A',
         securityGrade: 'N/A',
-        uxGrade: 'N/A',
+        seoGrade: 'N/A',
       });
       expect(h).toContain('needs some work');
     });
@@ -57,7 +57,7 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'D',
         securityGrade: 'A',
-        uxGrade: 'A',
+        seoGrade: 'A',
       });
       expect(h).toContain('costing you leads');
     });
@@ -66,7 +66,7 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'B',
         securityGrade: 'D',
-        uxGrade: 'C',
+        seoGrade: 'C',
       });
       expect(h).toContain('costing you leads');
     });
@@ -77,16 +77,16 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'F',
         securityGrade: 'A',
-        uxGrade: 'A',
+        seoGrade: 'A',
       });
       expect(h).toContain('working against you');
     });
 
-    it('uses the “working against you” line when UX is F', () => {
+    it('uses the “working against you” line when SEO is F', () => {
       const h = getResultsHeadline('Alex', {
         speedGrade: 'A',
         securityGrade: 'A',
-        uxGrade: 'F',
+        seoGrade: 'F',
       });
       expect(h).toContain('working against you');
     });
@@ -97,7 +97,7 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Riley', {
         speedGrade: 'A',
         securityGrade: 'A',
-        uxGrade: 'A',
+        seoGrade: 'A',
       });
       expect(h.startsWith('Riley,')).toBe(true);
     });
@@ -106,7 +106,7 @@ describe('getResultsHeadline', () => {
       const h = getResultsHeadline('Marcus', {
         speedGrade: 'A',
         securityGrade: 'A',
-        uxGrade: 'A',
+        seoGrade: 'A',
       });
       expect(h.startsWith('Marcus,')).toBe(true);
     });

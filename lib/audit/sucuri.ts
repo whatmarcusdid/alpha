@@ -1,8 +1,5 @@
-import type { SecurityGradeInput } from '@/lib/grading';
-
 /**
- * Sucuri SiteCheck scan; combine with Safe Browsing to build
- * {@link SecurityGradeInput} in the audit route.
+ * Sucuri SiteCheck scan; combine with Safe Browsing in the audit route.
  */
 
 export type SucuriResult =

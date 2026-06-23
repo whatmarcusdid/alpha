@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { Inter, Manrope, Schibsted_Grotesk } from 'next/font/google';
-import type { AuditResult } from '@/lib/types/audit';
-import { getResultsHeadline } from '@/lib/types/audit';
+import { ShieldCheck } from 'lucide-react';
+import { Inter, Schibsted_Grotesk } from 'next/font/google';
+
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { SPEED_ISSUE_DISPLAY_NAMES } from '@/lib/audit/speedTopIssues';
+import type { AuditResult, ClientGrade, SecurityFlag } from '@/lib/types/audit';
+import { getResultsHeadline } from '@/lib/types/audit';
+import {
+  SEO_SIGNAL_DISPLAY_NAMES,
+  type SeoFailingSignalKey,
+} from '@/lib/types/seoSignals';
+import { stripMarkdown } from '@/lib/utils/stripMarkdown';
 
 const schibstedGrotesk = Schibsted_Grotesk({
   subsets: ['latin'],
@@ -13,15 +20,9 @@ const schibstedGrotesk = Schibsted_Grotesk({
   display: 'swap',
 });
 
-const manrope = Manrope({
-  subsets: ['latin'],
-  weight: ['800'],
-  display: 'swap',
-});
-
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '700'],
+  weight: ['400', '600'],
   display: 'swap',
 });
 
@@ -31,21 +32,151 @@ export interface AuditResultsProps {
   onRunAnother: () => void;
 }
 
-function gradeColor(grade: string): string {
+const SECURITY_FLAG_DISPLAY_NAMES: Record<SecurityFlag, string> = {
+  malware_detected: 'Malware detected on your site',
+  blacklisted: 'Site appears on a security blacklist',
+  phishing_detected: 'Phishing content detected',
+  unwanted_software_detected: 'Unwanted software detected',
+  no_https: 'Site is not using HTTPS',
+  invalid_ssl: 'SSL certificate is invalid or expired',
+  missing_security_headers: 'Missing security headers (X-Frame-Options, CSP)',
+  outdated_cms: 'Site running an outdated CMS version',
+  http_redirect_missing: 'HTTP to HTTPS redirect is missing',
+  mixed_content: 'Mixed HTTP and HTTPS content detected',
+};
+
+function gradeColor(grade: ClientGrade): string {
   switch (grade) {
     case 'A':
-      return '#16a34a';
+      return '#00A63E';
     case 'B':
       return '#65a30d';
     case 'C':
-      return '#d97706';
+      return '#f0b100';
     case 'D':
-      return '#ea580c';
     case 'F':
-      return '#dc2626';
+      return '#e7000b';
     default:
       return '#6b7280';
   }
+}
+
+function seoSignalLabel(key: string): string {
+  return (
+    SEO_SIGNAL_DISPLAY_NAMES[key as SeoFailingSignalKey] ??
+    key.replace(/_/g, ' ')
+  );
+}
+
+function IssueDot({ variant }: { variant: 'amber' | 'red' | 'green' }) {
+  const color =
+    variant === 'red'
+      ? 'bg-[#e7000b]'
+      : variant === 'green'
+        ? 'bg-[#00A63E]'
+        : 'bg-[#f0b100]';
+  return <span className={`size-3 shrink-0 rounded-full ${color}`} />;
+}
+
+function TopIssuesList({
+  items,
+  dotVariant,
+}: {
+  items: string[];
+  dotVariant: 'amber' | 'red';
+}) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      <div className="border-t border-[#dddddd]" />
+      <div className="flex flex-col gap-2">
+        <p
+          className={`${inter.className} text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#232521] md:text-xl md:tracking-[-0.2px] lg:text-xl lg:tracking-[-0.2px]`}
+        >
+          Top issues found
+        </p>
+        <ul className="flex flex-col gap-2">
+          {items.map((item) => (
+            <li key={item} className="flex items-center gap-2">
+              <IssueDot variant={dotVariant} />
+              <span
+                className={`${inter.className} flex-1 text-sm leading-[1.5] tracking-[-0.14px] text-[#232521]`}
+              >
+                {item}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+}
+
+function GradeCard({
+  grade,
+  label,
+  descriptor,
+}: {
+  grade: ClientGrade;
+  label: string;
+  descriptor: string;
+}) {
+  return (
+    <div className="flex h-[124px] w-full items-center gap-4 rounded-xl border-2 border-[#e5e7eb] bg-white p-4 md:flex-1 lg:p-5">
+      {grade === 'N/A' ? (
+        <div className="flex w-[58px] shrink-0 items-center justify-center">
+          <div className="h-1 w-8 rounded-full bg-gray-300" />
+        </div>
+      ) : (
+        <p
+          className={`${inter.className} w-[58px] shrink-0 text-center text-[56px] font-extrabold leading-[1.2] tracking-[-0.56px] md:text-[64px] md:tracking-[-0.64px] lg:text-[80px] lg:tracking-[-0.8px]`}
+          style={{ color: gradeColor(grade) }}
+        >
+          {grade}
+        </p>
+      )}
+      <div className="flex min-w-0 flex-1 flex-col gap-2 leading-[1.5] text-[#545552]">
+        <span
+          className={`${inter.className} text-base font-semibold uppercase`}
+        >
+          {label}
+        </span>
+        <span
+          className={`${inter.className} text-sm tracking-[-0.14px]`}
+        >
+          {descriptor}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PillarSection({
+  title,
+  narrative,
+  children,
+}: {
+  title: string;
+  narrative: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-1 flex-col gap-4">
+      <div className="flex flex-col gap-3">
+        <h2
+          className={`${schibstedGrotesk.className} text-xl font-extrabold leading-[1.2] tracking-[-0.2px] text-[#232521] md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]`}
+        >
+          {title}
+        </h2>
+        <p
+          className={`${inter.className} text-base leading-[1.5] text-[#52525b] lg:text-lg`}
+        >
+          {narrative}
+        </p>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export function AuditResults({
@@ -55,415 +186,225 @@ export function AuditResults({
 }: AuditResultsProps) {
   const displayHost = result.websiteUrl
     .replace(/^https?:\/\//i, '')
-    .toUpperCase();
+    .replace(/\/+$/, '');
 
   const pricingUrl = process.env.NEXT_PUBLIC_PRICING_URL ?? '#';
 
-  const speedDescriptor = `Score: ${result.speedScore}/100`;
-  const securityDescriptor =
-    result.securityGrade === 'F'
-      ? 'Site is flagged as unsafe'
-      : result.securityFlags.length === 0
-      ? '0 flags found'
-      : `${result.securityFlags.length} flag${result.securityFlags.length === 1 ? '' : 's'} found`;
-  const uxDescriptor =
-    result.uxGrade === 'N/A'
+  const speedDescriptor =
+    result.speed.grade === 'N/A'
       ? 'Score unavailable'
-      : `Score: ${result.uxScore}/9`;
+      : `Score: ${result.speed.score}/100`;
+  const securityDescriptor =
+    result.security.grade === 'N/A'
+      ? 'Scan unavailable'
+      : result.security.grade === 'F'
+        ? 'Site is flagged as unsafe'
+        : result.security.flags.length === 0
+          ? '0 flags found'
+          : `${result.security.flags.length} flag${result.security.flags.length === 1 ? '' : 's'} found`;
+  const seoDescriptor =
+    result.seo.grade === 'N/A'
+      ? 'Score unavailable'
+      : `${result.seo.score}/9 checks passed`;
 
-  const [activeTab, setActiveTab] = useState<'speed' | 'security' | 'ux'>('speed');
+  const speedNarrative = stripMarkdown(result.speed.narrative);
+  const securityNarrative = stripMarkdown(result.security.narrative);
+  const seoNarrative = stripMarkdown(result.seo.narrative);
+
+  const speedIssues = result.speed.topIssues.map(
+    (issue) => SPEED_ISSUE_DISPLAY_NAMES[issue] ?? issue
+  );
+  const securityIssues = result.security.flags.map(
+    (flag) => SECURITY_FLAG_DISPLAY_NAMES[flag] ?? flag
+  );
+  const seoIssues = result.seo.failingSignals.map(seoSignalLabel);
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center border-b border-gray-100 bg-white px-6">
-        <div className="flex items-center">
-          <img
-            src="/images/tsg-logo.svg"
-            alt="TradeSiteGenie"
-            width={204}
-            height={31}
-            className="h-8 w-auto shrink-0 object-contain object-left"
-          />
-        </div>
-      </header>
-
-      <div className="mx-auto w-full max-w-4xl px-6 pb-32 pt-10">
-        <p className="mb-2 text-lg font-semibold uppercase leading-relaxed tracking-widest bg-[linear-gradient(270deg,#0284C7_0%,#4F46E5_100%)] bg-clip-text text-transparent [-webkit-text-fill-color:transparent]">
-          GENIE SITE AUDIT • {displayHost}
-        </p>
-
-        <h1 className={`${schibstedGrotesk.className} mb-8 max-w-3xl text-5xl font-extrabold leading-[1.2] tracking-[-0.48px] text-[#171544]`}>
-          {getResultsHeadline(firstName, {
-            speedGrade: result.speedGrade,
-            securityGrade: result.securityGrade,
-            uxGrade: result.uxGrade,
-          })}
-        </h1>
-
-        {[result.speedGrade, result.securityGrade, result.uxGrade].some(g => g === 'F') &&
-          result.securityGrade === 'F' && (
-          <Alert
-            className="mb-8 border-red-200 bg-red-50 text-red-900"
-          >
-            <AlertTitle className="text-base font-bold text-red-900">
-              Your site is currently flagged as unsafe.
-            </AlertTitle>
-            <AlertDescription className="mt-1 text-base leading-relaxed text-red-800">
-              Google and other browsers may be showing a warning to anyone who visits
-              your site right now — before they ever see your page. This isn&apos;t a
-              design issue or a slow load. Your site has been identified as potentially
-              harmful and needs to be addressed immediately.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-          {/* Speed card/tab */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('speed')}
-            className={`flex min-h-[80px] sm:min-h-[130px] w-full items-center gap-4 rounded-xl border-2 p-4 sm:p-5 text-left transition-colors ${
-              activeTab === 'speed'
-                ? 'border-[#171544] bg-white'
-                : 'border-[#dadada] bg-white hover:border-gray-300'
-            }`}
-          >
-            {result.speedGrade === 'N/A' ? (
-              <div className="w-[48px] sm:w-[58px] shrink-0 flex items-center justify-center">
-                <div className="h-1 w-8 rounded-full bg-gray-300" />
-              </div>
-            ) : (
-              <div
-                className={`${schibstedGrotesk.className} w-[48px] sm:w-[58px] shrink-0 text-[64px] sm:text-[80px] font-extrabold leading-[1.2] tracking-[-0.8px]`}
-                style={{ color: gradeColor(result.speedGrade) }}
-              >
-                {result.speedGrade}
-              </div>
-            )}
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className={`${inter.className} text-sm sm:text-base font-semibold uppercase leading-[1.5] text-[#545552]`}>Speed</span>
-              <span className={`${inter.className} text-[13px] sm:text-[14px] font-medium leading-[1.2] tracking-[-0.14px] text-[#545552]`}>{speedDescriptor}</span>
-            </div>
-          </button>
-
-          {/* Security card/tab */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('security')}
-            className={`flex min-h-[80px] sm:min-h-[130px] w-full items-center gap-4 rounded-xl border-2 p-4 sm:p-5 text-left transition-colors ${
-              activeTab === 'security'
-                ? 'border-[#171544] bg-white'
-                : 'border-[#dadada] bg-white hover:border-gray-300'
-            }`}
-          >
-            {result.securityGrade === 'N/A' ? (
-              <div className="w-[48px] sm:w-[58px] shrink-0 flex items-center justify-center">
-                <div className="h-1 w-8 rounded-full bg-gray-300" />
-              </div>
-            ) : (
-              <div
-                className={`${schibstedGrotesk.className} w-[48px] sm:w-[58px] shrink-0 text-[64px] sm:text-[80px] font-extrabold leading-[1.2] tracking-[-0.8px]`}
-                style={{ color: gradeColor(result.securityGrade) }}
-              >
-                {result.securityGrade}
-              </div>
-            )}
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className={`${inter.className} text-sm sm:text-base font-semibold uppercase leading-[1.5] text-[#545552]`}>Security</span>
-              <span className={`${inter.className} text-[13px] sm:text-[14px] font-medium leading-[1.2] tracking-[-0.14px] text-[#545552]`}>{securityDescriptor}</span>
-            </div>
-          </button>
-
-          {/* UX card/tab */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('ux')}
-            className={`flex min-h-[80px] sm:min-h-[130px] w-full items-center gap-4 rounded-xl border-2 p-4 sm:p-5 text-left transition-colors ${
-              activeTab === 'ux'
-                ? 'border-[#171544] bg-white'
-                : 'border-[#dadada] bg-white hover:border-gray-300'
-            }`}
-          >
-            {result.uxGrade === 'N/A' ? (
-              <div className="w-[48px] sm:w-[58px] shrink-0 flex items-center justify-center">
-                <div className="h-1 w-8 rounded-full bg-gray-300" />
-              </div>
-            ) : (
-              <div
-                className={`${schibstedGrotesk.className} w-[48px] sm:w-[58px] shrink-0 text-[64px] sm:text-[80px] font-extrabold leading-[1.2] tracking-[-0.8px]`}
-                style={{ color: gradeColor(result.uxGrade) }}
-              >
-                {result.uxGrade}
-              </div>
-            )}
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className={`${inter.className} text-sm sm:text-base font-semibold uppercase leading-[1.5] text-[#545552]`}>First-Impression UX</span>
-              <span className={`${inter.className} text-[13px] sm:text-[14px] font-medium leading-[1.2] tracking-[-0.14px] text-[#545552]`}>{uxDescriptor}</span>
-            </div>
-          </button>
+    <div className={`${inter.className} flex min-h-screen flex-col bg-white`}>
+      <div className="mx-auto flex w-full flex-col items-center gap-16 px-8 pb-[120px] pt-10 md:px-16 lg:px-[140px]">
+        <div className="flex w-full shrink-0 items-center gap-2">
+          <ShieldCheck className="size-6 shrink-0 text-[#1d4ed8]" aria-hidden />
+          <span className="text-[25px] font-normal uppercase leading-[1.5] text-[#030712]">
+            Book Service
+          </span>
         </div>
 
-        <div className="mb-16">
-          {/* On md+ show all three columns. On mobile/tablet show only the active tab. */}
-          <div className="hidden md:grid md:grid-cols-3 md:gap-8">
-            {/* Speed column */}
-            <div>
-              <h2 className={`${manrope.className} mb-3 text-2xl font-extrabold leading-[1.2] tracking-[-0.24px] text-[#232521]`}>Speed</h2>
-              <p className={`${inter.className} mb-4 text-lg font-normal leading-[1.5] text-[#232521]`}>{result.aiNarrative.speed}</p>
-              {result.speedTopIssues.length > 0 ? (
+        <div className="flex w-full flex-col gap-10 lg:w-[800px]">
+          <div className="flex flex-col gap-3">
+            <p className="text-base font-semibold uppercase leading-[1.5] text-[#1d4ed8]">
+              Site Audit • {displayHost}
+            </p>
+            <h1
+              className={`${schibstedGrotesk.className} text-[36px] font-extrabold leading-[1.2] tracking-[-0.36px] text-[#171544] md:text-[44px] md:tracking-[-0.44px] lg:text-[52px] lg:tracking-[-0.52px]`}
+            >
+              {getResultsHeadline(firstName, {
+                speedGrade: result.speed.grade,
+                securityGrade: result.security.grade,
+                seoGrade: result.seo.grade,
+              })}
+            </h1>
+          </div>
+
+          {[result.speed.grade, result.security.grade, result.seo.grade].some(
+            (g) => g === 'F'
+          ) &&
+            result.security.grade === 'F' && (
+              <Alert className="border-red-200 bg-red-50 text-red-900">
+                <AlertTitle className="text-base font-bold text-red-900">
+                  Your site is currently flagged as unsafe.
+                </AlertTitle>
+                <AlertDescription className="mt-1 text-base leading-relaxed text-red-800">
+                  Google and other browsers may be showing a warning to anyone
+                  who visits your site right now — before they ever see your
+                  page. This isn&apos;t a design issue or a slow load. Your site
+                  has been identified as potentially harmful and needs to be
+                  addressed immediately.
+                </AlertDescription>
+              </Alert>
+            )}
+
+          <div className="flex flex-col gap-6 md:flex-row md:gap-9">
+            <GradeCard
+              grade={result.speed.grade}
+              label="SPEED"
+              descriptor={speedDescriptor}
+            />
+            <GradeCard
+              grade={result.security.grade}
+              label="SECURITY"
+              descriptor={securityDescriptor}
+            />
+            <GradeCard
+              grade={result.seo.grade}
+              label="SEO & AI VISIBILITY"
+              descriptor={seoDescriptor}
+            />
+          </div>
+        </div>
+
+        <div className="flex w-full flex-col gap-12 md:flex-row md:gap-6 lg:w-[800px] lg:gap-12">
+          <PillarSection title="Speed" narrative={speedNarrative}>
+            {result.speed.grade !== 'N/A' &&
+              (speedIssues.length > 0 ? (
+                <TopIssuesList items={speedIssues} dotVariant="amber" />
+              ) : result.speed.score >= 90 ? (
                 <>
-                  <div className="mb-4 border-t border-gray-100" />
-                  <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>Top issues found</p>
-                  <ul className="flex flex-col gap-[6px]">
-                    {result.speedTopIssues.map((issue, i) => (
-                      <li key={`speed-top-${i}`} className="mt-1 flex items-start gap-2 first:mt-0">
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-400" />
-                        <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>{issue}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : result.speedScore >= 90 ? (
-                <>
-                  <div className="mb-4 border-t border-gray-100" />
-                  <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>All clear</p>
-                  <ul className="flex flex-col gap-[6px]">
-                    <li className="mt-1 flex items-start gap-2 first:mt-0">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                      <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>No major speed issues detected</span>
-                    </li>
-                  </ul>
+                  <div className="border-t border-[#dddddd]" />
+                  <div className="flex flex-col gap-2">
+                    <p
+                      className={`${inter.className} text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#232521] md:text-xl md:tracking-[-0.2px]`}
+                    >
+                      All clear
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <IssueDot variant="green" />
+                      <span
+                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#232521]`}
+                      >
+                        No major speed issues detected
+                      </span>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <>
-                  <div className="mb-4 border-t border-gray-100" />
-                  <p className="text-sm text-gray-500">Check your PDF report for detailed recommendations.</p>
+                  <div className="border-t border-[#dddddd]" />
+                  <p className="text-sm text-[#52525b]">
+                    Check your PDF report for detailed recommendations.
+                  </p>
                 </>
-              )}
-            </div>
-            {/* Security column */}
-            <div>
-              <h2 className={`${manrope.className} mb-3 text-2xl font-extrabold leading-[1.2] tracking-[-0.24px] text-[#232521]`}>Security</h2>
-              <p className={`${inter.className} mb-4 text-lg font-normal leading-[1.5] text-[#232521]`}>{result.aiNarrative.security}</p>
-              <div className="mb-4 border-t border-gray-100" />
-              {result.securityFlags.length === 0 ? (
-                <>
-                  <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>All clear</p>
-                  <ul className="flex flex-col gap-[6px]">
-                    {['No malware detected', 'No blacklist hits', 'SSL valid'].map((line) => (
-                      <li key={line} className="mt-1 flex items-start gap-2 first:mt-0">
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                        <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+              ))}
+          </PillarSection>
+
+          <PillarSection title="Security" narrative={securityNarrative}>
+            {result.security.grade !== 'N/A' &&
+              (securityIssues.length > 0 ? (
+                <TopIssuesList items={securityIssues} dotVariant="red" />
               ) : (
                 <>
-                  <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>Issues found</p>
-                  <ul className="flex flex-col gap-[6px]">
-                    {result.securityFlags.map((flag) => (
-                      <li key={flag} className="mt-1 flex items-start gap-2 first:mt-0">
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" />
-                        <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>{flag}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="border-t border-[#dddddd]" />
+                  <div className="flex flex-col gap-2">
+                    <p
+                      className={`${inter.className} text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#232521] md:text-xl md:tracking-[-0.2px]`}
+                    >
+                      All clear
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <IssueDot variant="green" />
+                      <span
+                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#232521]`}
+                      >
+                        Your site passed our security checks
+                      </span>
+                    </div>
+                  </div>
                 </>
-              )}
-            </div>
-            {/* UX column */}
-            <div>
-              <h2 className={`${manrope.className} mb-3 text-2xl font-extrabold leading-[1.2] tracking-[-0.24px] text-[#232521]`}>First-Impression UX</h2>
-              <p className={`${inter.className} mb-4 text-lg font-normal leading-[1.5] text-[#232521]`}>{result.aiNarrative.ux}</p>
-              {result.uxGrade !== 'N/A' && (
-                <>
-                  <div className="mb-4 border-t border-gray-100" />
-                  {result.uxFailingSignals.length > 0 ? (
-                    <>
-                      <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>Top issues found</p>
-                      <ul className="flex flex-col gap-[6px]">
-                        {result.uxFailingSignals.map((signal) => (
-                          <li key={signal} className="mt-1 flex items-start gap-2 first:mt-0">
-                            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${result.uxGrade === 'D' || result.uxGrade === 'F' ? 'bg-red-500' : 'bg-amber-400'}`} />
-                            <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>{signal}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  ) : (
-                    <>
-                      <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>All clear</p>
-                      <ul className="flex flex-col gap-[6px]">
-                        <li className="mt-1 flex items-start gap-2 first:mt-0">
-                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                          <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>First impression looks strong for a new visitor</span>
-                        </li>
-                      </ul>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
+              ))}
+          </PillarSection>
 
-          {/* Mobile/tablet: single active tab content */}
-          <div className="md:hidden">
-            {activeTab === 'speed' && (
-              <div>
-                <h2 className={`${manrope.className} mb-3 text-2xl font-extrabold leading-[1.2] tracking-[-0.24px] text-[#232521]`}>Speed</h2>
-                <p className={`${inter.className} mb-4 text-lg font-normal leading-[1.5] text-[#232521]`}>{result.aiNarrative.speed}</p>
-                {result.speedTopIssues.length > 0 ? (
-                  <>
-                    <div className="mb-4 border-t border-gray-100" />
-                    <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>Top issues found</p>
-                    <ul className="flex flex-col gap-[6px]">
-                      {result.speedTopIssues.map((issue, i) => (
-                        <li key={`speed-mob-${i}`} className="mt-1 flex items-start gap-2 first:mt-0">
-                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-400" />
-                          <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>{issue}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : result.speedScore >= 90 ? (
-                  <>
-                    <div className="mb-4 border-t border-gray-100" />
-                    <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>All clear</p>
-                    <ul className="flex flex-col gap-[6px]">
-                      <li className="mt-1 flex items-start gap-2 first:mt-0">
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                        <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>No major speed issues detected</span>
-                      </li>
-                    </ul>
-                  </>
-                ) : (
-                  <>
-                    <div className="mb-4 border-t border-gray-100" />
-                    <p className="text-sm text-gray-500">Check your PDF report for detailed recommendations.</p>
-                  </>
-                )}
-              </div>
-            )}
-            {activeTab === 'security' && (
-              <div>
-                <h2 className={`${manrope.className} mb-3 text-2xl font-extrabold leading-[1.2] tracking-[-0.24px] text-[#232521]`}>Security</h2>
-                <p className={`${inter.className} mb-4 text-lg font-normal leading-[1.5] text-[#232521]`}>{result.aiNarrative.security}</p>
-                <div className="mb-4 border-t border-gray-100" />
-                {result.securityFlags.length === 0 ? (
-                  <>
-                    <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>All clear</p>
-                    <ul className="flex flex-col gap-[6px]">
-                      {['No malware detected', 'No blacklist hits', 'SSL valid'].map((line) => (
-                        <li key={line} className="mt-1 flex items-start gap-2 first:mt-0">
-                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                          <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>{line}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : (
-                  <>
-                    <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>Issues found</p>
-                    <ul className="flex flex-col gap-[6px]">
-                      {result.securityFlags.map((flag) => (
-                        <li key={flag} className="mt-1 flex items-start gap-2 first:mt-0">
-                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" />
-                          <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>{flag}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </div>
-            )}
-            {activeTab === 'ux' && (
-              <div>
-                <h2 className={`${manrope.className} mb-3 text-2xl font-extrabold leading-[1.2] tracking-[-0.24px] text-[#232521]`}>First-Impression UX</h2>
-                <p className={`${inter.className} mb-4 text-lg font-normal leading-[1.5] text-[#232521]`}>{result.aiNarrative.ux}</p>
-                {result.uxGrade !== 'N/A' && (
-                  <>
-                    <div className="mb-4 border-t border-gray-100" />
-                    {result.uxFailingSignals.length > 0 ? (
-                      <>
-                        <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>Top issues found</p>
-                        <ul className="flex flex-col gap-[6px]">
-                          {result.uxFailingSignals.map((signal) => (
-                            <li key={signal} className="mt-1 flex items-start gap-2 first:mt-0">
-                              <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${result.uxGrade === 'D' || result.uxGrade === 'F' ? 'bg-red-500' : 'bg-amber-400'}`} />
-                              <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>{signal}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    ) : (
-                      <>
-                        <p className={`${inter.className} mb-2 text-lg font-bold leading-[1.5] text-[#232521]`}>All clear</p>
-                        <ul className="flex flex-col gap-[6px]">
-                          <li className="mt-1 flex items-start gap-2 first:mt-0">
-                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                            <span className={`${inter.className} text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#232521]`}>First impression looks strong for a new visitor</span>
-                          </li>
-                        </ul>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          <PillarSection
+            title="SEO & AI Visibility"
+            narrative={seoNarrative}
+          >
+            {result.seo.grade !== 'N/A' &&
+              (seoIssues.length > 0 ? (
+                <TopIssuesList items={seoIssues} dotVariant="amber" />
+              ) : (
+                <>
+                  <div className="border-t border-[#dddddd]" />
+                  <div className="flex flex-col gap-2">
+                    <p
+                      className={`${inter.className} text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#232521] md:text-xl md:tracking-[-0.2px]`}
+                    >
+                      All clear
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <IssueDot variant="green" />
+                      <span
+                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#232521]`}
+                      >
+                        No major SEO issues detected
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ))}
+          </PillarSection>
         </div>
 
         <div className="text-center">
           <button
             type="button"
             onClick={onRunAnother}
-            className="mt-4 text-sm text-gray-400 underline transition-colors hover:text-gray-600"
+            className="text-sm text-gray-400 underline transition-colors hover:text-gray-600"
           >
             Run another audit
           </button>
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-100 bg-white px-6 py-4">
-        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className={`${schibstedGrotesk.className} text-2xl font-extrabold leading-[1.2] tracking-[-0.24px] text-[#171544]`}>
-              {(() => {
-                const grades = [result.speedGrade, result.securityGrade, result.uxGrade];
-                const allA = grades.every(g => g === 'A');
-                const anyF = grades.some(g => g === 'F');
-                const anyD = grades.some(g => g === 'D');
-                const goodCount = grades.filter(g => g === 'A' || g === 'B').length;
-                const singleOutlier = anyD && goodCount === 2;
-                if (allA) return 'Keep your site running this way.';
-                if (anyF) return 'This is urgent';
-                if (singleOutlier) return 'One issue is doing most of the damage.';
-                return "Don't leave these issues sitting";
-              })()}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e5e7eb] bg-white px-10 py-5 shadow-[0px_-1px_20px_rgba(85,85,85,0.1)]">
+        <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-6 md:flex-row md:items-center md:justify-end">
+          <div className="flex flex-1 flex-col gap-2">
+            <p
+              className={`${schibstedGrotesk.className} text-xl font-extrabold leading-[1.2] tracking-[-0.2px] text-[#171544] md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]`}
+            >
+              Don&apos;t leave these issues sitting
             </p>
-            <p className={`${inter.className} mt-0.5 text-[15px] font-medium leading-[1.2] tracking-[-0.15px] text-[#545552]`}>
-              {(() => {
-                const grades = [result.speedGrade, result.securityGrade, result.uxGrade];
-                const allA = grades.every(g => g === 'A');
-                const anyF = grades.some(g => g === 'F');
-                const anyD = grades.some(g => g === 'D');
-                const goodCount = grades.filter(g => g === 'A' || g === 'B').length;
-                const singleOutlier = anyD && goodCount === 2;
-                if (allA) return "The Genie Site Care Plan maintains what's working — so it stays that way.";
-                if (anyF) return 'Every day this stays unfixed is another day your site is turning people away.';
-                if (singleOutlier) return "The Genie Site Care Plan fixes what's hurting you — and protects what's working.";
-                return 'The Genie Site Care Plan handles all of this — and keeps it fixed.';
-              })()}
+            <p
+              className={`${inter.className} text-base leading-[1.5] text-[#545552] lg:text-lg`}
+            >
+              The Book Service Site Fix tackles these one by one, in priority
+              order.
             </p>
           </div>
           <PrimaryButton
             href={pricingUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="min-h-[40px] whitespace-nowrap px-8 py-3 text-sm font-bold uppercase tracking-widest"
+            className="min-h-[40px] w-full shrink-0 rounded-lg !bg-[#1d4ed8] px-6 py-2.5 text-base font-semibold uppercase !text-white hover:!bg-[#1e40af] md:w-auto"
           >
-            START YOUR SITE CARE PLAN
+            VIEW MY SITE FIXES
           </PrimaryButton>
         </div>
       </div>

@@ -86,9 +86,8 @@ export async function createAuditLeadRecord(params: {
   websiteUrl: string;
   speedGrade: string;
   securityGrade: string;
-  uxGrade: string;
-  uxScore: number;
-  uxPillarScores: { understand: number; see: number; know: number };
+  seoGrade: string;
+  seoScore: number;
   source: 'public_audit';
 }): Promise<void> {
   const apiKey = process.env.NOTION_API_KEY;
@@ -98,8 +97,7 @@ export async function createAuditLeadRecord(params: {
   }
 
   const notion = new Client({ auth: apiKey });
-  const { understand, see, know } = params.uxPillarScores;
-  const uxDetail = `U:${understand} S:${see} K:${know} Score:${params.uxScore}/9`;
+  const seoDetail = `Score:${params.seoScore}/9`;
 
   try {
     await notion.pages.create({
@@ -127,10 +125,10 @@ export async function createAuditLeadRecord(params: {
           rich_text: [{ text: { content: params.securityGrade } }],
         },
         'UX Grade': {
-          rich_text: [{ text: { content: params.uxGrade } }],
+          rich_text: [{ text: { content: params.seoGrade } }],
         },
         'UX Detail': {
-          rich_text: [{ text: { content: uxDetail } }],
+          rich_text: [{ text: { content: seoDetail } }],
         },
         'Source': {
           rich_text: [{ text: { content: 'Genie Site Audit' } }],
