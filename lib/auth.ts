@@ -20,6 +20,7 @@ if (typeof window !== 'undefined') {
     signInWithPopup: firebaseAuth.signInWithPopup,
     signOut: firebaseAuth.signOut,
     sendPasswordResetEmail: firebaseAuth.sendPasswordResetEmail,
+    signInWithCustomToken: firebaseAuth.signInWithCustomToken,
     getRedirectResult: firebaseAuth.getRedirectResult,
     onAuthStateChanged: firebaseAuth.onAuthStateChanged,
     verifyBeforeUpdateEmail: firebaseAuth.verifyBeforeUpdateEmail,
@@ -40,6 +41,7 @@ export async function signInWithGoogle(): Promise<User> {
   try {
     const provider = new authFunctions.GoogleAuthProvider();
     const result = await authFunctions.signInWithPopup(auth, provider);
+    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     return result.user;
   } catch (error: any) {
     console.error('Google sign-in error:', error);
@@ -58,6 +60,7 @@ export async function signInWithApple(): Promise<User> {
   
   try {
     const result = await authFunctions.signInWithPopup(auth, provider);
+    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     return result.user;
   } catch (error: any) {
     console.error('Apple sign-in error:', error);
@@ -72,6 +75,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
   try {
     const userCredential = await authFunctions.signInWithEmailAndPassword(auth, email, password);
+    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     return userCredential.user;
   } catch (error: any) {
     console.error('Email sign-in error:', error);
@@ -105,6 +109,7 @@ export async function signUpWithEmail(
       await authFunctions.updateProfile(userCredential.user, { displayName });
     }
     
+    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     return userCredential.user;
   } catch (error: any) {
     console.error('Sign-up error:', error);
@@ -205,10 +210,27 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
 
   try {
     await authFunctions.signOut(auth);
+    document.cookie = 'bs-auth=; path=/; max-age=0; SameSite=Lax';
     return { success: true };
   } catch (error: any) {
     console.error('Sign-out error:', error);
     return { success: false, error: error.message || 'Failed to sign out' };
+  }
+}
+
+export async function signInWithCustomToken(customToken: string): Promise<User> {
+  if (typeof window === 'undefined') {
+    throw new Error('Auth functions only work in browser');
+  }
+
+  try {
+    const userCredential = await authFunctions.signInWithCustomToken(auth, customToken);
+    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
+    return userCredential.user;
+  } catch (error: unknown) {
+    const firebaseError = error as { message?: string };
+    console.error('Custom token sign-in error:', error);
+    throw new Error(firebaseError.message || 'Failed to sign in');
   }
 }
 

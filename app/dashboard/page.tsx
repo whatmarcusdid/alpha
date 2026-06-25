@@ -14,6 +14,7 @@ import { SupportTicket } from '@/types/supportTicket';
 import { Meeting } from '@/types/user';
 import { UpcomingMeetingCard } from '@/components/dashboard/UpcomingMeetingCard';
 import { NoMeetingsCard } from '@/components/dashboard/NoMeetingsCard';
+import { SiteFixOnboardingPanel } from '@/components/dashboard/SiteFixOnboardingPanel';
 import { trackDashboardViewed, trackFirstDashboardViewed, trackSupportHoursViewed, trackSiteMetricsViewed } from '@/lib/analytics';
 
 // Add a top-level log in the component:
@@ -174,6 +175,8 @@ export default function DashboardPage() {
             </SecondaryButton>
           )}
         </div>
+
+        <SiteFixOnboardingPanel />
 
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           {metrics.map((metric, index) => {

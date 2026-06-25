@@ -1,9 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { Inter, Schibsted_Grotesk } from 'next/font/google';
 
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SiteFixBottomSheet } from '@/components/book-service/SiteFixBottomSheet';
+import {
+  derivePreSelectedSkus,
+  hasAnyFailingGrade,
+  isAllGradesHealthy,
+} from '@/lib/book-service/derive-skus';
+import { storeAuditLeadId } from '@/lib/book-service/storage';
+import type { SiteFixSKU } from '@/lib/book-service/skus';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SPEED_ISSUE_DISPLAY_NAMES } from '@/lib/audit/speedTopIssues';
 import type { AuditResult, ClientGrade, SecurityFlag } from '@/lib/types/audit';
@@ -184,11 +192,74 @@ export function AuditResults({
   firstName,
   onRunAnother,
 }: AuditResultsProps) {
+  const auditLeadId = result.auditLeadId;
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const gradeSnapshot = {
+    speedGrade: result.speed.grade,
+    securityGrade: result.security.grade,
+    seoGrade: result.seo.grade,
+  };
+
+  const showSiteFixBar = hasAnyFailingGrade(gradeSnapshot);
+  const allHealthy = isAllGradesHealthy(gradeSnapshot);
+
+  /**
+   * AUDIT → CHECKOUT HANDOFF CONTRACT
+   *
+   * auditLeadId: passed via sessionStorage (`book-service:auditLeadId` key)
+   *   NOT in the URL — this is intentional. URL params are droppable and visible.
+   *   The checkout API receives auditLeadId in the POST body from client state.
+   *
+   * skus: pre-selected SKU keys derived from failing grades, passed as CSV query param
+   *   /book-service/select?skus=speed_fix,security_fix
+   *
+   * The select page reads `skus` from the URL and `auditLeadId` from sessionStorage.
+   * If auditLeadId is missing on the select page, show an error state — do not proceed.
+   */
+  function handleViewSiteFixes() {
+    if (!auditLeadId) return;
+
+    storeAuditLeadId(auditLeadId);
+    setSheetOpen(true);
+  }
+
+  async function handleConfirm(sku: SiteFixSKU) {
+    setIsCheckoutLoading(true);
+    setCheckoutError(null);
+    try {
+      const res = await fetch('/api/book-service/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditLeadId,
+          sku,
+          normalizedEmail: '',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.data?.url) {
+        setCheckoutError('Something went wrong. Please try again.');
+        return;
+      }
+      window.location.href = data.data.url;
+    } catch {
+      setCheckoutError('Something went wrong. Please try again.');
+    } finally {
+      setIsCheckoutLoading(false);
+    }
+  }
+
+  function handleCloseSheet() {
+    setSheetOpen(false);
+    setCheckoutError(null);
+  }
+
   const displayHost = result.websiteUrl
     .replace(/^https?:\/\//i, '')
     .replace(/\/+$/, '');
-
-  const pricingUrl = process.env.NEXT_PUBLIC_PRICING_URL ?? '#';
 
   const speedDescriptor =
     result.speed.grade === 'N/A'
@@ -219,9 +290,12 @@ export function AuditResults({
   );
   const seoIssues = result.seo.failingSignals.map(seoSignalLabel);
 
+  const stickyBarPadding = showSiteFixBar || allHealthy ? 'pb-40' : 'pb-[120px]';
+
   return (
+    <>
     <div className={`${inter.className} flex min-h-screen flex-col bg-white`}>
-      <div className="mx-auto flex w-full flex-col items-center gap-16 px-8 pb-[120px] pt-10 md:px-16 lg:px-[140px]">
+      <div className={`mx-auto flex w-full flex-col items-center gap-16 px-8 ${stickyBarPadding} pt-10 md:px-16 lg:px-[140px]`}>
         <div className="flex w-full shrink-0 items-center gap-2">
           <ShieldCheck className="size-6 shrink-0 text-[#1d4ed8]" aria-hidden />
           <span className="text-[25px] font-normal uppercase leading-[1.5] text-[#030712]">
@@ -383,31 +457,54 @@ export function AuditResults({
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e5e7eb] bg-white px-10 py-5 shadow-[0px_-1px_20px_rgba(85,85,85,0.1)]">
-        <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-6 md:flex-row md:items-center md:justify-end">
-          <div className="flex flex-1 flex-col gap-2">
-            <p
-              className={`${schibstedGrotesk.className} text-xl font-extrabold leading-[1.2] tracking-[-0.2px] text-[#171544] md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]`}
-            >
-              Don&apos;t leave these issues sitting
-            </p>
-            <p
-              className={`${inter.className} text-base leading-[1.5] text-[#545552] lg:text-lg`}
-            >
-              The Book Service Site Fix tackles these one by one, in priority
-              order.
-            </p>
+      {(showSiteFixBar || allHealthy) && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-gray-900 px-6 py-5 shadow-[0px_-4px_24px_rgba(0,0,0,0.25)] md:px-10">
+          <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
+            <div className="flex flex-1 flex-col gap-2">
+              {allHealthy && !showSiteFixBar ? (
+                <p
+                  className={`${schibstedGrotesk.className} text-xl font-extrabold leading-[1.2] text-white md:text-2xl`}
+                >
+                  Your site is in great shape.
+                </p>
+              ) : (
+                <>
+                  <p
+                    className={`${schibstedGrotesk.className} text-xl font-extrabold leading-[1.2] text-white md:text-2xl`}
+                  >
+                    Don&apos;t leave these issues sitting
+                  </p>
+                  <p className={`${inter.className} text-base leading-[1.5] text-gray-300`}>
+                    The Book Service Site Fix tackles these one by one, in
+                    priority order.
+                  </p>
+                </>
+              )}
+            </div>
+            {showSiteFixBar && (
+              <button
+                type="button"
+                onClick={handleViewSiteFixes}
+                disabled={!auditLeadId}
+                className="min-h-[48px] shrink-0 rounded-full bg-[#2563EB] px-8 py-3 text-base font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-gray-600 disabled:opacity-70 md:w-auto"
+              >
+                View my site fixes
+              </button>
+            )}
           </div>
-          <PrimaryButton
-            href={pricingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="min-h-[40px] w-full shrink-0 rounded-lg !bg-[#1d4ed8] px-6 py-2.5 text-base font-semibold uppercase !text-white hover:!bg-[#1e40af] md:w-auto"
-          >
-            VIEW MY SITE FIXES
-          </PrimaryButton>
         </div>
-      </div>
+      )}
     </div>
+
+    <SiteFixBottomSheet
+      sku={null}
+      skus={derivePreSelectedSkus(gradeSnapshot)}
+      open={sheetOpen}
+      onClose={handleCloseSheet}
+      onConfirm={handleConfirm}
+      isLoading={isCheckoutLoading}
+      error={checkoutError}
+    />
+    </>
   );
 }

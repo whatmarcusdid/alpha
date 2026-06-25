@@ -14,6 +14,8 @@ import {
 import { updateLeadWithPayment } from '@/lib/notion-sales';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/formatters';
 import { getStripe, getStripeCustomerPortalUrl } from '@/lib/stripe-server';
+import { handleSiteFixPayment } from '@/lib/book-service/handleSiteFixPayment';
+import { isSiteFixSession } from '@/lib/book-service/stripe-metadata';
 
 // --- Growth Engine Helpers ---
 
@@ -481,6 +483,12 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
 
   const session = event.data.object as Stripe.Checkout.Session;
   const customerId = session.customer as string;
+
+  // SITE FIX BRANCH — must come before subscription logic
+  if (isSiteFixSession(session.metadata)) {
+    await handleSiteFixPayment(session);
+    return;
+  }
   
   // Set span attribute with truncated customerId for privacy
   if (customerId) {

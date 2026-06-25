@@ -89,6 +89,16 @@ export const webhookLimiter = redis
     })
   : null;
 
+// Book Service account creation: 5 attempts per IP per 15 minutes
+export const bookServiceCreateAccountLimiter = redis
+  ? new Ratelimit({
+      redis: redis,
+      limiter: Ratelimit.slidingWindow(5, '15 m'),
+      analytics: true,
+      prefix: 'ratelimit:book-service-create-account',
+    })
+  : null;
+
 // General API: 60 requests per minute per IP (fallback for all other routes)
 export const generalLimiter = redis
   ? new Ratelimit({

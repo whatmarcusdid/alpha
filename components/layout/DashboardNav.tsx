@@ -16,8 +16,20 @@ import {
   ChevronDown,
   LogOut
 } from 'lucide-react';
-import { TSGLogo } from '@/components/ui/logo';
 import { AllPagesOverlay } from '@/components/ui/AllPagesOverlay';
+
+function BookServiceLogo() {
+  return (
+    <Link href="/dashboard" className="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" fill="#1E3A8A" stroke="#1E3A8A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span className="text-sm font-bold tracking-widest text-[#0F172A] uppercase">
+        Book Service
+      </span>
+    </Link>
+  );
+}
 
 const mainNavItems = [
   { name: 'Home', href: '/dashboard', icon: Home },
@@ -77,9 +89,9 @@ export function DashboardNav() {
           e.stopPropagation();
           setShowUserDropdown(!showUserDropdown);
         }}
-        className="flex items-center space-x-2 min-w-[112px] min-h-[71px] justify-center hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40 rounded-lg transition-colors"
+        className="flex items-center space-x-2 min-w-[112px] min-h-[71px] justify-center hover:bg-blue-50 active:bg-blue-50 rounded-lg transition-colors"
       >
-        <div className="w-8 h-8 rounded-full bg-[#1b4a41] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-[#1E3A8A] flex items-center justify-center">
           <span className="text-white text-sm font-semibold">{userInitial}</span>
         </div>
         <ChevronDown className="h-4 w-4 text-gray-600" />
@@ -92,7 +104,7 @@ export function DashboardNav() {
               className="block px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-200"
             >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#1b4a41] flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 rounded-full bg-[#1E3A8A] flex items-center justify-center text-white font-semibold">
                 {userInitial}
               </div>
               <div className="flex-1">
@@ -122,8 +134,8 @@ export function DashboardNav() {
         }}
                 className={`flex flex-col items-center justify-center p-5 rounded-lg transition-colors w-full min-w-[64px] ${
             showMoreMenu || moreNavItems.some(item => pathname === item.href)
-            ? 'text-[#1B4A41] bg-[#D9D5C5]/40' 
-            : 'text-[#232521] hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40'
+            ? 'text-[#2563EB] bg-blue-50' 
+            : 'text-[#232521] hover:bg-blue-50 active:bg-blue-50'
         }`}>
         <SeeAllIcon className="w-6 h-6 mb-1" />
         <span className="text-sm font-medium whitespace-nowrap">See All</span>
@@ -140,7 +152,7 @@ export function DashboardNav() {
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center justify-between h-16">
             <div className="flex-shrink-0">
-              <TSGLogo />
+              <BookServiceLogo />
             </div>
 
             <div className="flex items-center space-x-1">
@@ -155,8 +167,8 @@ export function DashboardNav() {
                     className={`
                       flex flex-col items-center min-w-[112px] min-h-[71px] justify-center rounded-lg text-sm font-medium transition-colors
                       ${isActive 
-                        ? 'bg-[#D9D5C5]/40 text-[#1B4A41]' 
-                        : 'text-gray-600 hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40'
+                        ? 'bg-blue-50 text-[#2563EB]' 
+                        : 'text-gray-600 hover:bg-blue-50 active:bg-blue-50'
                       }
                     `}>
                     <Icon className="h-5 w-5 mb-1" />
@@ -172,8 +184,8 @@ export function DashboardNav() {
                 href="/dashboard/settings"
                 className={`flex items-center justify-center min-w-[112px] min-h-[71px] rounded-lg transition-colors ${
                   pathname === '/dashboard/settings' 
-                    ? 'bg-[#D9D5C5]/40 text-[#1B4A41]' 
-                    : 'text-gray-600 hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40'
+                    ? 'bg-blue-50 text-[#2563EB]' 
+                    : 'text-gray-600 hover:bg-blue-50 active:bg-blue-50'
                 }`}
               >
                 <Settings className="h-5 w-5" />
@@ -186,12 +198,12 @@ export function DashboardNav() {
       {/* Mobile Top Bar - Logo + User */}
       <div className="lg:hidden bg-transparent mt-4">
         <div className="px-4 h-16 flex items-center justify-between">
-          <TSGLogo />
+          <BookServiceLogo />
           <div className="flex items-center space-x-2">
             {userDropdown}
             <Link 
               href="/dashboard/settings"
-              className="hidden hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40 rounded-lg p-2 transition-colors"
+              className="hidden hover:bg-blue-50 active:bg-blue-50 rounded-lg p-2 transition-colors"
             >
               <Settings className="h-5 w-5 text-gray-600" />
             </Link>
@@ -212,8 +224,8 @@ export function DashboardNav() {
                 href={item.href}
                 className={`flex flex-col items-center justify-center p-5 rounded-lg transition-colors min-w-[64px] flex-1 ${
                   isActive 
-                    ? 'text-[#1B4A41] bg-[#D9D5C5]/40' 
-                    : 'text-[#232521] hover:bg-[#D9D5C5]/40 active:bg-[#D9D5C5]/40'
+                    ? 'text-[#2563EB] bg-blue-50' 
+                    : 'text-[#232521] hover:bg-blue-50 active:bg-blue-50'
                 }`}
               >
                 <Icon className="w-6 h-6 mb-1" />
