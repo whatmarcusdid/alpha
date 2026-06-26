@@ -2,6 +2,9 @@
 
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { ClockIcon } from '@heroicons/react/24/outline';
+import { SUPPORT_EMAIL } from '@/lib/config';
+import type { SiteFixEntitlement } from '@/lib/types/client-context';
+import type { OnboardingData } from '@/lib/types/onboarding';
 
 export type PillarStatus = 'queued' | 'in_progress' | 'done' | 'awaiting_access';
 
@@ -14,10 +17,13 @@ export type PillarProgress = {
 
 export type FixSession = {
   orderId: string | null;
-  deliveryStatus: 'in_progress' | 'delivered';
+  accessStatus: 'needed' | 'received' | null;
+  deliveryStatus: 'in_progress' | 'delivered' | null;
   estimatedCompletionAt: Date | null;
   reportUrl: string | null;
+  loomUrl: string | null;
   googleReviewUrl: string | null;
+  onboarding: OnboardingData | null;
   fixProgress: {
     speed: PillarProgress;
     security: PillarProgress;
@@ -28,13 +34,16 @@ export type FixSession = {
 type Props = {
   session: FixSession;
   businessName: string;
+  packageLabel: string | null;
+  entitlements: SiteFixEntitlement[];
+  showPackageFallback?: boolean;
   onViewDetails: () => void;
 };
 
 const PILLAR_ORDER = [
-  { key: 'speed' as const, label: 'Speed' },
-  { key: 'security' as const, label: 'Security' },
-  { key: 'seo' as const, label: 'SEO and AI visibility' },
+  { key: 'speed' as const, label: 'Speed', entitlement: 'speed' as const },
+  { key: 'security' as const, label: 'Security', entitlement: 'security' as const },
+  { key: 'seo' as const, label: 'SEO and AI visibility', entitlement: 'seo_ai_visibility' as const },
 ];
 
 const BADGE_STYLES: Record<PillarStatus, { className: string; label: string }> = {
@@ -105,29 +114,60 @@ function PillarIcon({ status }: { status: PillarStatus }) {
   return <ClockIcon className="h-6 w-6 shrink-0 text-gray-400" aria-hidden="true" />;
 }
 
-export function ActiveSiteFixesCard({ session, businessName, onViewDetails }: Props) {
-  const packageLabel = 'Speed, Security & SEO Fix';
+function getVisiblePillars(entitlements: SiteFixEntitlement[]) {
+  if (entitlements.length === 0) {
+    return PILLAR_ORDER;
+  }
 
-  const doneCount = PILLAR_ORDER.filter(
+  return PILLAR_ORDER.filter(({ entitlement }) => entitlements.includes(entitlement));
+}
+
+export function ActiveSiteFixesCard({
+  session,
+  businessName,
+  packageLabel,
+  entitlements,
+  showPackageFallback = false,
+  onViewDetails,
+}: Props) {
+  const deliveryStatus = session.deliveryStatus ?? 'in_progress';
+  const visiblePillars = getVisiblePillars(entitlements);
+  const pillarCount = visiblePillars.length;
+
+  const doneCount = visiblePillars.filter(
     ({ key }) => session.fixProgress[key].status === 'done'
   ).length;
 
   const lastUpdated = getMostRecentUpdatedAt(session);
 
-  const nonDonePillarLabels = PILLAR_ORDER.filter(
-    ({ key }) => session.fixProgress[key].status !== 'done'
-  ).map(({ label }) => label.toLowerCase());
+  const nonDonePillarLabels = visiblePillars
+    .filter(({ key }) => session.fixProgress[key].status !== 'done')
+    .map(({ label }) => label.toLowerCase());
 
-  const showFooterInProgress = session.deliveryStatus === 'in_progress';
+  const showFooterInProgress = deliveryStatus === 'in_progress';
   const showFooterDelivered =
-    session.deliveryStatus === 'delivered' && session.reportUrl != null;
+    deliveryStatus === 'delivered' && session.reportUrl != null;
 
   return (
     <div className="rounded-lg border-2 border-gray-200 bg-white p-4">
       <div className="flex flex-col gap-[3px]">
         <h3 className="text-lg font-semibold leading-[1.2] tracking-[-0.18px] text-gray-950 lg:text-xl lg:tracking-[-0.2px]">
-          {businessName} — {packageLabel}
+          {businessName.trim() || 'Your business'}
         </h3>
+        {packageLabel != null && (
+          <p className="text-sm tracking-[-0.14px] leading-[1.5] text-zinc-600">{packageLabel}</p>
+        )}
+        {showPackageFallback && (
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-gray-500">Package details pending</p>
+            <p className="text-sm text-gray-500">
+              Questions?{' '}
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-blue-600 hover:text-blue-700">
+                Contact us
+              </a>
+            </p>
+          </div>
+        )}
         {session.orderId != null && (
           <p className="text-sm tracking-[-0.14px] leading-[1.5] text-zinc-600">
             Site Fix order — #{session.orderId}
@@ -140,13 +180,13 @@ export function ActiveSiteFixesCard({ session, businessName, onViewDetails }: Pr
         )}
       </div>
 
-      {session.deliveryStatus === 'in_progress' ? (
+      {deliveryStatus === 'in_progress' ? (
         <div className="mt-4 rounded-lg bg-[#dbeafe] p-4">
           <p className="text-sm font-semibold tracking-[-0.14px] leading-[1.5] text-gray-950">
             We&apos;re fixing your website&apos;s {nonDonePillarLabels.join(', ')}
           </p>
           <p className="mt-1 text-xl font-semibold leading-[1.2] tracking-[-0.2px] text-[#1e3a8a] md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]">
-            {doneCount} of 3 fixes done — on track
+            {doneCount} of {pillarCount} fixes done — on track
           </p>
           {session.estimatedCompletionAt != null && (
             <p className="mt-1 text-sm tracking-[-0.14px] leading-[1.5] text-gray-950">
@@ -161,13 +201,13 @@ export function ActiveSiteFixesCard({ session, businessName, onViewDetails }: Pr
             Your website&apos;s Speed, Security, and SEO &amp; AI Visibility have been fixed
           </p>
           <p className="mt-1 text-xl font-semibold leading-[1.2] tracking-[-0.2px] text-green-800 md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]">
-            3 of 3 fixes complete
+            {pillarCount} of {pillarCount} fixes complete
           </p>
         </div>
       )}
 
       <ul className="mt-4 space-y-0">
-        {PILLAR_ORDER.map(({ key, label }) => {
+        {visiblePillars.map(({ key, label }) => {
           const pillar = session.fixProgress[key];
           const badge = BADGE_STYLES[pillar.status];
 

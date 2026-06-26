@@ -27,6 +27,12 @@ service cloud.firestore {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }
+
+      // Client-facing fix updates — read-only for the owning user, admin writes only
+      match /fixUpdates/{updateId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
     }
 
     // Support tickets — authenticated user can create and read their own

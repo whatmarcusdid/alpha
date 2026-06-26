@@ -4,18 +4,21 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { ClockIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { FixSession, PillarStatus } from '@/components/dashboard/ActiveSiteFixesCard';
+import type { SiteFixEntitlement } from '@/lib/types/client-context';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   session: FixSession;
   businessName: string;
+  packageLabel: string | null;
+  entitlements: SiteFixEntitlement[];
 };
 
 const PILLAR_ORDER = [
-  { key: 'speed' as const, label: 'Speed' },
-  { key: 'security' as const, label: 'Security' },
-  { key: 'seo' as const, label: 'SEO & AI Visibility' },
+  { key: 'speed' as const, label: 'Speed', entitlement: 'speed' as const },
+  { key: 'security' as const, label: 'Security', entitlement: 'security' as const },
+  { key: 'seo' as const, label: 'SEO & AI Visibility', entitlement: 'seo_ai_visibility' as const },
 ];
 
 const BADGE_STYLES: Record<PillarStatus, { className: string; label: string }> = {
@@ -78,7 +81,22 @@ function PillarIcon({ status }: { status: PillarStatus }) {
   return <ClockIcon className="h-6 w-6 text-gray-400 shrink-0" aria-hidden="true" />;
 }
 
-export function SiteFixDetailModal({ isOpen, onClose, session, businessName }: Props) {
+function getVisiblePillars(entitlements: SiteFixEntitlement[]) {
+  if (entitlements.length === 0) {
+    return PILLAR_ORDER;
+  }
+
+  return PILLAR_ORDER.filter(({ entitlement }) => entitlements.includes(entitlement));
+}
+
+export function SiteFixDetailModal({
+  isOpen,
+  onClose,
+  session,
+  businessName,
+  packageLabel,
+  entitlements,
+}: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const touchStartYRef = useRef<number | null>(null);
   const [isVisible, setIsVisible] = useState<boolean>(false);
@@ -175,6 +193,7 @@ export function SiteFixDetailModal({ isOpen, onClose, session, businessName }: P
   if (!isOpen) return null;
 
   const lastUpdated = getMostRecentUpdatedAt(session);
+  const visiblePillars = getVisiblePillars(entitlements);
 
   const backdropClassName = reduceMotion
     ? 'opacity-100'
@@ -227,7 +246,10 @@ export function SiteFixDetailModal({ isOpen, onClose, session, businessName }: P
           <div className="p-6 lg:flex lg:justify-center lg:pt-6">
             <div className="w-full lg:max-w-[900px]">
               <div className="space-y-1 text-sm text-gray-600">
-                <p className="font-medium text-[#232521]">{businessName}</p>
+                <p className="font-medium text-[#232521]">
+                  {businessName.trim() || 'Your business'}
+                </p>
+                {packageLabel != null && <p>{packageLabel}</p>}
                 {session.orderId != null && <p>Order #{session.orderId}</p>}
                 {lastUpdated != null && (
                   <p>Last updated {formatTimestamp(lastUpdated)}</p>
@@ -235,7 +257,7 @@ export function SiteFixDetailModal({ isOpen, onClose, session, businessName }: P
               </div>
 
               <div className="mt-6">
-                {PILLAR_ORDER.map(({ key, label }) => {
+                {visiblePillars.map(({ key, label }) => {
                   const pillar = session.fixProgress[key];
                   const badge = BADGE_STYLES[pillar.status];
 

@@ -19,7 +19,11 @@ import type Stripe from 'stripe';
 import { adminDb } from '@/lib/firebase/admin';
 
 import { sendSiteFixPaymentConfirmedEmail } from './emails';
-import { expandEntitlements, SITE_FIX_SKUS } from './skus';
+import {
+  processDashboardInvite,
+  resolveOrCreateUserIdForInvite,
+} from './dashboard-invite';
+import { expandEntitlements, SITE_FIX_SKUS, type SiteFixSKU } from './skus';
 import { isSiteFixSession, parseSiteFixSessionMetadata } from './stripe-metadata';
 
 function getAppBaseUrl(): string {
@@ -128,6 +132,55 @@ export async function handleSiteFixPayment(
   );
 
   console.log(`handleSiteFixPayment: order written orderId=${orderId}`);
+
+  void triggerDashboardInvite({
+    normalizedEmail,
+    orderId,
+    sku: skuKey,
+  }).catch((err) =>
+    console.error('handleSiteFixPayment: dashboard invite failed (non-blocking)', err)
+  );
+}
+
+async function triggerDashboardInvite(params: {
+  normalizedEmail: string;
+  orderId: string;
+  sku: SiteFixSKU;
+}): Promise<void> {
+  const userId = await resolveOrCreateUserIdForInvite(params.normalizedEmail);
+  if (!userId) {
+    return;
+  }
+
+  const cronSecret = process.env.CRON_SECRET;
+  const invitePayload = {
+    userId,
+    email: params.normalizedEmail,
+    orderId: params.orderId,
+    sku: params.sku,
+  };
+
+  if (cronSecret) {
+    const response = await fetch(`${getAppBaseUrl()}/api/book-service/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${cronSecret}`,
+      },
+      body: JSON.stringify(invitePayload),
+    });
+
+    if (!response.ok) {
+      console.error(
+        '[handleSiteFixPayment] invite route failed:',
+        await response.text()
+      );
+    }
+
+    return;
+  }
+
+  await processDashboardInvite(invitePayload);
 }
 
 async function trackServerAnalyticsEvent(

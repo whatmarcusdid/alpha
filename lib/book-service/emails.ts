@@ -190,3 +190,37 @@ export async function sendSiteFixDeliveryReadyEmail(params: {
     throw new Error(`Loops API error ${response.status}: ${errorText}`);
   }
 }
+
+export async function sendDashboardInviteEmail(params: {
+  email: string;
+  orderId: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  const apiKey = process.env.LOOPS_API_KEY;
+
+  if (!apiKey) {
+    console.warn('[Loops] LOOPS_API_KEY not set — skipping dashboard invite email');
+    return;
+  }
+
+  const response = await fetch('https://app.loops.so/api/v1/events', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: params.email,
+      eventName: 'dashboard_invite',
+      eventProperties: {
+        orderId: params.orderId,
+        dashboardUrl: params.dashboardUrl,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Loops API error ${response.status}: ${errorText}`);
+  }
+}

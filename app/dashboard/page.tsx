@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ActiveSiteFixesCard,
@@ -11,6 +11,21 @@ import {
 import { SiteFixDetailModal } from '@/components/dashboard/SiteFixDetailModal';
 import { RightColumnSidebar } from '@/components/dashboard/RightColumnSidebar';
 import { SupportContactModule } from '@/components/dashboard/SupportContactModule';
+import { WelcomeModule } from '@/components/dashboard/WelcomeModule';
+import {
+  MilestoneTimeline,
+  parseMilestoneTimelineProps,
+} from '@/components/dashboard/MilestoneTimeline';
+import { AccessRequestCard } from '@/components/dashboard/AccessRequestCard';
+import { ClientUpdatesFeed } from '@/components/dashboard/ClientUpdatesFeed';
+import { DeliverablesModule } from '@/components/dashboard/DeliverablesModule';
+import { DashboardEmptyState } from '@/components/dashboard/DashboardEmptyState';
+import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBoundary';
+import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
+import { useClientContext } from '@/lib/hooks/useClientContext';
+import { SUPPORT_EMAIL } from '@/lib/config';
+import type { SiteFixEntitlement } from '@/lib/types/client-context';
+import { mapOnboardingData } from '@/lib/types/onboarding';
 
 type FirestoreTimestamp = {
   toDate?: () => Date;
@@ -44,6 +59,14 @@ function mapPillarProgress(data: unknown): PillarProgress {
   };
 }
 
+function parseFixSessionAccessStatus(value: unknown): FixSession['accessStatus'] {
+  if (value === 'needed' || value === 'received') {
+    return value;
+  }
+
+  return null;
+}
+
 function mapFirestoreSessionToFixSession(data: FirestoreData): FixSession {
   const fixProgress =
     data.fixProgress && typeof data.fixProgress === 'object'
@@ -52,10 +75,18 @@ function mapFirestoreSessionToFixSession(data: FirestoreData): FixSession {
 
   return {
     orderId: typeof data.orderId === 'string' ? data.orderId : null,
-    deliveryStatus: data.deliveryStatus === 'delivered' ? 'delivered' : 'in_progress',
+    accessStatus: parseFixSessionAccessStatus(data.accessStatus),
+    deliveryStatus:
+      data.deliveryStatus === 'delivered'
+        ? 'delivered'
+        : data.deliveryStatus === 'in_progress'
+          ? 'in_progress'
+          : null,
     estimatedCompletionAt: toDateOrNull(data.estimatedCompletionAt),
     reportUrl: typeof data.reportUrl === 'string' ? data.reportUrl : null,
+    loomUrl: typeof data.loomUrl === 'string' ? data.loomUrl : null,
     googleReviewUrl: typeof data.googleReviewUrl === 'string' ? data.googleReviewUrl : null,
+    onboarding: mapOnboardingData(data.onboarding),
     fixProgress: {
       speed: mapPillarProgress(fixProgress.speed),
       security: mapPillarProgress(fixProgress.security),
@@ -64,13 +95,57 @@ function mapFirestoreSessionToFixSession(data: FirestoreData): FixSession {
   };
 }
 
-export default function DashboardPage() {
+function areAllPurchasedPillarsDone(
+  session: FixSession,
+  entitlements: SiteFixEntitlement[]
+): boolean {
+  const pillarKeys: Array<'speed' | 'security' | 'seo'> =
+    entitlements.length === 0
+      ? ['speed', 'security', 'seo']
+      : entitlements.map((entitlement) =>
+          entitlement === 'speed'
+            ? 'speed'
+            : entitlement === 'security'
+              ? 'security'
+              : 'seo'
+        );
+
+  return pillarKeys.every((key) => session.fixProgress[key].status === 'done');
+}
+
+const supportMailto = `mailto:${SUPPORT_EMAIL}`;
+
+function DashboardPageContent() {
   const router = useRouter();
   const [uid, setUid] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [fixSession, setFixSession] = useState<FixSession | null>(null);
-  const [userData, setUserData] = useState<{ firstName: string; businessName: string } | null>(null);
+  const [userData, setUserData] = useState<{
+    firstName: string;
+    businessName: string;
+    inviteStatus: string | null;
+    siteFix: Record<string, unknown> | null;
+  } | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState<boolean>(false);
+  const inviteAcceptedMarkedRef = useRef<boolean>(false);
+  const { context: clientContext, status: clientContextStatus } = useClientContext();
+
+  useEffect(() => {
+    if (!uid) return;
+
+    const key = `bsd_welcome_dismissed_${uid}`;
+    if (localStorage.getItem(key) === 'true') {
+      setWelcomeDismissed(true);
+    }
+  }, [uid]);
+
+  const handleWelcomeDismiss = () => {
+    if (!uid) return;
+
+    localStorage.setItem(`bsd_welcome_dismissed_${uid}`, 'true');
+    setWelcomeDismissed(true);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -94,18 +169,28 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!authReady || !uid) return;
 
-    const { getFirestore, doc, getDoc } = require('firebase/firestore');
+    const { getFirestore, doc, onSnapshot } = require('firebase/firestore');
     const db = getFirestore();
 
-    getDoc(doc(db, 'users', uid))
-      .then((snapshot: { exists: () => boolean; data: () => FirestoreData | undefined }) => {
+    const unsubscribe = onSnapshot(
+      doc(db, 'users', uid),
+      (snapshot: { exists: () => boolean; data: () => FirestoreData | undefined }) => {
         if (!snapshot.exists()) {
-          setUserData({ firstName: 'there', businessName: '' });
+          setUserData({
+            firstName: 'there',
+            businessName: '',
+            inviteStatus: null,
+            siteFix: null,
+          });
           return;
         }
 
         const data = snapshot.data() ?? {};
         const company = data.company as { legalName?: string } | undefined;
+        const siteFix =
+          data.siteFix && typeof data.siteFix === 'object'
+            ? (data.siteFix as Record<string, unknown>)
+            : null;
 
         setUserData({
           firstName:
@@ -113,13 +198,49 @@ export default function DashboardPage() {
               ? data.fullName.split(' ')[0]
               : 'there',
           businessName: company?.legalName ?? '',
+          inviteStatus:
+            siteFix != null && typeof siteFix.inviteStatus === 'string'
+              ? siteFix.inviteStatus
+              : null,
+          siteFix,
         });
-      })
-      .catch((error: Error) => {
+      },
+      (error: Error) => {
         console.error('[Dashboard] user fetch error:', error);
-        setUserData({ firstName: 'there', businessName: '' });
-      });
+        setUserData({
+          firstName: 'there',
+          businessName: '',
+          inviteStatus: null,
+          siteFix: null,
+        });
+      }
+    );
+
+    return () => unsubscribe();
   }, [authReady, uid]);
+
+  useEffect(() => {
+    if (
+      !authReady ||
+      !uid ||
+      userData?.inviteStatus !== 'sent' ||
+      inviteAcceptedMarkedRef.current
+    ) {
+      return;
+    }
+
+    inviteAcceptedMarkedRef.current = true;
+
+    const { getFirestore, doc, updateDoc, serverTimestamp } = require('firebase/firestore');
+    const db = getFirestore();
+
+    updateDoc(doc(db, 'users', uid), {
+      'siteFix.inviteStatus': 'accepted',
+      'siteFix.acceptedAt': serverTimestamp(),
+    }).catch((error: Error) => {
+      console.error('[Dashboard] failed to mark invite accepted:', error);
+    });
+  }, [authReady, uid, userData?.inviteStatus]);
 
   useEffect(() => {
     if (!authReady || !uid) return;
@@ -172,11 +293,90 @@ export default function DashboardPage() {
     day: 'numeric',
   });
 
-  const firstName = userData?.firstName ?? 'there';
-  const businessName = userData?.businessName ?? '';
+  const firstName =
+    clientContext?.fullName?.split(' ')[0] || userData?.firstName || 'there';
+  const businessName =
+    clientContext?.businessName || userData?.businessName || 'Your business';
+  const packageLabel = clientContext?.packageLabel ?? null;
+  const entitlements = clientContext?.entitlements ?? [];
+  const milestoneTimelineProps = parseMilestoneTimelineProps({
+    siteFix: userData?.siteFix ?? null,
+    deliveryStatus: fixSession?.deliveryStatus ?? null,
+    allPillarsDone:
+      fixSession != null ? areAllPurchasedPillarsDone(fixSession, entitlements) : false,
+  });
+
+  const renderCenterColumn = () => {
+    if (clientContextStatus === 'error') {
+      return (
+        <DashboardEmptyState
+          headline="Something went wrong"
+          body="We had trouble loading your account details. Try refreshing — if the problem continues, contact support."
+          cta={{ label: 'Refresh', href: '/' }}
+        />
+      );
+    }
+
+    if (clientContextStatus === 'not_linked') {
+      return (
+        <DashboardEmptyState
+          headline="We can't find your account"
+          body="Your account may not be linked yet. Please contact us and we'll get this sorted right away."
+          cta={{ label: 'Contact support', href: supportMailto }}
+        />
+      );
+    }
+
+    if (fixSession == null) {
+      return (
+        <DashboardEmptyState
+          headline="We're getting your project set up"
+          body="Your fix session will appear here shortly. If it's been more than 24 hours, reach out to us."
+          cta={{ label: 'Contact support', href: supportMailto }}
+        />
+      );
+    }
+
+    return (
+      <>
+        <h2 className="text-xl font-semibold leading-[1.2] tracking-[-0.2px] text-gray-950 md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]">
+          Active site fixes
+        </h2>
+        <MilestoneTimeline {...milestoneTimelineProps} />
+        {fixSession.accessStatus != null && (
+          <AccessRequestCard
+            accessStatus={fixSession.accessStatus}
+            orderId={fixSession.orderId}
+          />
+        )}
+        {uid != null && <ClientUpdatesFeed userId={uid} />}
+        <ActiveSiteFixesCard
+          session={fixSession}
+          businessName={businessName}
+          packageLabel={packageLabel}
+          entitlements={entitlements}
+          showPackageFallback={false}
+          onViewDetails={() => setModalOpen(true)}
+        />
+        <DeliverablesModule
+          reportUrl={fixSession.reportUrl}
+          loomUrl={fixSession.loomUrl}
+          deliveryStatus={fixSession.deliveryStatus}
+        />
+      </>
+    );
+  };
 
   return (
     <main className="min-h-[calc(100vh-120px)] rounded-t-2xl bg-white p-5 pb-24 md:p-6 lg:p-6 lg:pb-6">
+      {authReady && !welcomeDismissed && (
+        <WelcomeModule
+          firstName={firstName}
+          packageLabel={packageLabel}
+          onDismiss={handleWelcomeDismiss}
+        />
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[381px_1fr_381px]">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
@@ -186,22 +386,12 @@ export default function DashboardPage() {
             </h1>
           </div>
           <SupportContactModule />
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {fixSession && (
-            <>
-              <h2 className="text-xl font-semibold leading-[1.2] tracking-[-0.2px] text-gray-950 md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]">
-                Active site fixes
-              </h2>
-              <ActiveSiteFixesCard
-                session={fixSession}
-                businessName={businessName}
-                onViewDetails={() => setModalOpen(true)}
-              />
-            </>
+          {fixSession?.onboarding != null && (
+            <OnboardingChecklist onboarding={fixSession.onboarding} />
           )}
         </div>
+
+        <div className="flex flex-col gap-4">{renderCenterColumn()}</div>
 
         <div>
           <RightColumnSidebar
@@ -218,8 +408,18 @@ export default function DashboardPage() {
           onClose={() => setModalOpen(false)}
           session={fixSession}
           businessName={businessName}
+          packageLabel={packageLabel}
+          entitlements={entitlements}
         />
       )}
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <DashboardErrorBoundary>
+      <DashboardPageContent />
+    </DashboardErrorBoundary>
   );
 }
