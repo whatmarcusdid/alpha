@@ -60,7 +60,7 @@ export default function TransactionsPage() {
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      router.push('/signin');
     }
   }, [authLoading, user, router]);
 

@@ -1,33 +1,54 @@
-rules_version='2'
-
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Password Reset Tokens
-    // SECURITY: No client access allowed - only backend via Admin SDK
-    // This prevents token enumeration, manipulation, and rate limit bypass attacks
+
+    // Password resets — server-only via Admin SDK
     match /passwordResets/{tokenId} {
       allow read, write: if false;
     }
 
     // auditLeads — server-only via Admin SDK
-    // No client reads or writes permitted
     match /auditLeads/{auditId} {
       allow read, write: if false;
     }
 
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      // Exclude passwordResets - backend only (request.path[3] is collection name)
-      allow read, write: if request.time < timestamp.date(2026, 2, 2)
-        && request.path[3] != 'passwordResets';
+    // User profiles — authenticated user can read/write their own document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Reports subcollection — read-only for the owning user
+      match /reports/{reportId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
+      // Fix sessions — read-only for the owning user, admin writes only
+      match /fixSessions/{sessionId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
     }
+
+    // Support tickets — authenticated user can create and read their own
+    match /supportTickets/{ticketId} {
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Pending subscriptions — server-only
+    match /pending_subscriptions/{email} {
+      allow read, write: if false;
+    }
+
+    // Sites — authenticated user can read their own site records
+    match /sites/{siteId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
   }
 }

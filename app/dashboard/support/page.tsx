@@ -5,6 +5,7 @@ import type { User } from 'firebase/auth';
 import { onAuthStateChange } from '@/lib/auth';
 import { validateFile } from '@/lib/firebase/storage';
 import { createSupportTicket, TicketCategory, TicketUrgency } from '@/lib/support/client';
+import { SUPPORT_EMAIL, SUPPORT_PHONE } from '@/lib/config';
 import {
   PhoneIcon,
   EnvelopeIcon,
@@ -144,12 +145,12 @@ export default function SupportPage() {
   }, [activeTab, user, fetchPastTickets]);
 
   const handleCopyPhone = () => {
-    navigator.clipboard.writeText('(555) 123-4567');
+    navigator.clipboard.writeText(SUPPORT_PHONE);
     setNotification({ show: true, type: 'success', message: 'Copied to clipboard!' });
   };
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText('support@tradesitegenie.com');
+    navigator.clipboard.writeText(SUPPORT_EMAIL);
     setNotification({ show: true, type: 'success', message: 'Copied to clipboard!' });
   };
 
@@ -261,7 +262,7 @@ export default function SupportPage() {
           show: true,
           type: 'error',
           message: 'Submission failed',
-          subtitle: result.error || 'Please try again or email support@tradesitegenie.com directly.'
+          subtitle: result.error || `Please try again or email ${SUPPORT_EMAIL} directly.`
         });
         return;
       }
@@ -368,15 +369,15 @@ export default function SupportPage() {
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
                       <PhoneIcon className="h-6 w-6 text-[#1b4a41]"/>
                     </div>
-                    <p className="font-semibold">(555) 123-4567</p>
+                    <p className="font-semibold">{SUPPORT_PHONE}</p>
                     <p className="text-xs text-gray-500">Mon–Fri, 9 AM–5 PM EST</p>
-                    <SecondaryButton href="tel:+15551234567" className="mt-2">Call Number</SecondaryButton>
+                    <SecondaryButton href={`tel:${SUPPORT_PHONE}`} className="mt-2">Call Number</SecondaryButton>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
                       <DocumentTextIcon className="h-6 w-6 text-[#1b4a41]"/>
                     </div>
-                    <p className="font-semibold">(555) 123-4567</p>
+                    <p className="font-semibold">{SUPPORT_PHONE}</p>
                     <p className="text-xs text-gray-500">Text Anytime</p>
                     <SecondaryButton onClick={handleCopyPhone} className="mt-2">Copy Number</SecondaryButton>
                   </div>
@@ -384,7 +385,7 @@ export default function SupportPage() {
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
                       <EnvelopeIcon className="h-6 w-6 text-[#1b4a41]"/>
                     </div>
-                    <p className="font-semibold">support@tradesitegenie.com</p>
+                    <p className="font-semibold">{SUPPORT_EMAIL}</p>
                     <p className="text-xs text-gray-500">Email Anytime</p>
                     <SecondaryButton onClick={handleCopyEmail} className="mt-2">Copy Email</SecondaryButton>
                   </div>

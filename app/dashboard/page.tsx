@@ -2,258 +2,224 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth';
-import { SecondaryButton } from '@/components/ui/SecondaryButton';
-import { TertiaryButton } from '@/components/ui/TertiaryButton';
-import { getUserMetrics, getUserCompany, getUserSubscription } from '@/lib/firestore';
-import { RecentReportsCard } from '@/components/dashboard/RecentReportsCard';
-import { getUserSupportTickets } from '@/lib/firestore/supportTickets';
-import { getMeetings } from '@/lib/firestore/meetings';
-import { SupportTicket } from '@/types/supportTicket';
-import { Meeting } from '@/types/user';
-import { UpcomingMeetingCard } from '@/components/dashboard/UpcomingMeetingCard';
-import { NoMeetingsCard } from '@/components/dashboard/NoMeetingsCard';
-import { SiteFixOnboardingPanel } from '@/components/dashboard/SiteFixOnboardingPanel';
-import { trackDashboardViewed, trackFirstDashboardViewed, trackSupportHoursViewed, trackSiteMetricsViewed } from '@/lib/analytics';
+import {
+  ActiveSiteFixesCard,
+  type FixSession,
+  type PillarProgress,
+  type PillarStatus,
+} from '@/components/dashboard/ActiveSiteFixesCard';
+import { SiteFixDetailModal } from '@/components/dashboard/SiteFixDetailModal';
+import { RightColumnSidebar } from '@/components/dashboard/RightColumnSidebar';
+import { SupportContactModule } from '@/components/dashboard/SupportContactModule';
 
-// Add a top-level log in the component:
-console.log("Dashboard loaded - testing Cursor!");
+type FirestoreTimestamp = {
+  toDate?: () => Date;
+};
 
-function getMetricColor(metricType: string, value: number): string {
-  switch (metricType) {
-    case 'traffic':
-      if (value >= 1000) return '#22C55E';
-      if (value >= 500) return '#EAB308';
-      return '#EF4444';
-    case 'speed':
-      if (value < 2) return '#22C55E';
-      if (value <= 3) return '#EAB308';
-      return '#EF4444';
-    case 'support':
-      if (value > 6) return '#22C55E';
-      if (value >= 3) return '#EAB308';
-      return '#EF4444';
-    case 'maintenance':
-      if (value > 6) return '#22C55E';
-      if (value >= 3) return '#EAB308';
-      return '#EF4444';
-    default:
-      return '#6F797A';
+type FirestoreData = Record<string, unknown>;
+
+function toDateOrNull(value: unknown): Date | null {
+  if (
+    value != null &&
+    typeof value === 'object' &&
+    'toDate' in value &&
+    typeof (value as FirestoreTimestamp).toDate === 'function'
+  ) {
+    return (value as FirestoreTimestamp).toDate!();
   }
+
+  return null;
+}
+
+function mapPillarProgress(data: unknown): PillarProgress {
+  const pillar = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
+  const status = pillar.status as PillarStatus;
+  const validStatuses: PillarStatus[] = ['queued', 'in_progress', 'done', 'awaiting_access'];
+
+  return {
+    status: validStatuses.includes(status) ? status : 'queued',
+    description: typeof pillar.description === 'string' ? pillar.description : null,
+    updatedAt: toDateOrNull(pillar.updatedAt),
+    completedAt: toDateOrNull(pillar.completedAt),
+  };
+}
+
+function mapFirestoreSessionToFixSession(data: FirestoreData): FixSession {
+  const fixProgress =
+    data.fixProgress && typeof data.fixProgress === 'object'
+      ? (data.fixProgress as Record<string, unknown>)
+      : {};
+
+  return {
+    orderId: typeof data.orderId === 'string' ? data.orderId : null,
+    deliveryStatus: data.deliveryStatus === 'delivered' ? 'delivered' : 'in_progress',
+    estimatedCompletionAt: toDateOrNull(data.estimatedCompletionAt),
+    reportUrl: typeof data.reportUrl === 'string' ? data.reportUrl : null,
+    googleReviewUrl: typeof data.googleReviewUrl === 'string' ? data.googleReviewUrl : null,
+    fixProgress: {
+      speed: mapPillarProgress(fixProgress.speed),
+      security: mapPillarProgress(fixProgress.security),
+      seo: mapPillarProgress(fixProgress.seo),
+    },
+  };
 }
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('');
-  const [websiteUrl, setWebsiteUrl] = useState<string>('');
-  const [metrics, setMetrics] = useState([
-    { type: 'traffic', value: 0, label: 'Website Traffic This Month' },
-    { type: 'speed', value: 0, label: 'Average Site Speed In Seconds' },
-    { type: 'support', value: 0, label: 'Support Hours Remaining' },
-    { type: 'maintenance', value: 0, label: 'Maintenance Hours Remaining' }
-  ]);
-  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
-  const [upcomingMeetings, setUpcomingMeetings] = useState<Meeting[]>([]);
+  const [uid, setUid] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState<boolean>(false);
+  const [fixSession, setFixSession] = useState<FixSession | null>(null);
+  const [userData, setUserData] = useState<{ firstName: string; businessName: string } | null>(null);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const user = await getCurrentUser();
-      if (!user) {
-        router.push('/signin');
-        return;
-      } else {
-        const email = user.email || 'user@example.com';
-        const name = email.split('@')[0];
-        setUserName(name.charAt(0).toUpperCase() + name.slice(1));
-        
-        const [userMetrics, subscriptionData, ticketsResult, meetingsResult, companyData] = await Promise.all([
-          getUserMetrics(user.uid),
-          getUserSubscription(user.uid),
-          getUserSupportTickets(user.uid, { status: 'open' }),
-          getMeetings(user.uid),
-          getUserCompany(user.uid)
-        ]);
+    if (typeof window === 'undefined') return;
 
-        setMetrics([
-          { type: 'traffic', value: userMetrics.websiteTraffic, label: 'Website Traffic This Month' },
-          { type: 'speed', value: userMetrics.siteSpeedSeconds, label: 'Average Site Speed In Seconds' },
-          { type: 'support', value: userMetrics.supportHoursRemaining, label: 'Support Hours Remaining' },
-          { type: 'maintenance', value: userMetrics.maintenanceHoursRemaining, label: 'Maintenance Hours Remaining' }
-        ]);
-        
-        // Set website URL from company data
-        if (companyData?.websiteUrl) {
-          setWebsiteUrl(companyData.websiteUrl);
-        }
-        
-        if (ticketsResult.tickets) {
-          setSupportTickets(ticketsResult.tickets);
+    const { getAuth, onAuthStateChanged } = require('firebase/auth');
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user: { uid: string } | null) => {
+      setUid(user?.uid ?? null);
+      setAuthReady(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (authReady && !uid) {
+      router.push('/signin');
+    }
+  }, [authReady, uid, router]);
+
+  useEffect(() => {
+    if (!authReady || !uid) return;
+
+    const { getFirestore, doc, getDoc } = require('firebase/firestore');
+    const db = getFirestore();
+
+    getDoc(doc(db, 'users', uid))
+      .then((snapshot: { exists: () => boolean; data: () => FirestoreData | undefined }) => {
+        if (!snapshot.exists()) {
+          setUserData({ firstName: 'there', businessName: '' });
+          return;
         }
 
-        if (meetingsResult.meetings) {
-            const now = new Date();
-            const futureMeetings = meetingsResult.meetings
-                .filter(m => (m.date as any).toDate() > now)
-                .sort((a, b) => (a.date as any).toDate().getTime() - (b.date as any).toDate().getTime());
-            setUpcomingMeetings(futureMeetings);
-        }
+        const data = snapshot.data() ?? {};
+        const company = data.company as { legalName?: string } | undefined;
 
-        // Mixpanel: track dashboard view (once per page load)
-        const navigationEntryPoint = typeof document !== 'undefined' && document.referrer ? 'navigation' : 'direct';
-        const tier = subscriptionData?.tier;
-        trackDashboardViewed({
-          navigation_entry_point: navigationEntryPoint,
-          user_plan_tier: tier,
+        setUserData({
+          firstName:
+            typeof data.fullName === 'string'
+              ? data.fullName.split(' ')[0]
+              : 'there',
+          businessName: company?.legalName ?? '',
         });
-        // First-time users: account created within last 24 hours
-        const createdAt = subscriptionData?.createdAt ? new Date(subscriptionData.createdAt) : null;
-        const isFirstTime = createdAt && (Date.now() - createdAt.getTime()) < 24 * 60 * 60 * 1000;
-        if (isFirstTime) {
-          trackFirstDashboardViewed({ user_plan_tier: tier });
-        }
-        // Support hours and site metrics are displayed in the metrics grid
-        trackSupportHoursViewed({
-          support_hours_remaining: userMetrics.supportHoursRemaining,
-          user_plan_tier: tier,
-        });
-        trackSiteMetricsViewed({
-          feature_name: 'site_metrics',
-          user_plan_tier: tier,
-        });
+      })
+      .catch((error: Error) => {
+        console.error('[Dashboard] user fetch error:', error);
+        setUserData({ firstName: 'there', businessName: '' });
+      });
+  }, [authReady, uid]);
 
-        setLoading(false);
+  useEffect(() => {
+    if (!authReady || !uid) return;
+
+    const { getFirestore, collection, query, orderBy, limit, onSnapshot } = require('firebase/firestore');
+    const db = getFirestore();
+    const fixSessionsQuery = query(
+      collection(db, 'users', uid, 'fixSessions'),
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
+
+    const unsubscribe = onSnapshot(
+      fixSessionsQuery,
+      (snapshot: { empty: boolean; docs: Array<{ data: () => FirestoreData }> }) => {
+        if (snapshot.empty) {
+          setFixSession(null);
+          return;
+        }
+
+        const docSnap = snapshot.docs[0];
+        const mappedFixSession = mapFirestoreSessionToFixSession(docSnap.data());
+        setFixSession(mappedFixSession);
+      },
+      (error: Error) => {
+        console.error('[Dashboard] fixSessions listener error:', error);
+        setFixSession(null);
       }
-    };
-    checkAuth();
-  }, [router]);
+    );
 
-  if (loading) {
+    return () => unsubscribe();
+  }, [authReady, uid]);
+
+  if (!authReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F6F1]">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1b4a41] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mx-auto"></div>
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
   }
 
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    month: 'long', 
-    day: 'numeric' 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const formattedDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
   });
-  const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 18 ? 'Good afternoon' : 'Good evening';
+
+  const firstName = userData?.firstName ?? 'there';
+  const businessName = userData?.businessName ?? '';
 
   return (
-    <main className="bg-transparent max-w-[1440px] mx-auto py-8 pb-24 lg:pb-32">
-      <div className="bg-white rounded-lg p-8 min-h-[calc(100vh-theme(spacing.32))]">
-        
-        <div className="flex items-start justify-between gap-5 mb-8">
-          <div>
-            <p className="text-[18px] md:text-lg font-bold leading-tight tracking-tight text-[#545552] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{dateStr}</p>
-            <h1 className="text-[28px] md:text-4xl font-extrabold leading-tight tracking-tight text-[#232521]">
-              {greeting} {userName}
+    <main className="min-h-[calc(100vh-120px)] rounded-t-2xl bg-white p-5 pb-24 md:p-6 lg:p-6 lg:pb-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[381px_1fr_381px]">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <p className="text-base leading-[1.5] text-zinc-600 lg:text-lg">{formattedDate}</p>
+            <h1 className="text-[28px] font-semibold leading-[1.2] tracking-[-0.28px] text-gray-950 md:text-[30px] md:tracking-[-0.3px] lg:text-[32px] lg:tracking-[-0.32px]">
+              {greeting} {firstName}
             </h1>
           </div>
-          {websiteUrl ? (
-            <a 
-              href={websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <SecondaryButton>
-                View Site
-              </SecondaryButton>
-            </a>
-          ) : (
-            <SecondaryButton disabled className="opacity-50 cursor-not-allowed">
-              View Site
-            </SecondaryButton>
+          <SupportContactModule />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {fixSession && (
+            <>
+              <h2 className="text-xl font-semibold leading-[1.2] tracking-[-0.2px] text-gray-950 md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]">
+                Active site fixes
+              </h2>
+              <ActiveSiteFixesCard
+                session={fixSession}
+                businessName={businessName}
+                onViewDetails={() => setModalOpen(true)}
+              />
+            </>
           )}
         </div>
 
-        <SiteFixOnboardingPanel />
-
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-          {metrics.map((metric, index) => {
-            const borderColor = getMetricColor(metric.type, metric.value);
-            return (
-              <div 
-                key={index}
-                className="bg-white rounded-lg p-6 border border-[#6F797A]/40"
-                style={{ borderTopWidth: '4px', borderTopColor: borderColor }}
-              >
-                <p className="text-[32px] md:text-5xl font-extrabold leading-tight tracking-tight text-[#232521] mb-2">{metric.value}</p>
-                <p className="text-[15px] font-medium leading-tight tracking-tight text-gray-600">{metric.label}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          <div className="lg:col-span-2 space-y-6">
-            <div className="w-full rounded bg-[#FAF9F5] border border-[#6F797A]/40 p-4 flex items-start justify-between gap-6">
-
-              <div className="flex-1 space-y-3">
-                <span className="inline-flex items-center justify-center gap-2.5 px-2 py-1 rounded-full bg-[#1b4a41] text-white text-sm font-medium">
-                  Support
-                </span>
-                
-                {supportTickets.length > 0 ? (
-                  <h3 className="text-[16px] font-bold leading-relaxed tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    You have {supportTickets.length} open support ticket(s)
-                  </h3>
-                ) : (
-                  <h3 className="text-[16px] font-bold leading-relaxed tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    Your Support Team is Standing By
-                  </h3>
-                )}
-                
-                <p className="text-[15px] font-medium leading-tight tracking-tight text-gray-700">
-                  {supportTickets.length > 0 ? (
-                    <Link href="/dashboard/support" className="text-[#1b4a41] hover:text-[#0f3830] transition-colors">
-                      View your tickets in the Support Hub
-                    </Link>
-                  ) : (
-                    'Fast, reliable help when you need it—just like having a web guy who actually shows up.'
-                  )}
-                </p>
-              </div>
-              
-              <div className="flex-shrink-0">
-                <TertiaryButton href="/dashboard/support">
-                  Contact Support
-                </TertiaryButton>
-              </div>
-              
-            </div>
-
-            <RecentReportsCard />
-          </div>
-
-          <div className="lg:col-span-1">
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold leading-tight tracking-tight text-[#232521]" style={{ fontFamily: 'Manrope, sans-serif' }}>Upcoming Meetings</h2>
-              
-              {upcomingMeetings.length > 0 ? (
-                <div className="space-y-4">
-                  {upcomingMeetings.map(meeting => (
-                    <UpcomingMeetingCard key={meeting.id} meeting={meeting} />
-                  ))}
-                </div>
-              ) : (
-                <NoMeetingsCard />
-              )}
-            </div>
-          </div>
-
+        <div>
+          <RightColumnSidebar
+            deliveryStatus={fixSession?.deliveryStatus ?? null}
+            googleReviewUrl={fixSession?.googleReviewUrl ?? null}
+            userId={uid ?? ''}
+          />
         </div>
       </div>
+
+      {fixSession && (
+        <SiteFixDetailModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          session={fixSession}
+          businessName={businessName}
+        />
+      )}
     </main>
   );
 }

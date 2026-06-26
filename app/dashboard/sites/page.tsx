@@ -131,8 +131,8 @@ export default function SitesPage() {
                 No websites have been added to your plan. Get started with one of our packages in order to add your website to the dashboard.
               </p>
               <div className="mt-6">
-                <Link href="/dashboard/products">
-                  <span className="px-6 py-2 rounded-full bg-[#9be382] hover:bg-[#8dd370] text-[#232521] font-semibold transition-colors">
+                <Link href="/dashboard/support">
+                  <span className="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors">
                     Go To Products
                   </span>
                 </Link>
