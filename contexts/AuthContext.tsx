@@ -47,6 +47,43 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, []);
 
+  // Sync Firebase ID token to httpOnly session cookie for server-side route guards
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncSessionCookie(currentUser: User | null) {
+      if (cancelled) {
+        return;
+      }
+
+      if (!currentUser) {
+        await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => undefined);
+        return;
+      }
+
+      try {
+        const idToken = await currentUser.getIdToken();
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken }),
+        });
+      } catch (error) {
+        console.error('[AuthProvider] Failed to sync session cookie:', error);
+      }
+    }
+
+    void syncSessionCookie(user);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   // Mixpanel identity management - identify user on login/signup
   useEffect(() => {
     if (user?.uid) {

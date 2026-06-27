@@ -5,6 +5,7 @@ import type { FixUpdate, FixUpdatePillar } from '@/lib/types/fix-update';
 
 type Props = {
   userId: string;
+  previewUpdates?: FixUpdate[];
 };
 
 const sectionHeadingClass =
@@ -112,10 +113,15 @@ function formatUpdateTimestamp(date: Date): string {
   }).format(date);
 }
 
-export function ClientUpdatesFeed({ userId }: Props) {
-  const [updates, setUpdates] = useState<FixUpdate[]>([]);
+export function ClientUpdatesFeed({ userId, previewUpdates }: Props) {
+  const [updates, setUpdates] = useState<FixUpdate[]>(previewUpdates ?? []);
 
   useEffect(() => {
+    if (previewUpdates) {
+      setUpdates(sortUpdates(previewUpdates));
+      return;
+    }
+
     if (typeof window === 'undefined' || userId.length === 0) return;
 
     const { getFirestore, collection, query, orderBy, onSnapshot } = require('firebase/firestore');
@@ -143,7 +149,7 @@ export function ClientUpdatesFeed({ userId }: Props) {
     );
 
     return () => unsubscribe();
-  }, [userId]);
+  }, [userId, previewUpdates]);
 
   return (
     <section className="flex flex-col gap-4">

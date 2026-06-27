@@ -183,3 +183,56 @@ export function isAuthError(
 ): result is NextResponse {
   return result instanceof NextResponse;
 }
+
+export type VerifiedAdminAuth = VerifiedAuth & {
+  isAdmin: true;
+};
+
+/**
+ * Verifies Firebase ID token and requires `admin: true` custom claim.
+ */
+export async function requireAdmin(
+  req: NextRequest
+): Promise<NextResponse | VerifiedAdminAuth> {
+  const auth = await requireAuth(req);
+
+  if (isAuthError(auth)) {
+    return auth;
+  }
+
+  if (!adminAuth) {
+    return NextResponse.json(
+      { error: 'Server configuration error - Authentication service unavailable' },
+      { status: 500 }
+    );
+  }
+
+  const authHeader = req.headers.get('authorization');
+  const token = authHeader?.split('Bearer ')[1];
+
+  if (!token) {
+    return NextResponse.json(
+      { error: 'Unauthorized - No authentication token provided' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const decoded = await adminAuth.verifyIdToken(token);
+
+    if (decoded.admin !== true) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    return { userId: auth.userId, isAdmin: true };
+  } catch (error) {
+    console.error('Admin auth verification error:', error);
+    return NextResponse.json({ error: 'Authentication verification failed' }, { status: 401 });
+  }
+}
+
+export function isAdminAuthError(
+  result: NextResponse | VerifiedAdminAuth
+): result is NextResponse {
+  return result instanceof NextResponse;
+}

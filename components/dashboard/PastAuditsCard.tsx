@@ -30,6 +30,17 @@ export function PastAuditsCard({ userId }: Props) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    if (userId.startsWith('preview-')) {
+      setReports([]);
+      setHasLoaded(true);
+      return;
+    }
+
+    if (!userId || userId.trim() === '') {
+      setHasLoaded(true);
+      return;
+    }
+
     const {
       getFirestore,
       collection,

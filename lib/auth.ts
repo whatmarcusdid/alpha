@@ -10,6 +10,31 @@
 import type { User } from 'firebase/auth';
 import { auth } from './firebase'; // Browser-safe auth instance
 
+async function persistSessionCookie(user: User): Promise<void> {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const idToken = await user.getIdToken();
+    await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+  } catch (error) {
+    console.error('[auth] Failed to persist session cookie:', error);
+  }
+}
+
+async function clearSessionCookie(): Promise<void> {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => undefined);
+}
+
 // Load Firebase Auth functions only in browser
 let authFunctions: any = {};
 
@@ -42,6 +67,7 @@ export async function signInWithGoogle(): Promise<User> {
     const provider = new authFunctions.GoogleAuthProvider();
     const result = await authFunctions.signInWithPopup(auth, provider);
     document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
+    await persistSessionCookie(result.user);
     return result.user;
   } catch (error: any) {
     console.error('Google sign-in error:', error);
@@ -61,6 +87,7 @@ export async function signInWithApple(): Promise<User> {
   try {
     const result = await authFunctions.signInWithPopup(auth, provider);
     document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
+    await persistSessionCookie(result.user);
     return result.user;
   } catch (error: any) {
     console.error('Apple sign-in error:', error);
@@ -76,6 +103,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
   try {
     const userCredential = await authFunctions.signInWithEmailAndPassword(auth, email, password);
     document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
+    await persistSessionCookie(userCredential.user);
     return userCredential.user;
   } catch (error: any) {
     console.error('Email sign-in error:', error);
@@ -110,6 +138,7 @@ export async function signUpWithEmail(
     }
     
     document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
+    await persistSessionCookie(userCredential.user);
     return userCredential.user;
   } catch (error: any) {
     console.error('Sign-up error:', error);
@@ -211,6 +240,7 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
   try {
     await authFunctions.signOut(auth);
     document.cookie = 'bs-auth=; path=/; max-age=0; SameSite=Lax';
+    await clearSessionCookie();
     return { success: true };
   } catch (error: any) {
     console.error('Sign-out error:', error);
@@ -226,6 +256,7 @@ export async function signInWithCustomToken(customToken: string): Promise<User> 
   try {
     const userCredential = await authFunctions.signInWithCustomToken(auth, customToken);
     document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
+    await persistSessionCookie(userCredential.user);
     return userCredential.user;
   } catch (error: unknown) {
     const firebaseError = error as { message?: string };

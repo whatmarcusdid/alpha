@@ -12,6 +12,36 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Admin fix jobs — server-only via Admin SDK
+    match /fixJobs/{fixJobId} {
+      allow read, write: if false;
+
+      match /loops/{loopKey} {
+        allow read, write: if false;
+      }
+
+      match /approvals/{approvalId} {
+        allow read, write: if false;
+      }
+
+      match /qa/{qaDocId} {
+        allow read, write: if false;
+      }
+
+      match /reports/{reportId} {
+        allow read, write: if false;
+      }
+
+      match /accessRevocations/{credentialType} {
+        allow read, write: if false;
+      }
+    }
+
+    // Admin metadata (display-ID counter) — server-only via Admin SDK
+    match /meta/{docId} {
+      allow read, write: if false;
+    }
+
     // User profiles — authenticated user can read/write their own document
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;

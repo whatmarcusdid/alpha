@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
  *
  * Protected routes:
  * - /dashboard/* — existing subscription dashboard
+ * - /admin/* — Book Service admin dashboard
  * - /book-service/access — access submission (requires account)
  * - /book-service/signup — account creation (requires pending order context)
  *
@@ -26,6 +27,7 @@ const AUTH_COOKIE = 'bs-auth';
 // Routes that require authentication
 const PROTECTED_PATHS = [
   '/dashboard',
+  '/admin',
   '/book-service/access',
   '/book-service/confirm-details',
 ];

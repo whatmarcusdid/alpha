@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, isAuthError } from './auth';
+import { requireAuth, isAuthError, requireAdmin, isAdminAuthError } from './auth';
 import {
   checkRateLimit,
   generalLimiter,
@@ -223,6 +223,39 @@ export function withAuth(handler: ApiHandler) {
           error: 'An unexpected error occurred. Please try again later.',
           ...(process.env.NODE_ENV === 'development' && {
             details: error.message,
+          }),
+        },
+        { status: 500 }
+      );
+    }
+  };
+}
+
+/**
+ * Wraps an API handler with admin authentication (`admin: true` custom claim required).
+ */
+export function withAdmin(handler: ApiHandler) {
+  return async (
+    req: NextRequest,
+    context: RouteContext = {}
+  ): Promise<NextResponse> => {
+    try {
+      const auth = await requireAdmin(req);
+
+      if (isAdminAuthError(auth)) {
+        return auth;
+      }
+
+      const { userId } = auth;
+      return await handler(req, { ...context, userId });
+    } catch (error: unknown) {
+      console.error('Admin API handler error:', error);
+
+      return NextResponse.json(
+        {
+          error: 'An unexpected error occurred. Please try again later.',
+          ...(process.env.NODE_ENV === 'development' && {
+            details: error instanceof Error ? error.message : 'Unknown error',
           }),
         },
         { status: 500 }
