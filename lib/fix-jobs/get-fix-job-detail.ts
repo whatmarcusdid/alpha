@@ -7,6 +7,7 @@ import {
   assertFixJobDetailPayloadSanitized,
   buildFixJobDetailPayload,
 } from '@/lib/fix-jobs/job-detail-server-utils';
+import { buildHostingContextPayload } from '@/lib/fix-jobs/build-hosting-context-payload';
 import { loadLatestSiteAccessRequest } from '@/lib/site-access/load-latest-site-access-request';
 
 export async function getFixJobDetail(
@@ -61,5 +62,6 @@ export async function getFixJobDetail(
     }),
     recentUpdates,
     siteAccessRequest,
+    hostingContext: buildHostingContextPayload(userData),
   });
 }

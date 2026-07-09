@@ -111,6 +111,12 @@ const sampleDetail = {
   updatedAt: new Date().toISOString(),
   recentUpdates: [],
   siteAccessRequest: null,
+  hostingContext: {
+    host: '',
+    cms: '',
+    plugins: [],
+    isConfirmed: false,
+  },
 };
 
 function makeGetRequest(url: string, headers: Record<string, string> = {}): NextRequest {

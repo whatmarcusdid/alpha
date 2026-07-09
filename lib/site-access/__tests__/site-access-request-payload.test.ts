@@ -61,6 +61,12 @@ describe('siteAccessRequest payload sanitization', () => {
       updatedAt: new Date().toISOString(),
       recentUpdates: [],
       siteAccessRequest: payload,
+      hostingContext: {
+        host: '',
+        cms: '',
+        plugins: [],
+        isConfirmed: false,
+      },
     });
 
     expect(sanitized.siteAccessRequest?.requestId).toBe('req_1');

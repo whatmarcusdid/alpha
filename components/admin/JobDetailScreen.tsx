@@ -22,6 +22,7 @@ import {
 } from '@/components/admin/BeforeAfterStrip';
 import { QAPanel, UnlockReportButton } from '@/components/admin/QAPanel';
 import { ReportModule } from '@/components/admin/ReportModule';
+import { HostingContextModule } from '@/components/admin/HostingContextModule';
 import { SiteAccessReRequestModule } from '@/components/admin/SiteAccessReRequestModule';
 import { fetchWithAdminAuth } from '@/lib/admin/fetch-with-auth';
 import {
@@ -1157,6 +1158,15 @@ export function JobDetailScreen({ sessionId }: Props) {
           onError={setHeaderError}
         />
         {headerError && <p className="mt-2 text-sm text-red-700">{headerError}</p>}
+
+        <HostingContextModule
+          fixJobId={sessionId}
+          uid={detail.uid}
+          hostingContext={detail.hostingContext}
+          onConfirmed={(updated) =>
+            setDetail((current) => (current ? { ...current, hostingContext: updated } : current))
+          }
+        />
 
         <CredentialRevealModule sessionId={sessionId} uid={detail.uid} stage={detail.stage} />
 

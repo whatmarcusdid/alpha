@@ -230,6 +230,12 @@ export function buildFixJobDetailPayload(params: {
     updatedAt: timestampToIso(session.updatedAt),
     recentUpdates: [],
     siteAccessRequest: null,
+    hostingContext: {
+      host: '',
+      cms: '',
+      plugins: [],
+      isConfirmed: false,
+    },
   };
 }
 

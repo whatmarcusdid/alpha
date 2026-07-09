@@ -2,6 +2,7 @@ import type { Timestamp } from 'firebase-admin/firestore';
 
 import type { FixPillar } from '@/lib/audit/fixPlaybook';
 import type { EvalResult } from '@/lib/audit/qaEvaluators';
+import type { HostingContextPayload } from '@/lib/types/hosting-context';
 import type { OnboardingData } from '@/lib/types/onboarding';
 import type { RecentFixUpdate } from '@/lib/types/fix-update';
 import type { SiteAccessRequestPayload } from '@/lib/types/site-access-request';
@@ -212,6 +213,7 @@ export type FixJobDetailPayload = {
   updatedAt: string;
   recentUpdates: RecentFixUpdate[];
   siteAccessRequest: SiteAccessRequestPayload | null;
+  hostingContext: HostingContextPayload;
 };
 
 export type RevealedSiteFixCredentials = {
