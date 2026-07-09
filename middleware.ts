@@ -18,7 +18,8 @@ import { NextRequest, NextResponse } from 'next/server';
  * - /book-service/confirm-details?preview=1 — dev-only design preview (development only)
  * - /book-service/access?preview=1 — dev-only design preview (development only)
  * - /book-service/select — package selection (public)
- * - /book-service/checkout — Stripe checkout (public)
+ * - /book-service/access-request/grant — public token-gated re-request grant (no account)
+ * - /book-service/access-request/decline — public token-gated re-request decline (no account)
  */
 
 const SIGN_IN_PATH = '/signin';
@@ -38,8 +39,17 @@ const AUTH_ONLY_PATHS = [
   '/signup',
 ];
 
+const PUBLIC_ACCESS_REQUEST_PATHS = new Set([
+  '/book-service/access-request/grant',
+  '/book-service/access-request/decline',
+]);
+
 function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PATHS.some(path => pathname.startsWith(path));
+  if (PUBLIC_ACCESS_REQUEST_PATHS.has(pathname)) {
+    return false;
+  }
+
+  return PROTECTED_PATHS.some((path) => pathname.startsWith(path));
 }
 
 function isAuthOnlyPath(pathname: string): boolean {

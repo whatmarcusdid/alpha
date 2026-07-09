@@ -7,6 +7,7 @@ import {
   assertFixJobDetailPayloadSanitized,
   buildFixJobDetailPayload,
 } from '@/lib/fix-jobs/job-detail-server-utils';
+import { loadLatestSiteAccessRequest } from '@/lib/site-access/load-latest-site-access-request';
 
 export async function getFixJobDetail(
   uid: string,
@@ -22,10 +23,11 @@ export async function getFixJobDetail(
     .collection('fixSessions')
     .doc(sessionId);
 
-  const [sessionSnap, userSnap, recentUpdates] = await Promise.all([
+  const [sessionSnap, userSnap, recentUpdates, siteAccessRequest] = await Promise.all([
     sessionRef.get(),
     adminDb.collection('users').doc(uid).get(),
     loadRecentFixUpdates(uid, 10),
+    loadLatestSiteAccessRequest(uid, sessionId),
   ]);
 
   if (!sessionSnap.exists) {
@@ -58,5 +60,6 @@ export async function getFixJobDetail(
       auditLead,
     }),
     recentUpdates,
+    siteAccessRequest,
   });
 }

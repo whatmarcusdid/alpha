@@ -229,6 +229,7 @@ export function buildFixJobDetailPayload(params: {
     reportData: buildReportDataPayload(session, entitlements, resolveSessionStage(session)),
     updatedAt: timestampToIso(session.updatedAt),
     recentUpdates: [],
+    siteAccessRequest: null,
   };
 }
 
@@ -239,6 +240,7 @@ export function assertFixJobDetailPayloadSanitized(
     'credentials',
     'accessToken',
     'grantToken',
+    'tokenHash',
     'encryptedCredentials',
     'passwordEncrypted',
     'speedNarrative',

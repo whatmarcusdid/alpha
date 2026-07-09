@@ -47,6 +47,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // siteAccessRequests: server-only via Admin SDK. Public grant/decline routes use token validation, not Firestore rules.
+    match /siteAccessRequests/{requestId} {
+      allow read, write: if false;
+    }
+
     // User profiles — authenticated user can read/write their own document
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;

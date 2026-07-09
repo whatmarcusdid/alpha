@@ -4,6 +4,7 @@ import type { FixPillar } from '@/lib/audit/fixPlaybook';
 import type { EvalResult } from '@/lib/audit/qaEvaluators';
 import type { OnboardingData } from '@/lib/types/onboarding';
 import type { RecentFixUpdate } from '@/lib/types/fix-update';
+import type { SiteAccessRequestPayload } from '@/lib/types/site-access-request';
 
 export type FixJobStage =
   | 'awaiting_access'
@@ -210,6 +211,7 @@ export type FixJobDetailPayload = {
   } | null;
   updatedAt: string;
   recentUpdates: RecentFixUpdate[];
+  siteAccessRequest: SiteAccessRequestPayload | null;
 };
 
 export type RevealedSiteFixCredentials = {

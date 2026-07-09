@@ -43,6 +43,23 @@ All four prices must be **one-time** (`mode: payment`), not recurring subscripti
 
 **Merge fields — final delivery:** `customerName`, `businessName`, `loomUrl` (optional)
 
+## Site Access Re-Request Loops Email
+
+| Variable | Purpose | Where to find | Required |
+|---|---|---|---|
+| `LOOPS_ACCESS_REREQUEST_TEMPLATE_ID` | Email to client when admin re-requests site access (submitted credentials didn't work or expired) | Loops Dashboard → Transactional → Site Access Re-Request | **Yes** (production) |
+| `LOOPS_ACCESS_GRANTED_ADMIN_TEMPLATE_ID` | Admin notification when client grants renewed access | Loops Dashboard → Transactional → Site Access Granted (Admin) | **Yes** (production) |
+
+**Merge fields — access re-request (client):** `customerName`, `businessName`, `scopeDescription`, `accessType`, `grantUrl`, `declineUrl`, `expiryDays`
+
+**Merge fields — access granted (admin):** `customerName`, `businessName`, `sessionId`, `accessType`, `expiresAt`
+
+## Cron
+
+| Variable | Purpose | Where to find | Required |
+|---|---|---|---|
+| `CRON_SECRET` | Auth header for Vercel Cron jobs (e.g. weekly-sales-digest, expire-access-requests) | Generate secure random string | **Yes** (production) |
+
 ## Book Service Encryption
 
 | Variable | Purpose | Where to find | Required |

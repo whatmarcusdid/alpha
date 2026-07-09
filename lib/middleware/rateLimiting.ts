@@ -159,6 +159,26 @@ export const adminRerunChecksLimiter = redis
     })
   : null;
 
+// Admin site access re-request: 5 requests per minute per admin uid
+export const adminSiteAccessRequestLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, '1 m'),
+      analytics: true,
+      prefix: 'ratelimit:admin-site-access-request',
+    })
+  : null;
+
+// Public site access grant/decline: 10 requests per minute per IP
+export const siteAccessGrantDeclineLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, '1 m'),
+      analytics: true,
+      prefix: 'ratelimit:site-access-grant-decline',
+    })
+  : null;
+
 /**
  * Extract client identifier (IP address) from request
  * 

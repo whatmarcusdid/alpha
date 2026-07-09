@@ -110,6 +110,7 @@ const sampleDetail = {
   reportData: null,
   updatedAt: new Date().toISOString(),
   recentUpdates: [],
+  siteAccessRequest: null,
 };
 
 function makeGetRequest(url: string, headers: Record<string, string> = {}): NextRequest {

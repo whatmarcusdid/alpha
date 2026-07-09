@@ -22,6 +22,7 @@ import {
 } from '@/components/admin/BeforeAfterStrip';
 import { QAPanel, UnlockReportButton } from '@/components/admin/QAPanel';
 import { ReportModule } from '@/components/admin/ReportModule';
+import { SiteAccessReRequestModule } from '@/components/admin/SiteAccessReRequestModule';
 import { fetchWithAdminAuth } from '@/lib/admin/fetch-with-auth';
 import {
   PHASE_0_PRECONDITIONS,
@@ -1158,6 +1159,16 @@ export function JobDetailScreen({ sessionId }: Props) {
         {headerError && <p className="mt-2 text-sm text-red-700">{headerError}</p>}
 
         <CredentialRevealModule sessionId={sessionId} uid={detail.uid} stage={detail.stage} />
+
+        <SiteAccessReRequestModule
+          fixJobId={sessionId}
+          uid={detail.uid}
+          stage={detail.stage}
+          siteAccessRequest={detail.siteAccessRequest}
+          onSiteAccessRequestChange={(next) =>
+            setDetail((current) => (current ? { ...current, siteAccessRequest: next } : current))
+          }
+        />
 
         <ClientUpdatesComposer
           ref={composerRef}
