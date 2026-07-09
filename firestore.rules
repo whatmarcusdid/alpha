@@ -42,6 +42,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // adminAuditLog: server-only via Admin SDK. No client access.
+    match /adminAuditLog/{logId} {
+      allow read, write: if false;
+    }
+
     // User profiles — authenticated user can read/write their own document
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -56,6 +61,9 @@ service cloud.firestore {
       match /fixSessions/{sessionId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
+        // Admin fulfillment fields (stage, fixProgress, qa, afterAudit, report, etc.) are written
+        // exclusively via Firebase Admin SDK in API routes. No client-write rules are added for these fields.
+        // Client read of own fixSession is handled by the existing rule above.
       }
 
       // Client-facing fix updates — read-only for the owning user, admin writes only

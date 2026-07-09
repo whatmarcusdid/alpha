@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { getFixJobDetail } from '@/lib/fix-jobs/get-fix-job-detail';
 import {
   deleteFixJob,
   getFixJob,
@@ -82,10 +83,35 @@ const patchFixJobSchema = z
     message: 'At least one field is required',
   });
 
-export const GET = withAdmin(async (_req: NextRequest, context) => {
+const fixSessionDetailQuerySchema = z.object({
+  uid: z.string().min(1),
+});
+
+export const GET = withAdmin(async (req: NextRequest, context) => {
   const params = await context.params;
   if (!params?.fixJobId) {
     return NextResponse.json({ error: 'Missing route params' }, { status: 400 });
+  }
+
+  const uid = req.nextUrl.searchParams.get('uid');
+  if (uid) {
+    const parsed = fixSessionDetailQuerySchema.safeParse({ uid });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? 'Invalid query parameters' },
+        { status: 400 }
+      );
+    }
+
+    const detail = await getFixJobDetail(parsed.data.uid, params.fixJobId);
+    if (!detail) {
+      return NextResponse.json({ error: 'Fix job not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: detail,
+    });
   }
 
   const job = await getFixJob(params.fixJobId);

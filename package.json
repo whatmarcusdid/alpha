@@ -10,6 +10,7 @@
     "test": "vitest run",
     "lint": "next lint",
     "create-test-tickets": "tsx scripts/create-test-tickets.ts",
+    "seed:fix-job": "tsx scripts/seed-fix-job.ts",
     "test:scout": "tsx scripts/test-delivery-scout.ts"
   },
   "dependencies": {

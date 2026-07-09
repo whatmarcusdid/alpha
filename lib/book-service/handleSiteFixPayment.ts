@@ -16,7 +16,9 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import type Stripe from 'stripe';
 
+import { ensureFixSessionForOrder } from '@/lib/fix-jobs/seed-fix-session';
 import { adminDb } from '@/lib/firebase/admin';
+import type { SiteFixEntitlement } from '@/lib/types/client-context';
 
 import { sendSiteFixPaymentConfirmedEmail } from './emails';
 import {
@@ -55,6 +57,7 @@ export async function handleSiteFixPayment(
 
   const { orderId, auditLeadId, sku, normalizedEmail } = parsedMetadata;
   const skuKey = sku;
+  const entitlements = expandEntitlements(skuKey);
 
   const orderRef = adminDb.collection('orders').doc(orderId);
   const existing = await orderRef.get();
@@ -62,10 +65,15 @@ export async function handleSiteFixPayment(
     console.log(
       `handleSiteFixPayment: duplicate webhook, orderId=${orderId} already processed`
     );
+    await ensureFixSessionOnDuplicateWebhook({
+      orderId,
+      auditLeadId,
+      entitlements,
+      normalizedEmail,
+    });
     return;
   }
 
-  const entitlements = expandEntitlements(skuKey);
   const now = FieldValue.serverTimestamp();
 
   const order = {
@@ -136,21 +144,51 @@ export async function handleSiteFixPayment(
   void triggerDashboardInvite({
     normalizedEmail,
     orderId,
+    auditLeadId,
+    entitlements,
     sku: skuKey,
   }).catch((err) =>
     console.error('handleSiteFixPayment: dashboard invite failed (non-blocking)', err)
   );
 }
 
+async function ensureFixSessionOnDuplicateWebhook(params: {
+  orderId: string;
+  auditLeadId: string;
+  entitlements: SiteFixEntitlement[];
+  normalizedEmail: string;
+}): Promise<void> {
+  const userId = await resolveOrCreateUserIdForInvite(params.normalizedEmail);
+  if (!userId) {
+    return;
+  }
+
+  await ensureFixSessionForOrder({
+    userId,
+    orderId: params.orderId,
+    auditLeadId: params.auditLeadId,
+    entitlements: params.entitlements,
+  });
+}
+
 async function triggerDashboardInvite(params: {
   normalizedEmail: string;
   orderId: string;
+  auditLeadId: string;
+  entitlements: SiteFixEntitlement[];
   sku: SiteFixSKU;
 }): Promise<void> {
   const userId = await resolveOrCreateUserIdForInvite(params.normalizedEmail);
   if (!userId) {
     return;
   }
+
+  await ensureFixSessionForOrder({
+    userId,
+    orderId: params.orderId,
+    auditLeadId: params.auditLeadId,
+    entitlements: params.entitlements,
+  });
 
   const cronSecret = process.env.CRON_SECRET;
   const invitePayload = {

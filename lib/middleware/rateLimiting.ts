@@ -129,6 +129,36 @@ export const auditRateLimiter = redis
     })
   : null;
 
+// Admin credential reveal: 10 requests per minute per admin uid
+export const adminCredentialsLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, '1 m'),
+      analytics: true,
+      prefix: 'ratelimit:admin-credentials',
+    })
+  : null;
+
+// Admin fix updates: 20 requests per minute per admin uid
+export const adminFixUpdatesLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(20, '1 m'),
+      analytics: true,
+      prefix: 'ratelimit:admin-fix-updates',
+    })
+  : null;
+
+// Admin re-run checks: 5 requests per minute per admin uid
+export const adminRerunChecksLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, '1 m'),
+      analytics: true,
+      prefix: 'ratelimit:admin-rerun-checks',
+    })
+  : null;
+
 /**
  * Extract client identifier (IP address) from request
  * 

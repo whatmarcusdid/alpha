@@ -13,17 +13,11 @@ import { randomUUID } from 'crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { crawlPage } from '@/lib/audit/crawlPage';
 import { getAuditNarratives, getSEONarrative } from '@/lib/audit/gemini';
-import { gradeSEO } from '@/lib/audit/gradeSEO';
-import { checkHttpsSecurity } from '@/lib/audit/httpsCheck';
-import { fetchPageSpeed } from '@/lib/audit/pagespeed';
+import { applyPipelineToAuditState, deriveAuditStatus } from '@/lib/audit/applyPipelineResult';
+import { runAuditPipeline } from '@/lib/audit/runAuditPipeline';
 import { checkEmailRateLimit } from '@/lib/audit/rateLimit';
-import { checkSafeBrowsing } from '@/lib/audit/safeBrowsing';
-import { extractSpeedTopIssues } from '@/lib/audit/speedTopIssues';
-import { checkSucuri } from '@/lib/audit/sucuri';
 import { adminDb } from '@/lib/firebase-admin';
-import { gradeSecurity, gradeSpeed } from '@/lib/grading';
 import { sendAuditReportEmail } from '@/lib/loops';
 import { createAuditLeadRecord } from '@/lib/notion';
 import { sendAuditLeadNotification } from '@/lib/slack';
@@ -39,12 +33,7 @@ import {
   AuditInputSchema,
   type AuditLeadDoc,
   type AuditResult,
-  type Grade,
-  type SecurityFlag,
-  type SecurityFlagTier,
-  type SpeedTopIssueKey,
 } from '@/lib/types/audit';
-import type { SeoFailingSignalKey } from '@/lib/types/seoSignals';
 
 const IP_LIMIT_MESSAGE =
   "You've reached today's free audit limit from this network. Try again tomorrow or contact us if you think this is a mistake.";
@@ -53,28 +42,6 @@ const EMAIL_LIMIT_MESSAGE =
   "You've already run an audit today. Check your inbox for your previous report, or contact us directly.";
 
 const GENERIC_FAILURE = 'Something went wrong. Please try again.';
-
-function buildSecurityFlags(params: {
-  safeBrowsingFlagged: boolean;
-  sucuriFlagged: boolean;
-  missingHeadersCount: number;
-  outdatedCms: boolean;
-}): SecurityFlag[] {
-  const flags: SecurityFlag[] = [];
-  if (params.safeBrowsingFlagged) {
-    flags.push('malware_detected');
-  }
-  if (params.sucuriFlagged) {
-    flags.push('blacklisted');
-  }
-  if (params.outdatedCms) {
-    flags.push('outdated_cms');
-  }
-  if (params.missingHeadersCount > 0) {
-    flags.push('missing_security_headers');
-  }
-  return flags;
-}
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -110,100 +77,60 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    let speedGrade: Grade = 'F';
-    let speedScore = 0;
-    let speedTopIssues: SpeedTopIssueKey[] = [];
     let speedNarrative =
       "We weren't able to check your site speed this time. " +
       'Your Security and SEO & AI Visibility results are still shown below.';
-    let speedStatus: 'completed' | 'failed' = 'failed';
 
-    let securityGrade: Grade = 'F';
-    let securityFlags: SecurityFlag[] = [];
-    let securityFlagTier: SecurityFlagTier = 'none';
     let securityNarrative =
       "We weren't able to complete your security scan this time. " +
       'Your Speed and SEO & AI Visibility results are still shown below.';
-    let securityStatus: 'completed' | 'failed' = 'failed';
 
-    let seoGrade: Grade = 'F';
-    let seoScore = 0;
-    let seoFailingSignals: SeoFailingSignalKey[] = [];
     let seoNarrative =
       "We weren't able to complete your SEO & AI Visibility check this time. " +
       'Your Speed and Security results are still shown below.';
-    let seoStatus: 'completed' | 'failed' = 'failed';
 
-    try {
-      const pageSpeed = await fetchPageSpeed(input.websiteUrl);
-      if (!pageSpeed.success) {
-        throw new Error(pageSpeed.error);
-      }
+    const pipeline = await runAuditPipeline(input.websiteUrl, {
+      speed: true,
+      security: true,
+      seo: true,
+    });
 
-      const speedResult = gradeSpeed(pageSpeed.data);
-      speedGrade = speedResult.letterGrade;
-      speedScore = speedResult.performanceScore;
-      speedTopIssues = extractSpeedTopIssues(pageSpeed.audits);
+    const pillarState = applyPipelineToAuditState(pipeline);
+
+    let speedGrade = pillarState.speedGrade;
+    let speedScore = pillarState.speedScore;
+    let speedTopIssues = pillarState.speedTopIssues;
+    let speedStatus = pillarState.speedStatus;
+
+    let securityGrade = pillarState.securityGrade;
+    let securityFlags = pillarState.securityFlags;
+    let securityFlagTier = pillarState.securityFlagTier;
+    let securityStatus = pillarState.securityStatus;
+
+    let seoGrade = pillarState.seoGrade;
+    let seoScore = pillarState.seoScore;
+    let seoFailingSignals = pillarState.seoFailingSignals;
+    let seoStatus = pillarState.seoStatus;
+
+    if (speedStatus === 'completed') {
       speedNarrative = `Your site scored ${speedScore}/100 for speed. Grade: ${speedGrade}.`;
-      speedStatus = 'completed';
-    } catch (err) {
-      console.error('[audit] Speed pillar failed:', err);
     }
 
-    try {
-      const [safeBrowsingRaw, sucuriRaw, httpsFlags] = await Promise.all([
-        checkSafeBrowsing(input.websiteUrl),
-        checkSucuri(input.websiteUrl),
-        checkHttpsSecurity(input.websiteUrl),
-      ]);
-
-      const safeBrowsingFlagged = safeBrowsingRaw.success
-        ? safeBrowsingRaw.flagged
-        : false;
-      const sucuriFlagged = sucuriRaw.success ? sucuriRaw.flagged : false;
-      const missingHeadersCount = sucuriRaw.success
-        ? sucuriRaw.missingHeadersCount
-        : 0;
-      const outdatedCms = sucuriRaw.success ? sucuriRaw.outdatedCms : false;
-
-      const scanFlags = buildSecurityFlags({
-        safeBrowsingFlagged,
-        sucuriFlagged,
-        missingHeadersCount,
-        outdatedCms,
-      });
-
-      securityFlags = [...scanFlags, ...httpsFlags];
-      const securityResult = gradeSecurity(securityFlags);
-      securityGrade = securityResult.grade;
-      securityFlagTier = securityResult.flagTier;
+    if (securityStatus === 'completed') {
       securityNarrative = `Your site received a Security grade of ${securityGrade}.`;
-      securityStatus = 'completed';
-    } catch (err) {
-      console.error('[audit] Security pillar failed:', err);
     }
 
-    try {
-      const html = await crawlPage(input.websiteUrl);
-      const {
-        seoGrade: rawSeoGrade,
-        seoScore: rawSeoScore,
-        seoFailingSignals: rawSignals,
-      } = gradeSEO(html);
-      const rawNarrative = await getSEONarrative({
-        seoGrade: rawSeoGrade,
-        seoScore: rawSeoScore,
-        seoFailingSignals: rawSignals,
-        websiteUrl: input.websiteUrl,
-      });
-
-      seoGrade = rawSeoGrade;
-      seoScore = rawSeoScore;
-      seoFailingSignals = rawSignals;
-      seoNarrative = rawNarrative;
-      seoStatus = 'completed';
-    } catch (err) {
-      console.error('[audit] SEO pillar failed:', err);
+    if (seoStatus === 'completed') {
+      try {
+        seoNarrative = await getSEONarrative({
+          seoGrade,
+          seoScore,
+          seoFailingSignals,
+          websiteUrl: input.websiteUrl,
+        });
+      } catch (err) {
+        console.error('[audit] SEO narrative generation failed:', err);
+      }
     }
 
     if (speedStatus === 'completed' || securityStatus === 'completed') {
@@ -226,10 +153,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    const auditStatus =
-      [speedStatus, securityStatus, seoStatus].every((s) => s === 'completed')
-        ? 'completed'
-        : 'partial';
+    const auditStatus = deriveAuditStatus(pillarState);
 
     const auditDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 
 import { fetchWithAdminAuth } from '@/lib/admin/fetch-with-auth';
 import { normalizeWebsiteUrl, isValidHttpUrl } from '@/lib/fix-jobs/urls';
-import type { SerializedFixJob } from '@/lib/fix-jobs/serialize';
 
 type Props = {
   isOpen: boolean;
@@ -62,18 +61,23 @@ export function CreateFixJobModal({ isOpen, onClose }: Props) {
           return;
         }
 
-        const jobs = payload.data as SerializedFixJob[];
+        const jobs = (payload.data?.jobs ?? []) as Array<{
+          stage: string;
+          siteUrl: string;
+          sessionId: string;
+        }>;
         const normalizedTarget = normalizeWebsiteUrl(form.primaryWebsiteUrl);
         const duplicate = jobs.find(
           (job) =>
-            job.stage !== 'Delivered' &&
-            normalizeWebsiteUrl(job.primaryWebsiteUrl) === normalizedTarget
+            job.stage !== 'delivered' &&
+            job.siteUrl &&
+            normalizeWebsiteUrl(job.siteUrl) === normalizedTarget
         );
 
         if (!cancelled) {
           setDuplicateWarning(
             duplicate
-              ? { displayId: duplicate.displayId, fixJobId: duplicate.id }
+              ? { displayId: duplicate.sessionId, fixJobId: duplicate.sessionId }
               : null
           );
         }

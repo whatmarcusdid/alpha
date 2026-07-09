@@ -8,6 +8,7 @@ import { encryptSecret } from '@/lib/book-service/encryption';
 import { sendSiteFixDeliveryReadyEmail } from '@/lib/book-service/emails';
 import { formatEntitlementLabels } from '@/lib/book-service/entitlement-labels';
 import { transitionToDeliveryReady } from '@/lib/book-service/onboarding';
+import { transitionAwaitingAccessToReady } from '@/lib/fix-jobs/patch-fix-session-stage';
 import { adminDb } from '@/lib/firebase/admin';
 import { withAuth } from '@/lib/middleware/apiHandler';
 
@@ -128,6 +129,10 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
 
     if (!partial) {
       await transitionToDeliveryReady(userId);
+      await transitionAwaitingAccessToReady({
+        uid: userId,
+        sessionId: orderId,
+      });
 
       const packageNames = formatEntitlementLabels(
         siteFix.purchasedPackages ?? []

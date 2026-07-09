@@ -35,6 +35,14 @@ All four prices must be **one-time** (`mode: payment`), not recurring subscripti
 
 **Merge fields — delivery ready:** `firstName`, `orderId`, `packageNames`
 
+## Book Service Site Fix Delivery Email
+
+| Variable | Purpose | Where to find | Required |
+|---|---|---|---|
+| `LOOPS_SITE_FIX_DELIVERY_TEMPLATE_ID` | Final delivery email with Site Fix report PDF attached | Loops Dashboard → Transactional → Site Fix Delivery | **Yes** (production) |
+
+**Merge fields — final delivery:** `customerName`, `businessName`, `loomUrl` (optional)
+
 ## Book Service Encryption
 
 | Variable | Purpose | Where to find | Required |

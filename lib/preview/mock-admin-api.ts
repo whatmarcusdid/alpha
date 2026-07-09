@@ -330,7 +330,26 @@ export function createPreviewAdminFetchHandler(
     }
 
     if (pathname === '/api/admin/fix-jobs' && method === 'GET') {
-      return jsonResponse({ success: true, data: [state.job] });
+      return jsonResponse({
+        success: true,
+        data: {
+          jobs: [
+            {
+              sessionId: state.job.id,
+              uid: 'preview-user',
+              stage: 'in_progress',
+              customerName: state.job.businessName,
+              customerEmail: 'preview@example.com',
+              siteUrl: state.job.primaryWebsiteUrl,
+              entitlements: ['speed'],
+              nextAction: '2 of 5 signals remaining',
+              updatedAt: new Date().toISOString(),
+              signalsTotal: 5,
+              signalsDone: 3,
+            },
+          ],
+        },
+      });
     }
 
     return jsonResponse({ error: `Preview mock: unhandled ${method} ${pathname}` }, 404);
