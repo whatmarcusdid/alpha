@@ -43,6 +43,7 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.70.0",
     "recharts": "^3.6.0",
+    "server-only": "^0.0.1",
     "stripe": "^20.1.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",

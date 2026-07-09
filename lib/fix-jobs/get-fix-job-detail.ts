@@ -6,7 +6,7 @@ import type { FixJobDetailPayload, FixSessionDoc } from '@/lib/types/fix-session
 import {
   assertFixJobDetailPayloadSanitized,
   buildFixJobDetailPayload,
-} from '@/lib/fix-jobs/job-detail-utils';
+} from '@/lib/fix-jobs/job-detail-server-utils';
 
 export async function getFixJobDetail(
   uid: string,

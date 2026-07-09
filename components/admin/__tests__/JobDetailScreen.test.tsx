@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { getPlaybookEntry } from '@/lib/audit/fixPlaybook';
+import { buildFixJobDetailPayload } from '@/lib/fix-jobs/job-detail-server-utils';
 import {
   PILLAR_DISPLAY_ORDER,
-  buildFixJobDetailPayload,
   getSignalKeysForPillar,
   shouldShowAwaitingAccessBanner,
   shouldShowCredentialReveal,
