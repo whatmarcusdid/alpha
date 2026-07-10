@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
+
 import {
   signInWithEmail,
   signInWithGoogle,
@@ -11,12 +13,11 @@ import {
 } from '@/lib/auth';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AppleIcon, GoogleIcon } from '@/components/ui/icons';
-import { Loader2 } from 'lucide-react';
-import { PrimaryButton } from "@/components/ui/PrimaryButton";
+
+const authInputClassName =
+  'min-h-[40px] h-10 rounded-md border-[#d1d5db] px-5 py-2 text-sm text-[#030712] placeholder:text-[#52525b] focus-visible:ring-[#2920a5]';
 
 export function SignInForm() {
   const router = useRouter();
@@ -33,22 +34,30 @@ export function SignInForm() {
         if (user) {
           router.push('/dashboard');
         }
-      } catch (error: any) {
-        setError(error.message);
+      } catch (redirectError: unknown) {
+        const message =
+          redirectError instanceof Error
+            ? redirectError.message
+            : 'Unable to complete sign in.';
+        setError(message);
       }
     };
-    checkRedirectResult();
+
+    void checkRedirectResult();
   }, [router]);
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEmailSignIn = async (event: React.FormEvent) => {
+    event.preventDefault();
     setLoading(true);
     setError(null);
+
     try {
       await signInWithEmail(email, password);
       router.push('/dashboard');
-    } catch (error: any) {
-      setError(error.message);
+    } catch (signInError: unknown) {
+      const message =
+        signInError instanceof Error ? signInError.message : 'Unable to sign in.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -57,8 +66,8 @@ export function SignInForm() {
   const handleGoogleSignIn = () => {
     setSsoLoading('google');
     setError(null);
-    signInWithGoogle().catch((error) => {
-      setError(error.message);
+    signInWithGoogle().catch((signInError: Error) => {
+      setError(signInError.message);
       setSsoLoading(null);
     });
   };
@@ -66,38 +75,44 @@ export function SignInForm() {
   const handleAppleSignIn = () => {
     setSsoLoading('apple');
     setError(null);
-    signInWithApple().catch((error) => {
-      setError(error.message);
+    signInWithApple().catch((signInError: Error) => {
+      setError(signInError.message);
       setSsoLoading(null);
     });
   };
 
   return (
-    <div className="w-full max-w-md space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold text-[#232521]">Sign in to your account</h1>
-      </div>
-      <form onSubmit={handleEmailSignIn} className="space-y-4 pt-6">
-        <div className="space-y-2 text-left">
-          <Label htmlFor="email">Email address</Label>
+    <div className="flex w-full max-w-[500px] flex-col gap-6">
+      <h1 className="text-center text-[40px] font-bold leading-[1.2] tracking-[-0.4px] text-[#030712]">
+        Sign in to your account
+      </h1>
+
+      <form onSubmit={handleEmailSignIn} className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="email" className="text-sm font-semibold text-[#030712]">
+            Email address
+          </Label>
           <Input
             id="email"
             type="email"
-            placeholder="name@example.com"
+            placeholder="Enter your email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             required
             autoComplete="email"
             disabled={loading}
+            className={authInputClassName}
           />
         </div>
 
-        <div className="space-y-2 text-left">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="password" className="text-sm font-semibold text-[#030712]">
+              Password
+            </Label>
             <Link
               href="/forgot-password"
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-[#52525b] hover:text-[#030712]"
             >
               Forgot password?
             </Link>
@@ -107,10 +122,11 @@ export function SignInForm() {
             type="password"
             placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             required
             autoComplete="current-password"
             disabled={loading}
+            className={authInputClassName}
           />
         </div>
 
@@ -120,53 +136,49 @@ export function SignInForm() {
           </Alert>
         )}
 
-        <PrimaryButton
+        <button
           type="submit"
           disabled={loading}
-          className="w-full"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#241a94] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? 'Signing in...' : 'Sign in'}
-        </PrimaryButton>
+          {loading ? 'Signing in…' : 'Sign In'}
+        </button>
       </form>
 
-      <div className="relative pt-2">
-        <div className="absolute inset-0 flex items-center">
-          <Separator />
-        </div>
-        <div className="relative flex justify-center text-[0.7rem] uppercase">
-          <span className="bg-[#faf9f5] px-2 text-muted-foreground">
-            Or continue with
-          </span>
-        </div>
+      <div className="flex items-center gap-4">
+        <div className="h-px flex-1 bg-[#d1d5db]" />
+        <span className="text-sm text-[#030712]">Or</span>
+        <div className="h-px flex-1 bg-[#d1d5db]" />
       </div>
 
-      <div className="space-y-4 pt-2">
-        <Button
-          variant="outline"
+      <div className="flex flex-col gap-6">
+        <button
+          type="button"
           onClick={handleGoogleSignIn}
           disabled={loading || ssoLoading === 'apple'}
-          className="w-full h-11 bg-white border border-[#747775] text-[#1F1F1F] text-sm font-medium rounded-[360px] flex items-center justify-center px-4 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 transition-colors"
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-[#d1d5db] bg-white px-6 py-2.5 text-base font-bold text-[#030712] transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {ssoLoading === 'google' ? (
-            <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <GoogleIcon className="mr-3 h-5 w-5" />
+            <GoogleIcon className="h-6 w-6" />
           )}
-          Sign in with Google
-        </Button>
+          Continue with Google
+        </button>
 
-        <Button
+        <button
+          type="button"
           onClick={handleAppleSignIn}
           disabled={loading || ssoLoading === 'google'}
-          className="w-full h-11 bg-black text-white text-sm font-medium rounded-[360px] flex items-center justify-center px-4 hover:bg-gray-800 active:bg-gray-900 disabled:opacity-50 transition-colors"
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-[#d1d5db] bg-[#030712] px-6 py-2.5 text-base font-bold text-white transition-colors hover:bg-[#111827] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {ssoLoading === 'apple' ? (
-            <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <AppleIcon className="mr-3 h-5 w-5" />
+            <AppleIcon className="h-6 w-6" />
           )}
-          Sign in with Apple
-        </Button>
+          Continue with Apple
+        </button>
       </div>
     </div>
   );

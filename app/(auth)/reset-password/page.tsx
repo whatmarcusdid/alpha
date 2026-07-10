@@ -1,11 +1,21 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Header } from '@/components/layout/Header';
-import { Label } from '@/components/ui/label';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+import { AuthPageLayout } from '@/components/auth/AuthPageLayout';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+const authInputClassName =
+  'min-h-[40px] h-10 rounded-md border-[#d1d5db] px-5 py-2 text-sm text-[#030712] placeholder:text-[#52525b] focus-visible:ring-[#2920a5]';
+
+const primaryButtonClassName =
+  'inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#241a94] disabled:cursor-not-allowed disabled:opacity-50';
+
+const secondaryButtonClassName =
+  'inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border-[3px] border-[#2920a5] bg-white px-6 py-2.5 text-base font-semibold text-[#2920a5] transition-colors hover:bg-[#f5f3ff]';
 
 function getPasswordStrength(password: string): {
   score: number;
@@ -30,11 +40,53 @@ function getPasswordStrength(password: string): {
   return { score, label: 'Strong', labelColor: 'text-green-600', segmentFillColor: 'bg-green-500' };
 }
 
+function ErrorIcon() {
+  return (
+    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FEE2E2]">
+      <svg
+        className="h-8 w-8 text-red-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+        aria-hidden
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </div>
+  );
+}
+
+function SuccessIcon() {
+  return (
+    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+      <svg
+        className="h-8 w-8 text-green-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+        aria-hidden
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+  );
+}
+
+function LoadingState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#2920a5] border-t-transparent" />
+      <p className="mt-4 text-base text-[#52525b]">{message}</p>
+    </div>
+  );
+}
+
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [isValid, setIsValid] = useState(false);
   const [email, setEmail] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
@@ -60,7 +112,6 @@ function ResetPasswordContent() {
         const data = await response.json();
 
         if (data.valid) {
-          setIsValid(true);
           setEmail(data.email);
         } else {
           setValidationError(data.error ?? 'Invalid reset link.');
@@ -72,7 +123,7 @@ function ResetPasswordContent() {
       }
     };
 
-    validate();
+    void validate();
   }, [token]);
 
   useEffect(() => {
@@ -86,8 +137,8 @@ function ResetPasswordContent() {
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
   const canSubmit = passwordValid && passwordsMatch && !submitting;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!canSubmit || !token) return;
 
     setSubmitting(true);
@@ -115,42 +166,18 @@ function ResetPasswordContent() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#9be382] border-t-transparent" />
-        <p className="mt-4 text-[#6F797A]">Validating reset link...</p>
-      </div>
-    );
+    return <LoadingState message="Validating reset link…" />;
   }
 
   if (validationError) {
     return (
-      <div className="w-full max-w-md space-y-6 text-center">
-        <div className="flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <svg
-              className="h-8 w-8 text-red-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-[#232521]">Invalid Reset Link</h1>
-          <p className="text-[#6F797A]">{validationError}</p>
-        </div>
-        <Link
-          href="/forgot-password"
-          className="inline-flex w-full min-h-[40px] items-center justify-center rounded-full bg-[#9be382] px-6 py-3 font-semibold text-[#232521] transition-colors hover:bg-[#8dd370]"
-        >
+      <div className="flex w-full max-w-[500px] flex-col items-center gap-6 text-center">
+        <ErrorIcon />
+        <h1 className="text-[40px] font-bold leading-[1.2] tracking-[-0.4px] text-[#030712]">
+          Invalid Reset Link
+        </h1>
+        <p className="text-lg leading-[1.5] text-[#030712]">{validationError}</p>
+        <Link href="/forgot-password" className={primaryButtonClassName}>
           Request New Reset
         </Link>
       </div>
@@ -159,63 +186,46 @@ function ResetPasswordContent() {
 
   if (success) {
     return (
-      <div className="w-full max-w-md space-y-6 text-center">
-        <div className="flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <svg
-              className="h-8 w-8 text-green-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-[#232521]">Password Reset Successfully!</h1>
-          <p className="text-[#6F797A]">Redirecting you to login...</p>
-        </div>
-        <Link
-          href="/signin"
-          className="inline-flex w-full min-h-[40px] items-center justify-center rounded-full bg-[#9be382] px-6 py-3 font-semibold text-[#232521] transition-colors hover:bg-[#8dd370]"
-        >
-          Go to Login
+      <div className="flex w-full max-w-[500px] flex-col items-center gap-6 text-center">
+        <SuccessIcon />
+        <h1 className="text-[40px] font-bold leading-[1.2] tracking-[-0.4px] text-[#030712]">
+          Password reset successfully
+        </h1>
+        <p className="text-lg leading-[1.5] text-[#030712]">Redirecting you to sign in…</p>
+        <Link href="/signin" className={primaryButtonClassName}>
+          Go to sign in
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold text-[#232521]">Set your new password</h1>
-        <p className="text-sm text-[#6F797A]">
+    <div className="flex w-full max-w-[500px] flex-col gap-6">
+      <div className="flex flex-col gap-6 text-center">
+        <h1 className="text-[40px] font-bold leading-[1.2] tracking-[-0.4px] text-[#030712]">
+          Set your new password
+        </h1>
+        <p className="text-lg leading-[1.5] text-[#030712]">
           Enter a new password for {email}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 pt-2">
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-[#232521]">
-            New Password
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="password" className="text-sm font-semibold text-[#030712]">
+            New password
           </Label>
           <Input
             id="password"
             name="password"
             type="password"
-            placeholder="••••••••"
+            placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             minLength={8}
             autoComplete="new-password"
             disabled={submitting}
-            className="min-h-[40px] border-[#6F797A] focus:ring-[#1B4332]"
+            className={authInputClassName}
           />
           {password.length > 0 && password.length < 8 && (
             <p className="text-sm text-red-600">Password must be at least 8 characters</p>
@@ -223,11 +233,11 @@ function ResetPasswordContent() {
           {password.length >= 8 && (
             <div className="space-y-1">
               <div className="flex gap-1">
-                {[0, 1, 2, 3, 4, 5].map((i) => (
+                {[0, 1, 2, 3, 4, 5].map((index) => (
                   <div
-                    key={i}
+                    key={index}
                     className={`h-1 flex-1 rounded-full transition-colors ${
-                      i < strength.score ? strength.segmentFillColor : 'bg-gray-200'
+                      index < strength.score ? strength.segmentFillColor : 'bg-gray-200'
                     }`}
                   />
                 ))}
@@ -237,20 +247,20 @@ function ResetPasswordContent() {
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword" className="text-[#232521]">
-            Confirm Password
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="confirmPassword" className="text-sm font-semibold text-[#030712]">
+            Confirm password
           </Label>
           <Input
             id="confirmPassword"
             name="confirmPassword"
             type="password"
-            placeholder="••••••••"
+            placeholder="Confirm your password"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(event) => setConfirmPassword(event.target.value)}
             autoComplete="new-password"
             disabled={submitting}
-            className="min-h-[40px] border-[#6F797A] focus:ring-[#1B4332]"
+            className={authInputClassName}
           />
           {confirmPassword.length > 0 && (
             <p className={`text-sm ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
@@ -259,27 +269,14 @@ function ResetPasswordContent() {
           )}
         </div>
 
-        {submitError && (
-          <p className="text-sm text-red-600">{submitError}</p>
-        )}
+        {submitError && <p className="text-sm text-red-600">{submitError}</p>}
 
-        <div className="space-y-3">
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className={`w-full min-h-[40px] rounded-full px-6 py-3 font-semibold transition-colors ${
-              canSubmit
-                ? 'bg-[#9be382] text-[#232521] hover:bg-[#8dd370]'
-                : 'cursor-not-allowed bg-gray-300 text-gray-500'
-            }`}
-          >
-            {submitting ? 'Resetting...' : 'Reset Password'}
+        <div className="flex flex-col gap-6">
+          <button type="submit" disabled={!canSubmit} className={primaryButtonClassName}>
+            {submitting ? 'Resetting…' : 'Reset password'}
           </button>
 
-          <Link
-            href="/signin"
-            className="block text-center text-sm text-[#6F797A] hover:text-[#232521] transition-colors"
-          >
+          <Link href="/signin" className={secondaryButtonClassName}>
             Back to sign in
           </Link>
         </div>
@@ -290,20 +287,10 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen w-full bg-[#faf9f5] flex flex-col">
-      <Header />
-      <main className="flex-1 flex items-center justify-center px-6 py-12 md:px-10 md:py-16 lg:py-28">
-        <Suspense
-          fallback={
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#9be382] border-t-transparent" />
-              <p className="mt-4 text-[#6F797A]">Loading...</p>
-            </div>
-          }
-        >
-          <ResetPasswordContent />
-        </Suspense>
-      </main>
-    </div>
+    <AuthPageLayout>
+      <Suspense fallback={<LoadingState message="Loading…" />}>
+        <ResetPasswordContent />
+      </Suspense>
+    </AuthPageLayout>
   );
 }

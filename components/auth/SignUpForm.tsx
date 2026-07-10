@@ -6,11 +6,12 @@ import { signUpWithEmail, signInWithGoogle, signInWithApple } from '@/lib/auth';
 import { createUserWithSubscription, linkStripeCustomer } from '@/lib/firestore';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GoogleIcon, AppleIcon } from '@/components/ui/icons';
 import { Loader2 } from 'lucide-react';
+
+const authInputClassName =
+  'min-h-[40px] h-10 rounded-md border-[#d1d5db] px-5 py-2 text-sm text-[#030712] placeholder:text-[#52525b] focus-visible:ring-[#2920a5]';
 
 export function SignUpForm() {
   const router = useRouter();
@@ -419,20 +420,20 @@ export function SignUpForm() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-6">
-      {/* Heading Section */}
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Create New Account</h1>
-        <p className="text-base text-gray-600 leading-relaxed">
-          Create your account to unlock access to your dashboard securely access your services.
+    <div className="flex w-full max-w-[500px] flex-col gap-6">
+      <div className="flex flex-col gap-6 text-center">
+        <h1 className="text-[40px] font-bold leading-[1.2] tracking-[-0.4px] text-[#232521]">
+          Create New Account
+        </h1>
+        <p className="text-lg leading-[1.5] text-[#030712]">
+          Create your account to unlock access to your dashboard securely access your
+          services.
         </p>
       </div>
 
-      {/* Email/Password Form */}
-      <form onSubmit={handleEmailSignUp} className="space-y-4">
-        {/* Name Field */}
-        <div className="space-y-2">
-          <Label htmlFor="name" className="text-sm font-semibold text-gray-900">
+      <form onSubmit={handleEmailSignUp} className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="name" className="text-sm font-semibold text-[#030712]">
             Full Name
           </Label>
           <Input
@@ -440,16 +441,16 @@ export function SignUpForm() {
             type="text"
             placeholder="Enter your full name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(event) => setName(event.target.value)}
             required
+            autoComplete="name"
             disabled={loading}
-            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg min-h-[40px]"
+            className={authInputClassName}
           />
         </div>
 
-        {/* Email Field */}
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-semibold text-gray-900">
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="email" className="text-sm font-semibold text-[#030712]">
             Email
           </Label>
           <Input
@@ -457,16 +458,16 @@ export function SignUpForm() {
             type="email"
             placeholder="Enter your email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             required
+            autoComplete="email"
             disabled={loading}
-            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg min-h-[40px]"
+            className={authInputClassName}
           />
         </div>
 
-        {/* Password Field */}
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-semibold text-gray-900">
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="password" className="text-sm font-semibold text-[#030712]">
             Password
           </Label>
           <Input
@@ -474,72 +475,63 @@ export function SignUpForm() {
             type="password"
             placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             required
+            autoComplete="new-password"
             disabled={loading}
-            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg min-h-[40px]"
+            className={authInputClassName}
           />
         </div>
 
-        {/* Error Alert */}
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        {/* Create Account Button */}
-        <Button
+        <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-[#9be382] hover:bg-[#8cd370] text-[#1b4a41] font-semibold rounded-full"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#241a94] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading && !ssoLoading ? 'Creating account...' : 'Create New Account'}
-        </Button>
+          {loading && !ssoLoading ? 'Creating account…' : 'Create New Account'}
+        </button>
       </form>
 
-      {/* Separator */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <Separator />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-[#faf9f5] px-2 text-muted-foreground">Or</span>
-        </div>
+      <div className="flex items-center gap-4">
+        <div className="h-px flex-1 bg-[#d1d5db]" />
+        <span className="text-sm text-[#030712]">Or</span>
+        <div className="h-px flex-1 bg-[#d1d5db]" />
       </div>
 
-      {/* SSO Buttons */}
-      <div className="space-y-3">
-        {/* Google Button */}
-        <Button
+      <div className="flex flex-col gap-6">
+        <button
           type="button"
-          variant="outline"
-          onClick={handleGoogleSignUp}
-          disabled={loading}
-          className="w-full py-3 bg-white border border-gray-300 text-gray-900 rounded-full"
+          onClick={() => void handleGoogleSignUp()}
+          disabled={loading || ssoLoading === 'apple'}
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-[#d1d5db] bg-white px-6 py-2.5 text-base font-bold text-[#030712] transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {ssoLoading === 'google' ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <GoogleIcon className="mr-2 h-5 w-5" />
+            <GoogleIcon className="h-6 w-6" />
           )}
           Continue with Google
-        </Button>
+        </button>
 
-        {/* Apple Button */}
-        <Button
+        <button
           type="button"
-          onClick={handleAppleSignUp}
-          disabled={loading}
-          className="w-full py-3 bg-black hover:bg-gray-900 text-white rounded-full"
+          onClick={() => void handleAppleSignUp()}
+          disabled={loading || ssoLoading === 'google'}
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-[#d1d5db] bg-[#030712] px-6 py-2.5 text-base font-bold text-white transition-colors hover:bg-[#111827] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {ssoLoading === 'apple' ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <AppleIcon className="mr-2 h-5 w-5" />
+            <AppleIcon className="h-6 w-6" />
           )}
           Continue with Apple
-        </Button>
+        </button>
       </div>
     </div>
   );
