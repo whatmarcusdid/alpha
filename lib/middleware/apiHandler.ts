@@ -97,7 +97,7 @@ export function withAuthAndRateLimit(
 
       // Step 3: Call the actual handler with userId
       const { userId } = auth;
-      return await handler(req, { ...context, userId });
+      return await handler(req, { params: context.params, userId });
 
     } catch (error: any) {
       console.error('API handler error:', error);
@@ -213,7 +213,7 @@ export function withAuth(handler: ApiHandler) {
 
       // Call the handler with userId
       const { userId } = auth;
-      return await handler(req, { ...context, userId });
+      return await handler(req, { params: context.params, userId });
 
     } catch (error: any) {
       console.error('API handler error:', error);
@@ -247,7 +247,7 @@ export function withAdmin(handler: ApiHandler) {
       }
 
       const { userId } = auth;
-      return await handler(req, { ...context, userId });
+      return await handler(req, { params: context.params, userId });
     } catch (error: unknown) {
       console.error('Admin API handler error:', error);
 
