@@ -1,7 +1,7 @@
 'use client';
 
 import { Inter } from 'next/font/google';
-import { ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 
 import { AuditLoadingAnimation } from '@/components/audit/AuditLoadingAnimation';
@@ -9,6 +9,7 @@ import { AuditRateLimitOverlay } from '@/components/audit/AuditRateLimitOverlay'
 import { AuditResults } from '@/components/audit/AuditResults';
 import { Input } from '@/components/ui/input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { ratch } from '@/lib/fonts/ratch';
 import type { AuditResult } from '@/lib/types/audit';
 
 type AuditView = 'form' | 'loading' | 'results';
@@ -43,7 +44,7 @@ function isAuditSuccessPayload(
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '600'],
+  weight: ['400', '600', '700'],
   display: 'swap',
 });
 
@@ -147,10 +148,10 @@ export default function AuditPage() {
   }
 
   return (
-    <div className={`flex min-h-screen flex-col ${view === 'form' ? 'bg-[#E5E7EB]' : 'bg-white'}`}>
+    <div className={`flex min-h-screen flex-col ${view === 'form' ? '' : 'bg-white'}`}>
       {showRateLimitOverlay && (
         <>
-          <div className="fixed inset-0 z-30 bg-white/60 backdrop-blur-sm backdrop-grayscale" />
+          <div className="fixed inset-0 z-30 bg-[#0c0a28]/60 backdrop-blur-sm backdrop-grayscale" />
           <AuditRateLimitOverlay
             firstName={formValues.firstName}
             websiteUrl={formValues.websiteUrl}
@@ -161,26 +162,47 @@ export default function AuditPage() {
       )}
 
       {view === 'form' && (
-        <div className={`${inter.className} flex flex-1 flex-col px-8 pb-[80px] pt-10 md:px-16 lg:px-[140px]`}>
-          <div className="mb-[120px] flex items-center gap-2">
-            <ShieldCheck className="size-6 shrink-0 text-[#1d4ed8]" aria-hidden />
-            <span className="text-[25px] font-normal uppercase leading-[1.5] text-[#030712]">
-              Book Service
-            </span>
-          </div>
+        <div
+          className={`${inter.className} relative flex min-h-screen flex-1 flex-col items-center justify-center overflow-hidden bg-[#0c0a28] px-8 pb-[120px] pt-10 md:px-16 lg:px-[140px]`}
+        >
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            aria-hidden="true"
+          >
+            <source src="/videos/audit-hero-bg.mp4" type="video/mp4" />
+          </video>
 
-          <div className="mx-auto flex w-full max-w-[1160px] flex-col justify-start gap-16 lg:flex-row lg:items-start">
+          <nav
+            aria-label="Book Service"
+            className="absolute left-8 top-10 z-10 md:left-16 lg:left-[140px]"
+          >
+            <Image
+              src="/brand/book-service-audit-logo.png"
+              alt="Book Service"
+              width={194}
+              height={25}
+              priority
+              className="h-[25px] w-auto"
+            />
+          </nav>
+
+          <div className="relative z-10 mx-auto flex w-full max-w-[1160px] flex-col justify-start gap-16 lg:flex-row lg:items-start">
             <div className="flex w-full flex-col gap-10 lg:flex-1">
               <div className="flex flex-col gap-3">
-                <p className="text-base font-semibold uppercase leading-[1.5] text-[#1d4ed8]">
+                <p className="text-base font-semibold leading-[1.5] text-white">
                   Site Audit
                 </p>
-                <h1 className="text-[40px] font-extrabold leading-[1.2] tracking-[-0.4px] text-[#172554] md:text-[48px] md:tracking-[-0.48px] lg:text-[60px] lg:tracking-[-0.6px]">
+                <h1
+                  className={`${ratch.className} text-[40px] font-bold leading-[1.2] tracking-[-0.4px] text-white md:text-[48px] md:tracking-[-0.48px] lg:text-[52px] lg:tracking-[-0.52px]`}
+                >
                   Is your website helping or hurting your business?
                 </h1>
-                <p className="text-base leading-[1.5] text-[#52525b] lg:text-lg">
-                  Get your Speed, Security + SEO & AI Visibility grade in 60
-                  seconds.
+                <p className="text-base leading-[1.5] text-white lg:text-lg">
+                  Get your speed, security, and SEO grade in seconds
                 </p>
               </div>
 
@@ -200,10 +222,10 @@ export default function AuditPage() {
                   />
                 )}
                 <div className="flex min-w-0 flex-col gap-2">
-                  <span className="text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#030712] md:text-xl md:tracking-[-0.2px]">
+                  <span className="text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-white md:text-xl md:tracking-[-0.2px]">
                     Marcus White
                   </span>
-                  <span className="text-base leading-[1.5] text-[#52525b] lg:text-lg">
+                  <span className="text-base leading-[1.5] text-[rgba(248,250,252,0.65)] lg:text-lg">
                     Founder, Book Service
                   </span>
                 </div>
@@ -217,7 +239,7 @@ export default function AuditPage() {
               <div>
                 <label
                   htmlFor="audit-firstName"
-                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]"
+                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-white"
                 >
                   First name
                 </label>
@@ -230,13 +252,13 @@ export default function AuditPage() {
                   onChange={(e) =>
                     setFormValues((v) => ({ ...v, firstName: e.target.value }))
                   }
-                  className="rounded-md border-[rgba(111,121,122,0.4)] px-5"
+                  className="min-h-[40px] rounded-md border-[rgba(111,121,122,0.4)] px-5 py-3 text-sm placeholder:text-[#52525b]"
                 />
               </div>
               <div>
                 <label
                   htmlFor="audit-businessName"
-                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]"
+                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-white"
                 >
                   Business name
                 </label>
@@ -249,13 +271,13 @@ export default function AuditPage() {
                   onChange={(e) =>
                     setFormValues((v) => ({ ...v, businessName: e.target.value }))
                   }
-                  className="rounded-md border-[rgba(111,121,122,0.4)] px-5"
+                  className="min-h-[40px] rounded-md border-[rgba(111,121,122,0.4)] px-5 py-3 text-sm placeholder:text-[#52525b]"
                 />
               </div>
               <div>
                 <label
                   htmlFor="audit-email"
-                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]"
+                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-white"
                 >
                   Email address
                 </label>
@@ -268,13 +290,13 @@ export default function AuditPage() {
                   onChange={(e) =>
                     setFormValues((v) => ({ ...v, email: e.target.value }))
                   }
-                  className="rounded-md border-[rgba(111,121,122,0.4)] px-5"
+                  className="min-h-[40px] rounded-md border-[rgba(111,121,122,0.4)] px-5 py-3 text-sm placeholder:text-[#52525b]"
                 />
               </div>
               <div>
                 <label
                   htmlFor="audit-websiteUrl"
-                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]"
+                  className="mb-2.5 block text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-white"
                 >
                   Website URL
                 </label>
@@ -287,12 +309,12 @@ export default function AuditPage() {
                   onChange={(e) =>
                     setFormValues((v) => ({ ...v, websiteUrl: e.target.value }))
                   }
-                  className="rounded-md border-[rgba(111,121,122,0.4)] px-5"
+                  className="min-h-[40px] rounded-md border-[rgba(111,121,122,0.4)] px-5 py-3 text-sm placeholder:text-[#52525b]"
                 />
               </div>
 
               {error ? (
-                <p className="text-sm text-red-500" role="alert">
+                <p className="text-sm text-red-400" role="alert">
                   {error}
                 </p>
               ) : null}
@@ -300,12 +322,12 @@ export default function AuditPage() {
               <PrimaryButton
                 type="submit"
                 disabled={submitting}
-                className="min-h-[40px] w-full rounded-lg !bg-[#1d4ed8] px-6 py-2.5 text-base font-semibold uppercase !text-white hover:!bg-[#1e40af]"
+                className="min-h-[40px] w-full rounded-lg !bg-[#34d399] px-6 py-2 !text-base !font-bold !text-[#0c0a28] shadow-[4px_8px_12px_rgba(0,0,0,0.08)] hover:!bg-[#2fc48d]"
               >
                 Run My Free Audit
               </PrimaryButton>
 
-              <p className="text-center text-sm leading-[1.5] tracking-[-0.14px] text-[#52525b]">
+              <p className="text-center text-sm leading-[1.5] tracking-[-0.14px] text-white">
                 No login required. Results in under 60 seconds. Your PDF report
                 will be emailed to you automatically.
               </p>
