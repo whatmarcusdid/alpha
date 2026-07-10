@@ -47,3 +47,5 @@ serviceAccountKey.json
 
 # Sentry Config File
 .env.sentry-build-plugin
+firebase-debug.log
+firestore-debug.log
