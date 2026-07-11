@@ -37,6 +37,7 @@ import HorizontalTabs from '@/components/ui/HorizontalTabs';
 import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
 import { StickyBottomBar } from '@/components/ui/StickyBottomBar';
 import { AllPagesOverlay } from '@/components/ui/AllPagesOverlay';
+import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 
 // Define Tier type for upgrade flow
 type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
@@ -3292,6 +3293,63 @@ export default function DashboardLayout({ children }) {
 const [showAllPages, setShowAllPages] = useState(false);
 
 <AllPagesOverlay isOpen={showAllPages} onClose={() => setShowAllPages(false)} />`}
+                </code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* BOOK SERVICE HEADERS SECTION */}
+        <section>
+          <h2 className="text-3xl font-bold text-[#232521] mb-6">Book Service Headers</h2>
+          <p className="text-gray-600 mb-6">Navigation and branding header used across the entire Book Service product surface — audit flow, package selection, onboarding, confirmation, and access pages.</p>
+
+          <div className="space-y-8">
+            {/* BookServiceHeader */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Book Service Header</h3>
+              <p className="text-gray-600 mb-6">
+                Book Service header with the Figma nav logo (<code className="text-xs bg-gray-100 px-1 rounded">/brand/book-service-nav-logo.png</code>). Supports two layout variants for different page contexts.
+              </p>
+
+              {/* Visual Demo */}
+              <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200 space-y-6">
+                <div>
+                  <p className="text-sm text-gray-600 mb-4 font-semibold">Preview — variant=&quot;bar&quot; (package selection):</p>
+                  <div className="rounded-lg overflow-hidden border border-gray-200">
+                    <BookServiceHeader variant="bar" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-4 font-semibold">Preview — variant=&quot;inline&quot; (audit, onboarding, confirmation, access):</p>
+                  <div className="rounded-lg border border-gray-200 bg-white p-6">
+                    <BookServiceHeader variant="inline" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Features */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li><code className="text-xs">variant=&quot;bar&quot;</code> — full-width header with white background and bottom border; used on <code className="text-xs">/book-service/select</code></li>
+                  <li><code className="text-xs">variant=&quot;inline&quot;</code> — logo-only row without border; used on audit loading/results, signup, confirmation, confirm-details, access, and access-request pages</li>
+                  <li>Logo links to <code className="text-xs">/audit</code> via Next.js Image + Link</li>
+                  <li>Responsive padding: px-6 py-4 on mobile, md:px-10 on desktop (bar variant)</li>
+                  <li>Single header component across all Book Service pages</li>
+                </ul>
+              </div>
+
+              {/* Code Example */}
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
+
+// Package selection page (bordered bar)
+<BookServiceHeader variant="bar" />
+
+// Audit, onboarding, confirmation, and access pages (inline logo)
+<BookServiceHeader variant="inline" />`}
                 </code>
               </div>
             </div>
