@@ -1,17 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
-import { Inter, Schibsted_Grotesk } from 'next/font/google';
+import { Inter } from 'next/font/google';
+import { useRouter } from 'next/navigation';
 
-import { SiteFixBottomSheet } from '@/components/book-service/SiteFixBottomSheet';
 import {
   derivePreSelectedSkus,
   hasAnyFailingGrade,
   isAllGradesHealthy,
 } from '@/lib/book-service/derive-skus';
+import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import { storeAuditLeadId } from '@/lib/book-service/storage';
-import type { SiteFixSKU } from '@/lib/book-service/skus';
+import { ratch } from '@/lib/fonts/ratch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SPEED_ISSUE_DISPLAY_NAMES } from '@/lib/audit/speedTopIssues';
 import type { AuditResult, ClientGrade, SecurityFlag } from '@/lib/types/audit';
@@ -21,12 +20,6 @@ import {
   type SeoFailingSignalKey,
 } from '@/lib/types/seoSignals';
 import { stripMarkdown } from '@/lib/utils/stripMarkdown';
-
-const schibstedGrotesk = Schibsted_Grotesk({
-  subsets: ['latin'],
-  weight: ['800'],
-  display: 'swap',
-});
 
 const inter = Inter({
   subsets: ['latin'],
@@ -52,6 +45,14 @@ const SECURITY_FLAG_DISPLAY_NAMES: Record<SecurityFlag, string> = {
   http_redirect_missing: 'HTTP to HTTPS redirect is missing',
   mixed_content: 'Mixed HTTP and HTTPS content detected',
 };
+
+const PILLAR_INSIGHTS = {
+  speed:
+    'When page load time goes from 1s → 5s, bounce rates can jump by 90%—which means fewer people reach your quote/booking step.',
+  security:
+    'If Google blocklists a site for security issues, it can lose ~95% of organic search traffic—which means fewer "near me" calls until it\'s resolved.',
+  seo: 'If Google (and AI assistants) can\'t quickly tell what you do and where you do it, you get skipped—even if you\'re great—because your site isn\'t legible to search and AI systems.',
+} as const;
 
 function gradeColor(grade: ClientGrade): string {
   switch (grade) {
@@ -86,20 +87,34 @@ function IssueDot({ variant }: { variant: 'amber' | 'red' | 'green' }) {
   return <span className={`size-3 shrink-0 rounded-full ${color}`} />;
 }
 
+function PillarInsightCallout({ children }: { children: string }) {
+  return (
+    <div className="rounded-lg bg-[#e5e7eb] p-2.5">
+      <p
+        className={`${inter.className} text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]`}
+      >
+        {children}
+      </p>
+    </div>
+  );
+}
+
 function TopIssuesList({
   items,
   dotVariant,
+  insight,
 }: {
   items: string[];
   dotVariant: 'amber' | 'red';
+  insight: string;
 }) {
   if (items.length === 0) return null;
   return (
     <>
-      <div className="border-t border-[#dddddd]" />
+      <div className="border-t border-[#e5e7eb]" />
       <div className="flex flex-col gap-2">
         <p
-          className={`${inter.className} text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#232521] md:text-xl md:tracking-[-0.2px] lg:text-xl lg:tracking-[-0.2px]`}
+          className={`${inter.className} text-xl font-semibold leading-[1.5] tracking-[-0.2px] text-[#030712]`}
         >
           Top issues found
         </p>
@@ -108,7 +123,7 @@ function TopIssuesList({
             <li key={item} className="flex items-center gap-2">
               <IssueDot variant={dotVariant} />
               <span
-                className={`${inter.className} flex-1 text-sm leading-[1.5] tracking-[-0.14px] text-[#232521]`}
+                className={`${inter.className} flex-1 text-sm leading-[1.5] tracking-[-0.14px] text-[#030712]`}
               >
                 {item}
               </span>
@@ -116,6 +131,7 @@ function TopIssuesList({
           ))}
         </ul>
       </div>
+      <PillarInsightCallout>{insight}</PillarInsightCallout>
     </>
   );
 }
@@ -130,7 +146,7 @@ function GradeCard({
   descriptor: string;
 }) {
   return (
-    <div className="flex h-[124px] w-full items-center gap-4 rounded-xl border-2 border-[#e5e7eb] bg-white p-4 md:flex-1 lg:p-5">
+    <div className="flex h-[124px] w-full items-center gap-4 rounded-xl border-2 border-[#e5e7eb] bg-white p-5 md:flex-1">
       {grade === 'N/A' ? (
         <div className="flex w-[58px] shrink-0 items-center justify-center">
           <div className="h-1 w-8 rounded-full bg-gray-300" />
@@ -143,15 +159,11 @@ function GradeCard({
           {grade}
         </p>
       )}
-      <div className="flex min-w-0 flex-1 flex-col gap-2 leading-[1.5] text-[#545552]">
-        <span
-          className={`${inter.className} text-base font-semibold uppercase`}
-        >
+      <div className="flex min-w-0 flex-1 flex-col gap-2 leading-[1.5] text-[#52525b]">
+        <span className={`${inter.className} text-base font-semibold`}>
           {label}
         </span>
-        <span
-          className={`${inter.className} text-sm tracking-[-0.14px]`}
-        >
+        <span className={`${inter.className} text-sm tracking-[-0.14px]`}>
           {descriptor}
         </span>
       </div>
@@ -172,13 +184,11 @@ function PillarSection({
     <div className="flex flex-1 flex-col gap-4">
       <div className="flex flex-col gap-3">
         <h2
-          className={`${schibstedGrotesk.className} text-xl font-extrabold leading-[1.2] tracking-[-0.2px] text-[#232521] md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]`}
+          className={`${ratch.className} text-2xl font-bold leading-[1.2] tracking-[-0.24px] text-[#030712]`}
         >
           {title}
         </h2>
-        <p
-          className={`${inter.className} text-base leading-[1.5] text-[#52525b] lg:text-lg`}
-        >
+        <p className={`${inter.className} text-lg leading-[1.5] text-[#52525b]`}>
           {narrative}
         </p>
       </div>
@@ -192,10 +202,8 @@ export function AuditResults({
   firstName,
   onRunAnother,
 }: AuditResultsProps) {
+  const router = useRouter();
   const auditLeadId = result.auditLeadId;
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const gradeSnapshot = {
     speedGrade: result.speed.grade,
@@ -223,37 +231,8 @@ export function AuditResults({
     if (!auditLeadId) return;
 
     storeAuditLeadId(auditLeadId);
-    setSheetOpen(true);
-  }
-
-  async function handleConfirm(sku: SiteFixSKU) {
-    setIsCheckoutLoading(true);
-    setCheckoutError(null);
-    try {
-      const res = await fetch('/api/book-service/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          auditLeadId,
-          sku,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.data?.url) {
-        setCheckoutError('Something went wrong. Please try again.');
-        return;
-      }
-      window.location.href = data.data.url;
-    } catch {
-      setCheckoutError('Something went wrong. Please try again.');
-    } finally {
-      setIsCheckoutLoading(false);
-    }
-  }
-
-  function handleCloseSheet() {
-    setSheetOpen(false);
-    setCheckoutError(null);
+    const skus = derivePreSelectedSkus(gradeSnapshot);
+    router.push(`/book-service/select?skus=${skus.join(',')}`);
   }
 
   const displayHost = result.websiteUrl
@@ -292,23 +271,19 @@ export function AuditResults({
   const stickyBarPadding = showSiteFixBar || allHealthy ? 'pb-40' : 'pb-[120px]';
 
   return (
-    <>
     <div className={`${inter.className} flex min-h-screen flex-col bg-white`}>
-      <div className={`mx-auto flex w-full flex-col items-center gap-16 px-8 ${stickyBarPadding} pt-10 md:px-16 lg:px-[140px]`}>
-        <div className="flex w-full shrink-0 items-center gap-2">
-          <ShieldCheck className="size-6 shrink-0 text-[#1d4ed8]" aria-hidden />
-          <span className="text-[25px] font-normal uppercase leading-[1.5] text-[#030712]">
-            Book Service
-          </span>
-        </div>
+      <BookServiceHeader variant="bar" />
 
+      <div
+        className={`mx-auto flex w-full flex-1 flex-col items-center gap-16 px-8 ${stickyBarPadding} pt-10 md:px-16 lg:px-[140px]`}
+      >
         <div className="flex w-full flex-col gap-10 lg:w-[800px]">
           <div className="flex flex-col gap-3">
-            <p className="text-base font-semibold uppercase leading-[1.5] text-[#1d4ed8]">
+            <p className="text-base font-semibold leading-[1.5] text-[#2920a5]">
               Site Audit • {displayHost}
             </p>
             <h1
-              className={`${schibstedGrotesk.className} text-[36px] font-extrabold leading-[1.2] tracking-[-0.36px] text-[#171544] md:text-[44px] md:tracking-[-0.44px] lg:text-[52px] lg:tracking-[-0.52px]`}
+              className={`${ratch.className} text-[36px] font-bold leading-[1.2] tracking-[-0.36px] text-[#0c0a28] md:text-[44px] md:tracking-[-0.44px] lg:text-[52px] lg:tracking-[-0.52px]`}
             >
               {getResultsHeadline(firstName, {
                 speedGrade: result.speed.grade,
@@ -339,17 +314,17 @@ export function AuditResults({
           <div className="flex flex-col gap-6 md:flex-row md:gap-9">
             <GradeCard
               grade={result.speed.grade}
-              label="SPEED"
+              label="Speed"
               descriptor={speedDescriptor}
             />
             <GradeCard
               grade={result.security.grade}
-              label="SECURITY"
+              label="Security"
               descriptor={securityDescriptor}
             />
             <GradeCard
               grade={result.seo.grade}
-              label="SEO & AI VISIBILITY"
+              label="SEO & AI Visibility"
               descriptor={seoDescriptor}
             />
           </div>
@@ -359,20 +334,24 @@ export function AuditResults({
           <PillarSection title="Speed" narrative={speedNarrative}>
             {result.speed.grade !== 'N/A' &&
               (speedIssues.length > 0 ? (
-                <TopIssuesList items={speedIssues} dotVariant="amber" />
+                <TopIssuesList
+                  items={speedIssues}
+                  dotVariant="amber"
+                  insight={PILLAR_INSIGHTS.speed}
+                />
               ) : result.speed.score >= 90 ? (
                 <>
-                  <div className="border-t border-[#dddddd]" />
+                  <div className="border-t border-[#e5e7eb]" />
                   <div className="flex flex-col gap-2">
                     <p
-                      className={`${inter.className} text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#232521] md:text-xl md:tracking-[-0.2px]`}
+                      className={`${inter.className} text-xl font-semibold leading-[1.5] tracking-[-0.2px] text-[#030712]`}
                     >
                       All clear
                     </p>
                     <div className="flex items-center gap-2">
                       <IssueDot variant="green" />
                       <span
-                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#232521]`}
+                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#030712]`}
                       >
                         No major speed issues detected
                       </span>
@@ -381,7 +360,7 @@ export function AuditResults({
                 </>
               ) : (
                 <>
-                  <div className="border-t border-[#dddddd]" />
+                  <div className="border-t border-[#e5e7eb]" />
                   <p className="text-sm text-[#52525b]">
                     Check your PDF report for detailed recommendations.
                   </p>
@@ -392,20 +371,24 @@ export function AuditResults({
           <PillarSection title="Security" narrative={securityNarrative}>
             {result.security.grade !== 'N/A' &&
               (securityIssues.length > 0 ? (
-                <TopIssuesList items={securityIssues} dotVariant="red" />
+                <TopIssuesList
+                  items={securityIssues}
+                  dotVariant="red"
+                  insight={PILLAR_INSIGHTS.security}
+                />
               ) : (
                 <>
-                  <div className="border-t border-[#dddddd]" />
+                  <div className="border-t border-[#e5e7eb]" />
                   <div className="flex flex-col gap-2">
                     <p
-                      className={`${inter.className} text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#232521] md:text-xl md:tracking-[-0.2px]`}
+                      className={`${inter.className} text-xl font-semibold leading-[1.5] tracking-[-0.2px] text-[#030712]`}
                     >
                       All clear
                     </p>
                     <div className="flex items-center gap-2">
                       <IssueDot variant="green" />
                       <span
-                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#232521]`}
+                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#030712]`}
                       >
                         Your site passed our security checks
                       </span>
@@ -421,20 +404,24 @@ export function AuditResults({
           >
             {result.seo.grade !== 'N/A' &&
               (seoIssues.length > 0 ? (
-                <TopIssuesList items={seoIssues} dotVariant="amber" />
+                <TopIssuesList
+                  items={seoIssues}
+                  dotVariant="amber"
+                  insight={PILLAR_INSIGHTS.seo}
+                />
               ) : (
                 <>
-                  <div className="border-t border-[#dddddd]" />
+                  <div className="border-t border-[#e5e7eb]" />
                   <div className="flex flex-col gap-2">
                     <p
-                      className={`${inter.className} text-lg font-semibold leading-[1.5] tracking-[-0.18px] text-[#232521] md:text-xl md:tracking-[-0.2px]`}
+                      className={`${inter.className} text-xl font-semibold leading-[1.5] tracking-[-0.2px] text-[#030712]`}
                     >
                       All clear
                     </p>
                     <div className="flex items-center gap-2">
                       <IssueDot variant="green" />
                       <span
-                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#232521]`}
+                        className={`${inter.className} text-sm leading-[1.5] tracking-[-0.14px] text-[#030712]`}
                       >
                         No major SEO issues detected
                       </span>
@@ -457,23 +444,25 @@ export function AuditResults({
       </div>
 
       {(showSiteFixBar || allHealthy) && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-gray-900 px-6 py-5 shadow-[0px_-4px_24px_rgba(0,0,0,0.25)] md:px-10">
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e5e7eb] bg-white px-6 py-5 shadow-[0px_-1px_20px_rgba(85,85,85,0.1)] md:px-10">
           <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
             <div className="flex flex-1 flex-col gap-2">
               {allHealthy && !showSiteFixBar ? (
                 <p
-                  className={`${schibstedGrotesk.className} text-xl font-extrabold leading-[1.2] text-white md:text-2xl`}
+                  className={`${ratch.className} text-2xl font-bold leading-[1.2] tracking-[-0.24px] text-[#0c0a28]`}
                 >
                   Your site is in great shape.
                 </p>
               ) : (
                 <>
                   <p
-                    className={`${schibstedGrotesk.className} text-xl font-extrabold leading-[1.2] text-white md:text-2xl`}
+                    className={`${ratch.className} text-2xl font-bold leading-[1.2] tracking-[-0.24px] text-[#0c0a28]`}
                   >
                     Don&apos;t leave these issues sitting
                   </p>
-                  <p className={`${inter.className} text-base leading-[1.5] text-gray-300`}>
+                  <p
+                    className={`${inter.className} text-lg leading-[1.5] text-[#52525b]`}
+                  >
                     The Book Service Site Fix tackles these one by one, in
                     priority order.
                   </p>
@@ -485,7 +474,7 @@ export function AuditResults({
                 type="button"
                 onClick={handleViewSiteFixes}
                 disabled={!auditLeadId}
-                className="min-h-[48px] shrink-0 rounded-full bg-[#2563EB] px-8 py-3 text-base font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-gray-600 disabled:opacity-70 md:w-auto"
+                className="min-h-[48px] shrink-0 rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold leading-[1.5] text-white transition-colors hover:bg-[#211880] disabled:cursor-not-allowed disabled:bg-gray-400 disabled:opacity-70 md:w-auto"
               >
                 View my site fixes
               </button>
@@ -494,16 +483,5 @@ export function AuditResults({
         </div>
       )}
     </div>
-
-    <SiteFixBottomSheet
-      sku={null}
-      skus={derivePreSelectedSkus(gradeSnapshot)}
-      open={sheetOpen}
-      onClose={handleCloseSheet}
-      onConfirm={handleConfirm}
-      isLoading={isCheckoutLoading}
-      error={checkoutError}
-    />
-    </>
   );
 }
