@@ -2,7 +2,7 @@
 
 import { Inter } from 'next/font/google';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AuditLoadingAnimation } from '@/components/audit/AuditLoadingAnimation';
 import { AuditRateLimitOverlay } from '@/components/audit/AuditRateLimitOverlay';
@@ -10,6 +10,12 @@ import { AuditResults } from '@/components/audit/AuditResults';
 import { Input } from '@/components/ui/input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ratch } from '@/lib/fonts/ratch';
+import {
+  clearAuditLeadId,
+  clearAuditSession,
+  readAuditSession,
+  storeAuditSession,
+} from '@/lib/book-service/storage';
 import type { AuditResult } from '@/lib/types/audit';
 
 type AuditView = 'form' | 'loading' | 'results';
@@ -62,6 +68,30 @@ export default function AuditPage() {
   const [submitting, setSubmitting] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [showRateLimitOverlay, setShowRateLimitOverlay] = useState(false);
+  const [hasCheckedSession, setHasCheckedSession] = useState(false);
+
+  useEffect(() => {
+    const session = readAuditSession();
+    if (session) {
+      setAuditResult(session.result);
+      setFormValues((values) => ({
+        ...values,
+        firstName: session.firstName,
+        websiteUrl: session.result.websiteUrl,
+      }));
+      setView('results');
+    }
+    setHasCheckedSession(true);
+  }, []);
+
+  useEffect(() => {
+    if (view === 'results' && auditResult) {
+      storeAuditSession({
+        result: auditResult,
+        firstName: formValues.firstName || auditResult.firstName,
+      });
+    }
+  }, [view, auditResult, formValues.firstName]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,6 +112,8 @@ export default function AuditPage() {
     }
 
     setError(null);
+    clearAuditSession();
+    clearAuditLeadId();
     setSubmitting(true);
     setView('loading');
     setApiComplete(false);
@@ -132,12 +164,18 @@ export default function AuditPage() {
     }
   }
 
+  if (!hasCheckedSession) {
+    return <div className="min-h-screen bg-white" aria-hidden="true" />;
+  }
+
   if (view === 'results' && auditResult) {
     return (
       <AuditResults
         result={auditResult}
         firstName={formValues.firstName}
         onRunAnother={() => {
+          clearAuditSession();
+          clearAuditLeadId();
           setView('form');
           setAuditResult(null);
           setApiComplete(false);
