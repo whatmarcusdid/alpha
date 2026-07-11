@@ -236,7 +236,6 @@ export function AuditResults({
         body: JSON.stringify({
           auditLeadId,
           sku,
-          normalizedEmail: '',
         }),
       });
       const data = await res.json();

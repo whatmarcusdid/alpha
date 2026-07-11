@@ -15,7 +15,7 @@ const bookServiceCheckoutSchema = z.object({
     'seo_ai_visibility_fix',
     'full_bundle',
   ]),
-  normalizedEmail: z.string().email().optional(),
+  normalizedEmail: z.string().email().optional().or(z.literal('')),
 });
 
 function getAppBaseUrl(): string {
@@ -38,7 +38,10 @@ export const POST = withRateLimit(async (req: NextRequest) => {
       );
     }
 
-    const { auditLeadId, sku, normalizedEmail } = parsed.data;
+    const { auditLeadId, sku, normalizedEmail: rawEmail } = parsed.data;
+    const normalizedEmail = rawEmail?.trim()
+      ? rawEmail.toLowerCase().trim()
+      : undefined;
     const orderId = crypto.randomUUID();
     const priceId = getSKUPriceMap()[sku];
     const baseUrl = getAppBaseUrl();
@@ -47,7 +50,7 @@ export const POST = withRateLimit(async (req: NextRequest) => {
       orderId,
       auditLeadId,
       sku,
-      normalizedEmail: normalizedEmail?.toLowerCase().trim() ?? '',
+      normalizedEmail: normalizedEmail ?? '',
     });
 
     const stripe = getStripe();
