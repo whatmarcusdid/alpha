@@ -11,7 +11,16 @@ This guide explains how to set up all required environment variables for develop
 
 2. Fill in the values following the sections below
 
-3. Restart your development server:
+3. Start the Firebase emulator suite (required alongside the dev server):
+   ```bash
+   firebase emulators:start
+   ```
+
+   Without it, Firestore- and Auth-dependent routes (including the
+   `/audit` pipeline) will hang or time out against `127.0.0.1:8080` and
+   `127.0.0.1:9099` rather than failing clearly.
+
+4. In a separate terminal, restart your development server:
    ```bash
    npm run dev
    ```
