@@ -1,8 +1,10 @@
 'use client';
 
-import { ShieldCheck } from 'lucide-react';
-import { Inter, Schibsted_Grotesk } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { useEffect, useRef, useState } from 'react';
+
+import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
+import { ratch } from '@/lib/fonts/ratch';
 
 export interface AuditLoadingAnimationProps {
   websiteUrl: string;
@@ -15,12 +17,6 @@ type ScanKind = 'speed' | 'security' | 'seo';
 const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '600'],
-  display: 'swap',
-});
-
-const schibstedGrotesk = Schibsted_Grotesk({
-  subsets: ['latin'],
-  weight: ['800'],
   display: 'swap',
 });
 
@@ -86,9 +82,9 @@ function PlaceholderBar() {
 }
 
 const SCANS: { kind: ScanKind; label: string }[] = [
-  { kind: 'speed', label: 'SPEED' },
-  { kind: 'security', label: 'SECURITY' },
-  { kind: 'seo', label: 'SEO & AI VISIBILITY' },
+  { kind: 'speed', label: 'Speed' },
+  { kind: 'security', label: 'Security' },
+  { kind: 'seo', label: 'SEO & AI Visibility' },
 ];
 
 export function AuditLoadingAnimation({
@@ -130,26 +126,21 @@ export function AuditLoadingAnimation({
     .replace(/\/+$/, '');
 
   return (
-    <div className={`${inter.className} flex w-full flex-1 flex-col bg-white`}>
+    <div className={`${inter.className} flex min-h-screen w-full flex-col bg-white`}>
       <div className="mx-auto flex w-full flex-1 flex-col items-center gap-16 px-8 pb-[120px] pt-10 md:px-16 lg:px-[140px]">
-        <div className="flex w-full shrink-0 items-center gap-2">
-          <ShieldCheck className="size-6 shrink-0 text-[#1d4ed8]" aria-hidden />
-          <span className="text-[25px] font-normal uppercase leading-[1.5] text-[#030712]">
-            Book Service
-          </span>
-        </div>
+        <BookServiceHeader variant="inline" />
 
-        <div className="flex w-full flex-col gap-10 lg:w-[800px]">
+        <div className="flex w-full flex-col gap-6 lg:w-[800px]">
           <div className="flex flex-col gap-3">
-            <p className="text-base font-semibold uppercase leading-[1.5] text-[#1d4ed8]">
+            <p className="text-base font-semibold leading-[1.5] text-[#2920a5]">
               Site Audit • {displayHost}
             </p>
             <h2
-              className={`${schibstedGrotesk.className} text-[36px] font-extrabold leading-[1.2] tracking-[-0.36px] text-[#171544] md:text-[44px] md:tracking-[-0.44px] lg:text-[52px] lg:tracking-[-0.52px]`}
+              className={`${ratch.className} text-[36px] font-bold leading-[1.2] tracking-[-0.36px] text-[#0c0a28] md:text-[44px] md:tracking-[-0.44px] lg:text-[52px] lg:tracking-[-0.52px]`}
             >
               Analyzing your site…
             </h2>
-            <p className="text-base leading-[1.5] text-[#232521] lg:text-lg">
+            <p className="text-lg leading-[1.5] text-[#030712]">
               Your grades will appear as each scan completes.
             </p>
           </div>
@@ -162,10 +153,10 @@ export function AuditLoadingAnimation({
                   key={kind}
                   className="flex h-[124px] w-full flex-col items-center justify-center gap-4 rounded-xl border-[3px] border-[#e5e7eb] bg-white p-5 md:flex-1"
                 >
-                  <span className="text-center text-base font-semibold uppercase leading-[1.5] text-[#545552]">
+                  <span className="text-center text-base font-semibold leading-[1.5] text-[#52525b]">
                     {label}
                   </span>
-                  <div className="flex items-center justify-center">
+                  <div className="flex min-h-10 items-center justify-center">
                     {state === 'spinner' ? (
                       <SpinnerBlock />
                     ) : state === 'check' ? (
