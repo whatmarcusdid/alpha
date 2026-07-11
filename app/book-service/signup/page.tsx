@@ -5,7 +5,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { signInWithCustomToken } from '@/lib/auth';
-import { BookServiceLogoLink } from '@/lib/book-service/BookServiceHeader';
+import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import { AppleIcon, GoogleIcon } from '@/components/ui/icons';
 
 type FormState = {
@@ -85,7 +85,7 @@ function SignupContent() {
     return (
       <div className="relative flex min-h-screen flex-col bg-white">
         <div className="absolute left-6 top-10 z-10 md:left-10">
-          <BookServiceLogoLink />
+          <BookServiceHeader variant="inline" />
         </div>
         <main className="mx-auto flex w-full max-w-[500px] flex-1 flex-col items-center justify-center gap-6 px-6 py-16 text-center">
           <h1 className="text-[40px] font-extrabold leading-[1.2] tracking-[-0.4px] text-[#030712]">
@@ -165,7 +165,7 @@ function SignupContent() {
   return (
     <div className="relative flex min-h-screen flex-col bg-white">
       <div className="absolute left-6 top-10 z-10 md:left-10">
-        <BookServiceLogoLink />
+        <BookServiceHeader variant="inline" />
       </div>
       <main className="mx-auto flex w-full max-w-[500px] flex-1 flex-col items-center gap-6 px-6 pb-[120px] pt-[120px] md:px-0">
         <div className="flex w-full flex-col items-center gap-6 text-center">
@@ -296,7 +296,7 @@ export default function BookServiceSignupPage() {
       fallback={
         <div className="relative flex min-h-screen flex-col bg-white">
           <div className="absolute left-6 top-10 z-10 md:left-10">
-            <BookServiceLogoLink />
+            <BookServiceHeader variant="inline" />
           </div>
           <main className="mx-auto flex w-full max-w-[500px] flex-1 items-center justify-center px-6 py-16">
             <p className="text-[#52525b]">Loading…</p>

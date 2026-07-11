@@ -1,6 +1,6 @@
 'use client';
 
-import { BookServiceLogoLink } from '@/lib/book-service/BookServiceHeader';
+import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import type { AccessRequestPageState } from '@/lib/site-access/client/access-request-page-logic';
 
 type AccessRequestStatusCardProps = {
@@ -157,7 +157,7 @@ export function AccessRequestPageShell({ children }: { children: React.ReactNode
     <div className="flex min-h-screen flex-col bg-white">
       <div className="mx-auto flex w-full max-w-[880px] flex-1 flex-col items-center gap-12 px-6 pb-[120px] pt-10 md:px-[140px]">
         <div className="w-full">
-          <BookServiceLogoLink variant="large" />
+          <BookServiceHeader variant="inline" />
         </div>
         <div className="flex w-full max-w-[600px] flex-col items-center gap-6 rounded-2xl border border-[#e5e7eb] bg-white p-8 shadow-sm">
           {children}

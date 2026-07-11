@@ -5,7 +5,7 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { trackBookServiceEvent } from '@/lib/book-service/analytics-client';
-import { BookServiceLogoLink } from '@/lib/book-service/BookServiceHeader';
+import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import { isDevPreviewEnabled } from '@/lib/book-service/dev-preview';
 import {
   WHAT_HAPPENS_NEXT_ITEMS,
@@ -56,7 +56,7 @@ function ConfirmationPageShell({
     <div className="flex min-h-screen flex-col bg-white">
       <div className="mx-auto flex w-full max-w-[880px] flex-1 flex-col items-center gap-20 px-6 pb-[120px] pt-10 md:px-[140px]">
         <div className="w-full">
-          <BookServiceLogoLink variant="large" />
+          <BookServiceHeader variant="inline" />
         </div>
         <div className="flex w-full max-w-[600px] flex-col gap-6">{children}</div>
       </div>
