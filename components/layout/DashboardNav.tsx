@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
+import { BookServiceLogo } from '@/lib/book-service/BookServiceHeader';
 import {
   Home,
   Building,
@@ -13,19 +14,6 @@ import {
   ChevronDown,
   LogOut,
 } from 'lucide-react';
-
-function BookServiceLogo() {
-  return (
-    <Link href="/dashboard" className="flex items-center gap-2">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" fill="#1E3A8A" stroke="#1E3A8A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-      <span className="text-[25px] font-bold uppercase tracking-wide text-gray-950 leading-[1.5]">
-        Book Service
-      </span>
-    </Link>
-  );
-}
 
 const desktopNavTabs = [
   { name: 'Home', href: '/dashboard', icon: Home },
@@ -108,10 +96,10 @@ export function DashboardNav() {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden px-6 pt-6 lg:block">
-        <div className="mx-auto flex max-w-[1408px] items-center justify-between">
+      <nav className="hidden w-full px-8 pt-6 pb-6 lg:block">
+        <div className="flex w-full items-center justify-between">
           <div className="shrink-0">
-            <BookServiceLogo />
+            <BookServiceLogo href="/dashboard" />
           </div>
 
           <div className="flex items-center gap-3">
@@ -125,7 +113,7 @@ export function DashboardNav() {
                   href={item.href}
                   className={`flex w-[130px] flex-col items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold tracking-[-0.14px] transition-colors ${
                     isActive
-                      ? 'bg-gray-200 text-blue-700'
+                      ? 'bg-gray-200 text-[#2920A5]'
                       : 'text-gray-950 hover:bg-gray-100'
                   }`}
                 >
@@ -143,7 +131,7 @@ export function DashboardNav() {
       {/* Tablet + Mobile Top Bar — logo and profile only */}
       <div className="px-5 py-4 lg:hidden md:px-6">
         <div className="flex items-center justify-between">
-          <BookServiceLogo />
+          <BookServiceLogo href="/dashboard" />
           {userDropdown}
         </div>
       </div>
@@ -161,7 +149,7 @@ export function DashboardNav() {
                 href={item.href}
                 className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md px-3 py-2 text-[10px] font-semibold tracking-[-0.1px] transition-colors md:w-[130px] md:flex-none md:gap-2 md:text-sm md:tracking-[-0.14px] ${
                   isActive
-                    ? 'bg-gray-200 text-blue-700'
+                    ? 'bg-gray-200 text-[#2920A5]'
                     : 'text-gray-950 hover:bg-gray-100'
                 }`}
               >
