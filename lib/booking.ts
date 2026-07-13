@@ -40,9 +40,6 @@ export async function saveBookingIntake(formData: any) {
       businessName: formData.businessName,
       email: formData.email,
       websiteUrl: formData.websiteUrl,
-      tradeType: formData.tradeType,
-      numEmployees: formData.numEmployees,
-      biggestFrustration: formData.biggestFrustration,
     }).catch((err) => {
       console.error('[Booking] Failed to send Slack notification:', err);
     });

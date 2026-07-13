@@ -15,9 +15,9 @@ export async function addProspectToNotion(formData: {
   businessName: string;
   email: string;
   websiteUrl: string;
-  tradeType: string;
-  numEmployees: string;
-  biggestFrustration: string;
+  tradeType?: string;
+  numEmployees?: string;
+  biggestFrustration?: string;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   const apiKey = process.env.NOTION_API_KEY;
   if (!apiKey) {
@@ -28,46 +28,58 @@ export async function addProspectToNotion(formData: {
   const notion = new Client({ auth: apiKey });
 
   try {
-    // Convert numEmployees to number (it comes as string from form)
-    const numEmployeesNumber = parseInt(formData.numEmployees) || 0;
+    const numEmployeesNumber = formData.numEmployees
+      ? parseInt(formData.numEmployees) || 0
+      : undefined;
+
+    const properties: Record<string, unknown> = {
+      'Company Name': {
+        title: [{ text: { content: formData.businessName } }],
+      },
+      'First Name': {
+        rich_text: [{ text: { content: formData.firstName } }],
+      },
+      'Last Name': {
+        rich_text: [{ text: { content: formData.lastName } }],
+      },
+      Email: {
+        email: formData.email,
+      },
+      'Website URL': {
+        url: formData.websiteUrl,
+      },
+      Stage: {
+        status: { name: 'Contacted' },
+      },
+      Priority: {
+        select: { name: 'Warm' },
+      },
+    };
+
+    if (formData.tradeType) {
+      properties['Trade Type'] = {
+        select: { name: formData.tradeType },
+      };
+    }
+
+    if (numEmployeesNumber !== undefined) {
+      properties['Number of Employees'] = {
+        number: numEmployeesNumber,
+      };
+    }
+
+    if (formData.biggestFrustration) {
+      properties['Business Frustration'] = {
+        rich_text: [{ text: { content: formData.biggestFrustration } }],
+      };
+    }
 
     const response = await notion.pages.create({
       parent: {
         type: 'data_source_id',
         data_source_id: DATA_SOURCE_ID,
       },
-      properties: {
-        'Company Name': {
-          title: [{ text: { content: formData.businessName } }],
-        },
-        'First Name': {
-          rich_text: [{ text: { content: formData.firstName } }],
-        },
-        'Last Name': {
-          rich_text: [{ text: { content: formData.lastName } }],
-        },
-        'Email': {
-          email: formData.email,
-        },
-        'Website URL': {
-          url: formData.websiteUrl,
-        },
-        'Trade Type': {
-          select: { name: formData.tradeType },
-        },
-        'Number of Employees': {
-          number: numEmployeesNumber,
-        },
-        'Business Frustration': {
-          rich_text: [{ text: { content: formData.biggestFrustration } }],
-        },
-        'Stage': {
-          status: { name: 'Contacted' },
-        },
-        'Priority': {
-          select: { name: 'Warm' },
-        },
-      },
+      properties: properties as Parameters<typeof notion.pages.create>[0]['properties'],
     });
 
     console.log('✅ Prospect added to Notion Sales Pipeline:', response.id);

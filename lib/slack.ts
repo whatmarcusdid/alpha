@@ -64,9 +64,9 @@ export interface BookingCompletedData {
   businessName: string;
   email: string;
   websiteUrl: string;
-  tradeType: string;
-  numEmployees: string;
-  biggestFrustration: string;
+  tradeType?: string;
+  numEmployees?: string;
+  biggestFrustration?: string;
 }
 
 /**
@@ -82,34 +82,45 @@ export async function sendBookingCompletedNotification(
     ? data.websiteUrl
     : `https://${data.websiteUrl}`;
 
-  const payload: SlackWebhookPayload = {
-    text: `🎯 New Website Game Plan Booking: ${data.businessName} - ${data.email}`,
-    blocks: [
-      {
-        type: 'header',
-        text: {
-          type: 'plain_text',
-          text: '🎯 New Website Game Plan Booking!',
-          emoji: true,
-        },
+  const businessDetails = [
+    `• *Company:* ${data.businessName}`,
+    `• *Website:* <${displayUrl}|${displayUrl}>`,
+    data.tradeType ? `• *Trade Type:* ${data.tradeType}` : null,
+    data.numEmployees ? `• *Employees:* ${data.numEmployees}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const blocks: SlackWebhookPayload['blocks'] = [
+    {
+      type: 'header',
+      text: {
+        type: 'plain_text',
+        text: '🎯 New Website Game Plan Booking!',
+        emoji: true,
       },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `*Contact*\n• *Name:* ${data.firstName} ${data.lastName}\n• *Email:* ${data.email}`,
-        },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*Contact*\n• *Name:* ${data.firstName} ${data.lastName}\n• *Email:* ${data.email}`,
       },
-      {
-        type: 'divider',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*Business*\n${businessDetails}`,
       },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `*Business*\n• *Company:* ${data.businessName}\n• *Website:* <${displayUrl}|${displayUrl}>\n• *Trade Type:* ${data.tradeType}\n• *Employees:* ${data.numEmployees}`,
-        },
-      },
+    },
+  ];
+
+  if (data.biggestFrustration) {
+    blocks.push(
       {
         type: 'divider',
       },
@@ -119,21 +130,27 @@ export async function sendBookingCompletedNotification(
           type: 'mrkdwn',
           text: `*Pain Point (Sales Intel)*\n>${data.biggestFrustration}`,
         },
-      },
+      }
+    );
+  }
+
+  blocks.push({
+    type: 'context',
+    elements: [
       {
-        type: 'context',
-        elements: [
-          {
-            type: 'mrkdwn',
-            text: `Submitted ${new Date().toLocaleString('en-US', {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-              timeZone: 'America/New_York',
-            })} ET`,
-          },
-        ],
+        type: 'mrkdwn',
+        text: `Submitted ${new Date().toLocaleString('en-US', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: 'America/New_York',
+        })} ET`,
       },
     ],
+  });
+
+  const payload: SlackWebhookPayload = {
+    text: `🎯 New Website Game Plan Booking: ${data.businessName} - ${data.email}`,
+    blocks,
   };
 
   const sent = await sendSlackSalesNotification(payload);
