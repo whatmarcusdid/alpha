@@ -137,7 +137,7 @@ export default function MyCompanyPage() {
   }
 
   return (
-    <main className="max-w-[1440px] mx-auto py-8 pb-24 lg:pb-8">
+    <main className="w-full mx-auto pt-0 pb-24 lg:pb-8">
       <NotificationToast
         show={notification.show}
         type={notification.type}
@@ -146,11 +146,11 @@ export default function MyCompanyPage() {
         onDismiss={() => setNotification({ ...notification, show: false })}
       />
 
-      <PageCard>
+      <PageCard className="flex flex-col gap-6 items-center justify-start">
         
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-[#232521]">My Company</h1>
+        <div className="flex items-center justify-between mb-8 w-full">
+          <h1 className="text-3xl font-bold text-[#232521]">My Company</h1>
           
           {!isEditMode && (
             <SecondaryButton
@@ -164,7 +164,7 @@ export default function MyCompanyPage() {
         </div>
 
         {/* General Information Section */}
-        <div className="max-w-[600px] mx-auto mb-6">
+        <div className="max-w-[600px] w-full mb-6">
           <h2 className="text-2xl font-bold text-[#232521] mb-6">General Information</h2>
           
           <div className="space-y-4">
@@ -360,7 +360,7 @@ export default function MyCompanyPage() {
         </div>
 
         {/* Business Services Section */}
-        <div className="max-w-[600px] mx-auto">
+        <div className="max-w-[600px] w-full">
           <h2 className="text-2xl font-bold text-[#232521] mb-6">Business Services</h2>
           
           <div className="space-y-4">

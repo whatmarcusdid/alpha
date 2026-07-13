@@ -284,10 +284,10 @@ export default function TransactionsPage() {
         duration={5000}
       />
 
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 h-full">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8">
+      <main className="flex flex-col items-center justify-start w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 h-full bg-white rounded-lg shadow-[0_5px_12px_0_rgba(0,0,0,0.10)]">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 w-full">
           <div>
-            <h1 className="text-2xl font-bold text-[#232521]">Transactions</h1>
+            <h1 className="text-[30px] font-bold text-[#232521]">Transactions</h1>
           </div>
           <div className="mt-4 sm:mt-0">
             <PrimaryButton onClick={() => setShowUpgradeModal(true)}>
@@ -297,7 +297,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* My Active Subscription Section */}
-        <div className="flex flex-col gap-6 mb-8">
+        <div className="flex flex-col gap-6 mb-8 w-full max-w-[600px]">
           <h2 className="text-2xl font-extrabold text-[#0a0a0a] leading-[1.2] tracking-tight">
             My Active Subscription
           </h2>
@@ -339,7 +339,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* Billing History Section */}
-        <div className="flex flex-col gap-6 mb-8 p-5 rounded bg-white h-full border border-[#DADADA]">
+        <div className="flex flex-col gap-6 mb-8 p-5 rounded bg-white h-full border border-[#DADADA] w-full max-w-[600px]">
           <h2 className="text-[15px] font-bold leading-relaxed tracking-tight text-[#232521]">
             Billing History
           </h2>

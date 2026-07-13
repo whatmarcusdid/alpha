@@ -304,12 +304,12 @@ export default function SettingsPage() {
 
   return (
     <main
-      className={`max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-[108px] ${hasSettingsChanges ? 'pb-24 lg:pb-24' : ''}`}
+      className={`flex flex-col justify-start items-center gap-8 w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 bg-white rounded-lg shadow-[0_5px_12px_0_rgba(0,0,0,0.10)] ${hasSettingsChanges ? 'pb-24 lg:pb-24' : ''}`}
     >
-      <h1 className="text-3xl font-bold text-[#232521] mb-8">Settings</h1>
+      <h1 className="w-full text-3xl font-bold text-[#232521] mb-8 max-w-[600px]">Settings</h1>
       
-      <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-        <h2 className="text-2xl font-bold text-[#232521] mb-4">Time Zone</h2>
+      <div className="mb-6 w-full max-w-[600px]">
+        <h2 className="text-2xl font-bold text-[#232521] mb-4 w-full">Time Zone</h2>
         <div className="max-w-[600px] mx-auto">
           <p className="text-sm text-gray-600 mb-4">Choose the time zone your business operates in so we can schedule reports, notifications, and bookings accurately.</p>
           
@@ -331,8 +331,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-        <h2 className="text-2xl font-bold text-[#232521] mb-4">Linked Accounts</h2>
+      <div className="mb-6 w-full max-w-[600px]">
+        <h2 className="text-2xl font-bold text-[#232521] mb-4 w-full">Linked Accounts</h2>
         <div className="max-w-[600px] mx-auto">
           <p className="text-sm text-gray-600 mb-4">Connect social accounts for easier login and account recovery. You can link multiple services and choose your preferred sign-in method.</p>
 
@@ -349,8 +349,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-        <h2 className="text-2xl font-bold text-[#232521] mb-4">Email Notification Frequency</h2>
+      <div className="mb-6 w-full max-w-[600px]">
+        <h2 className="text-2xl font-bold text-[#232521] mb-4 w-full">Email Notification Frequency</h2>
         <div className="max-w-[600px] mx-auto">
           <p className="text-sm text-gray-600 mb-4">Choose how often you receive email updates. Critical alerts (like failed payments or new leads) will always be sent in real time.</p>
 
@@ -401,8 +401,8 @@ export default function SettingsPage() {
         </StickyBottomBar>
       )}
 
-      <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-        <h2 className="text-2xl font-bold text-[#232521] mb-4">Privacy</h2>
+      <div className="mb-6 w-full max-w-[600px]">
+        <h2 className="text-2xl font-bold text-[#232521] mb-4 w-full">Privacy</h2>
         <div className="max-w-[600px] mx-auto">
           <div>
             <h3 className="text-lg font-semibold text-[#232521] mb-2">Download Your Data</h3>
@@ -419,8 +419,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-        <h2 className="text-2xl font-bold text-[#232521] mb-4">WordPress Dashboard Access</h2>
+      <div className="mb-6 w-full max-w-[600px]">
+        <h2 className="text-2xl font-bold text-[#232521] mb-4 w-full">WordPress Dashboard Access</h2>
         <div className="max-w-[600px] mx-auto">
           <p className="text-sm text-gray-600 mb-4">We maintain secure admin access to your WordPress site to deliver maintenance services.</p>
 
@@ -444,8 +444,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-        <h2 className="text-2xl font-bold text-[#232521] mb-4">Legal Documents</h2>
+      <div className="mb-6 w-full max-w-[600px]">
+        <h2 className="text-2xl font-bold text-[#232521] mb-4 w-full">Legal Documents</h2>
         <div className="max-w-[600px] mx-auto">
           <p className="text-sm text-gray-600 mb-4">Review the agreements and policies that govern your TradeSiteGenie account and services. These documents outline your rights, our commitments, and how we work together.</p>
 
@@ -475,8 +475,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-        <h2 className="text-2xl font-bold text-[#232521] mb-4">Delete Account</h2>
+      <div className="w-full max-w-[600px]">
+        <h2 className="text-2xl font-bold text-[#232521] mb-4 w-full">Delete Account</h2>
         <div className="max-w-[600px] mx-auto">
           <p className="text-sm text-gray-600 mb-3">Permanently delete your TradeSiteGenie account and all associated website data.</p>
           <p className="text-sm font-semibold text-[#232521] mb-4">This action is permanent and cannot be undone.</p>

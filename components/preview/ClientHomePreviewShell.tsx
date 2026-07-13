@@ -119,7 +119,7 @@ function ClientHomePreviewLayout({
               <DashboardEmptyState
                 headline="We're getting your project set up"
                 body="Your fix session will appear here shortly. If it's been more than 24 hours, reach out to us."
-                cta={{ label: 'Contact support', href: `mailto:${SUPPORT_EMAIL}` }}
+                cta={{ label: 'Contact support', href: `mailto:${SUPPORT_EMAIL}`, variant: 'secondary' }}
               />
             ) : (
               <>

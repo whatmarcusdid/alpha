@@ -322,7 +322,7 @@ function DashboardPageContent() {
         <DashboardEmptyState
           headline="We can't find your account"
           body="Your account may not be linked yet. Please contact us and we'll get this sorted right away."
-          cta={{ label: 'Contact support', href: supportMailto }}
+          cta={{ label: 'Contact support', href: supportMailto, variant: 'secondary' }}
         />
       );
     }
@@ -332,7 +332,7 @@ function DashboardPageContent() {
         <DashboardEmptyState
           headline="We're getting your project set up"
           body="Your fix session will appear here shortly. If it's been more than 24 hours, reach out to us."
-          cta={{ label: 'Contact support', href: supportMailto }}
+          cta={{ label: 'Contact support', href: supportMailto, variant: 'secondary' }}
         />
       );
     }
@@ -368,7 +368,7 @@ function DashboardPageContent() {
   };
 
   return (
-    <main className="min-h-[calc(100vh-120px)] rounded-t-2xl bg-white p-5 pb-24 md:p-6 lg:p-6 lg:pb-6">
+    <main className="min-h-[calc(100vh-120px)] rounded-t-2xl bg-white p-5 pb-24 shadow-[0_5px_12px_0_rgba(0,0,0,0.10)] md:p-6 lg:p-6 lg:pb-6">
       {authReady && !welcomeDismissed && (
         <WelcomeModule
           firstName={firstName}
