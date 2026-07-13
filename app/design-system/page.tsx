@@ -37,7 +37,7 @@ import HorizontalTabs from '@/components/ui/HorizontalTabs';
 import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
 import { StickyBottomBar } from '@/components/ui/StickyBottomBar';
 import { AllPagesOverlay } from '@/components/ui/AllPagesOverlay';
-import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
+import { BookServiceHeader, BookServiceLogo } from '@/lib/book-service/BookServiceHeader';
 
 // Define Tier type for upgrade flow
 type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
@@ -1365,7 +1365,7 @@ export default function DesignSystemPage() {
             {/* Primary Button */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
               <h3 className="text-xl font-semibold text-[#232521] mb-4">Primary Button</h3>
-              <p className="text-gray-600 mb-6">Use for primary actions like "Save", "Submit", "Sign In"</p>
+              <p className="text-gray-600 mb-6">Use for primary actions like &quot;Confirm &amp; Schedule&quot;, &quot;Save&quot;, &quot;Submit&quot;</p>
               <div className="flex flex-wrap gap-4 items-center">
                 <PrimaryButton onClick={() => alert('Primary clicked!')}>
                   Primary Action
@@ -1382,12 +1382,18 @@ export default function DesignSystemPage() {
                   {`<PrimaryButton onClick={handleClick}>Primary Action</PrimaryButton>`}
                 </code>
               </div>
+              <ul className="mt-4 text-sm text-gray-600 list-disc pl-5 space-y-1">
+                <li>Background: #2920a5, hover #211880</li>
+                <li>Text: white, bold 16px, line-height 1.5</li>
+                <li>Min height: 40px, padding 8px 24px, rounded-lg</li>
+                <li>Shadow: 4px 8px 12px rgba(0,0,0,0.08)</li>
+              </ul>
             </div>
 
             {/* Secondary Button */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
               <h3 className="text-xl font-semibold text-[#232521] mb-4">Secondary Button</h3>
-              <p className="text-gray-600 mb-6">Use for secondary actions like "Edit", "View Details"</p>
+              <p className="text-gray-600 mb-6">Use for secondary actions like &quot;Go Back&quot;, &quot;Edit&quot;, &quot;Cancel&quot;</p>
               <div className="flex flex-wrap gap-4 items-center">
                 <SecondaryButton onClick={() => alert('Secondary clicked!')}>
                   Secondary Action
@@ -1404,6 +1410,12 @@ export default function DesignSystemPage() {
                   {`<SecondaryButton onClick={handleClick}>Secondary Action</SecondaryButton>`}
                 </code>
               </div>
+              <ul className="mt-4 text-sm text-gray-600 list-disc pl-5 space-y-1">
+                <li>Border: 2px solid #2920a5, hover background #f4f3ff</li>
+                <li>Text: #2920a5, bold 16px, line-height 1.5</li>
+                <li>Min height: 40px, padding 8px 24px, rounded-lg</li>
+                <li>Shadow: 4px 8px 24px rgba(0,0,0,0.08)</li>
+              </ul>
             </div>
 
             {/* Tertiary Button */}
@@ -1433,7 +1445,7 @@ export default function DesignSystemPage() {
               <h3 className="text-xl font-semibold text-[#232521] mb-4">Destructive Button</h3>
               <p className="text-gray-600 mb-6">Use for destructive actions like "Delete", "Cancel Subscription"</p>
               <div className="flex flex-wrap gap-4 items-center">
-                <button className="px-6 py-2 border-2 border-[#E7000B] text-[#E7000B] rounded-full font-semibold hover:bg-red-50">
+                <button className="px-6 py-2 border-2 border-[#E7000B] text-[#E7000B] rounded-lg font-semibold hover:bg-red-50">
                   Delete Account
                 </button>
                 <button className="px-6 py-2 border-2 border-[#E7000B] text-[#E7000B] rounded-full font-semibold opacity-50 cursor-not-allowed">
@@ -3305,11 +3317,40 @@ const [showAllPages, setShowAllPages] = useState(false);
           <p className="text-gray-600 mb-6">Navigation and branding header used across the entire Book Service product surface — audit flow, package selection, onboarding, confirmation, and access pages.</p>
 
           <div className="space-y-8">
+            {/* BookServiceLogo */}
+            <div className="bg-white rounded-lg p-8 border border-gray-200">
+              <h3 className="text-xl font-semibold text-[#232521] mb-4">Book Service Logo</h3>
+              <p className="text-gray-600 mb-6">
+                Standalone Book Service nav logo (<code className="text-xs bg-gray-100 px-1 rounded">/brand/book-service-nav-logo.png</code>). Used inside headers, auth pages, and anywhere the Book Service brand mark is needed on its own.
+              </p>
+
+              <div className="mb-6 flex justify-center p-6 bg-[#FAF9F5] rounded-lg border border-gray-200">
+                <BookServiceLogo />
+              </div>
+
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li>194×25px PNG rendered at <code className="text-xs">h-[25px] w-auto</code></li>
+                  <li>Links to <code className="text-xs">/audit</code> via Next.js Image + Link</li>
+                  <li>Composable — drop into any layout without the full header chrome</li>
+                </ul>
+              </div>
+
+              <div className="bg-gray-50 rounded p-4">
+                <code className="text-xs text-gray-700 block whitespace-pre">
+{`import { BookServiceLogo } from '@/lib/book-service/BookServiceHeader';
+
+<BookServiceLogo />`}
+                </code>
+              </div>
+            </div>
+
             {/* BookServiceHeader */}
             <div className="bg-white rounded-lg p-8 border border-gray-200">
               <h3 className="text-xl font-semibold text-[#232521] mb-4">Book Service Header</h3>
               <p className="text-gray-600 mb-6">
-                Book Service header with the Figma nav logo (<code className="text-xs bg-gray-100 px-1 rounded">/brand/book-service-nav-logo.png</code>). Supports two layout variants for different page contexts.
+                Book Service header built from <code className="text-xs bg-gray-100 px-1 rounded">BookServiceLogo</code>. Supports layout variants for different page contexts.
               </p>
 
               {/* Visual Demo */}
@@ -3334,7 +3375,7 @@ const [showAllPages, setShowAllPages] = useState(false);
                 <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                   <li><code className="text-xs">variant=&quot;bar&quot;</code> — full-width header with white background and bottom border; used on <code className="text-xs">/book-service/select</code></li>
                   <li><code className="text-xs">variant=&quot;inline&quot;</code> — logo-only row without border; used on audit loading/results, signup, confirmation, confirm-details, access, and access-request pages</li>
-                  <li>Logo links to <code className="text-xs">/audit</code> via Next.js Image + Link</li>
+                  <li>Built from <code className="text-xs">BookServiceLogo</code> — see standalone logo component above</li>
                   <li>Responsive padding: px-6 py-4 on mobile, md:px-10 on desktop (bar variant)</li>
                   <li>Single header component across all Book Service pages</li>
                 </ul>
