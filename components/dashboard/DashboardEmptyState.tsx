@@ -1,18 +1,19 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
 
 type Props = {
   icon?: ReactNode;
   headline: string;
   body: string;
-  cta?: { label: string; href: string };
+  cta?: { label: string; href: string; variant?: 'primary' | 'secondary' };
 };
 
-const actionLinkClass =
-  'mt-6 inline-flex min-h-[40px] items-center justify-center rounded-lg bg-[#2563EB] px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-[#1D4ED8]';
-
 export function DashboardEmptyState({ icon, headline, body, cta }: Props) {
+  const CtaButton = cta?.variant === 'secondary' ? SecondaryButton : PrimaryButton;
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
       {icon != null && <div className="mb-4 flex justify-center">{icon}</div>}
@@ -23,9 +24,9 @@ export function DashboardEmptyState({ icon, headline, body, cta }: Props) {
         {body}
       </p>
       {cta != null && (
-        <a href={cta.href} className={actionLinkClass}>
+        <CtaButton href={cta.href} className="mt-6">
           {cta.label}
-        </a>
+        </CtaButton>
       )}
     </div>
   );

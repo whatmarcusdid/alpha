@@ -1,7 +1,8 @@
 import { Inter, Schibsted_Grotesk } from 'next/font/google';
-import Link from 'next/link';
 
 import { AuthNavbar } from '@/components/auth/AuthNavbar';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SecondaryButton } from '@/components/ui/SecondaryButton';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -37,19 +38,10 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-6">
-              <Link
-                href="/signin"
-                className="inline-flex min-h-[44px] w-[150px] items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#241a94]"
-              >
+              <PrimaryButton href="/signin" className="w-[160px]">
                 Sign In
-              </Link>
-
-              <Link
-                href="/signup"
-                className="inline-flex min-h-[44px] w-[150px] items-center justify-center rounded-lg border-[3px] border-[#2920a5] bg-white px-6 py-2.5 text-base font-semibold text-[#2920a5] transition-colors hover:bg-[#f5f3ff]"
-              >
-                Sign Up
-              </Link>
+              </PrimaryButton>
+              <SecondaryButton href="/signup">Sign Up</SecondaryButton>
             </div>
           </div>
         </main>
