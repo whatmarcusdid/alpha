@@ -1,51 +1,92 @@
 'use client';
 
-import { Suspense, useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { z, ZodIssue } from "zod";
-import { BookingLayout } from "@/components/layout/booking-layout";
-import { BookingCard } from "@/components/ui/booking-card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { saveBookingIntake } from "@/lib/booking";
-import { addProspectToNotion } from "@/lib/notion";
-import { trackGamePlanCallLandingViewed } from "@/lib/analytics";
-import { useAuth } from "@/contexts/AuthContext";
+import { Inter } from 'next/font/google';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { z, type ZodIssue } from 'zod';
+
+import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
+import { ratch } from '@/lib/fonts/ratch';
+import { trackGamePlanCallLandingViewed } from '@/lib/analytics';
+import { saveBookingIntake } from '@/lib/booking';
+import { addProspectToNotion } from '@/lib/notion';
+import { useAuth } from '@/contexts/AuthContext';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  display: 'swap',
+});
 
 const bookingIntakeSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  businessName: z.string().min(1, "Business name is required"),
-  email: z.string().email("Please enter a valid email address"),
-  websiteUrl: z.string().min(1, "Website URL is required"),
-  tradeType: z.string().min(1, "Please select a trade type"),
-  numEmployees: z.string().min(1, "Number of employees is required"),
-  biggestFrustration: z
-    .string()
-    .min(1, "Please select your biggest frustration"),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  businessName: z.string().min(1, 'Business name is required'),
+  email: z.string().email('Please enter a valid email address'),
+  websiteUrl: z.string().min(1, 'Website URL is required'),
 });
 
 type BookingIntakeData = z.infer<typeof bookingIntakeSchema>;
+
+const LABEL_CLASS =
+  'text-sm font-semibold leading-[1.5] tracking-[-0.14px] text-[#030712]';
+
+const FIELD_CLASS =
+  'min-h-[48px] w-full rounded-md border border-[#d1d5db] bg-white px-4 py-3 text-sm leading-[1.5] tracking-[-0.14px] text-[#030712] shadow-none transition-colors placeholder:text-[#52525b] focus:border-[#2920a5] focus:outline-none focus:ring-2 focus:ring-[#2920a5]/20';
+
+function BookCallLoadingFallback() {
+  return (
+    <div className={`${inter.className} flex min-h-screen flex-col bg-[#f3f4f6]`}>
+      <BookServiceHeader variant="transparent" />
+      <main className="flex flex-1 items-center justify-center px-4 pb-8">
+        <div className="flex w-full max-w-[700px] flex-col items-center rounded-t-2xl bg-white p-6">
+          <div className="size-8 animate-spin rounded-full border-2 border-[#2920a5] border-t-transparent" />
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function FormField({
+  id,
+  label,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex w-full flex-col gap-1">
+      <label htmlFor={id} className={LABEL_CLASS}>
+        {label}
+      </label>
+      {children}
+      {error ? (
+        <p className="text-sm leading-[1.5] text-[#e7000b]" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 function BookCallContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState<Partial<BookingIntakeData>>({
-    firstName: "",
-    lastName: "",
-    businessName: "",
-    email: "",
-    websiteUrl: "",
-    tradeType: "",
-    numEmployees: "",
-    biggestFrustration: "",
+    firstName: '',
+    lastName: '',
+    businessName: '',
+    email: '',
+    websiteUrl: '',
   });
   const [errors, setErrors] = useState<ZodIssue[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Mixpanel: track landing page view (once per page load, after auth settles)
   const hasTrackedLandingRef = useRef(false);
   useEffect(() => {
     if (authLoading || hasTrackedLandingRef.current) return;
@@ -62,40 +103,7 @@ function BookCallContent() {
     }
   }, [searchParams, user, authLoading]);
 
-  const tradeOptions = [
-    "Plumbing only",
-    "HVAC only",
-    "Electrical only",
-    "Multi-trade",
-    "General Contractor",
-    "Roofing",
-    "Painting",
-    "Landscaping",
-    "Pest Control",
-    "Junk Removal",
-    "Tree Service",
-    "Pressure Washing",
-    "Septic",
-  ];
-
-  const frustrationOptions = [
-    "Site is slow (especially on mobile)",
-    "Site goes down or breaks randomly",
-    "Contact forms don't work (leads get missed)",
-    "Too many spam leads / spam form submissions",
-    "Not showing up on Google (local search)",
-    "Website looks outdated / not professional",
-    "Hard to update content (I have to call someone)",
-    "Security concerns (hacks, malware, warnings)",
-    "Plugin/theme updates are risky (something always breaks)",
-    "Hosting issues (slow, unreliable, confusing)",
-    "I don't know what's wrong — I just know it's not working",
-    "Other",
-  ];
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -106,7 +114,7 @@ function BookCallContent() {
 
     const processedData = {
       ...formData,
-      websiteUrl: formData.websiteUrl?.startsWith("http")
+      websiteUrl: formData.websiteUrl?.startsWith('http')
         ? formData.websiteUrl
         : `https://${formData.websiteUrl}`,
     };
@@ -123,9 +131,8 @@ function BookCallContent() {
 
     try {
       const docId = await saveBookingIntake(result.data);
-      sessionStorage.setItem("bookingIntakeId", docId);
+      sessionStorage.setItem('bookingIntakeId', docId);
 
-      // Add to Notion Sales Pipeline (non-blocking)
       const notionResult = await addProspectToNotion(result.data);
       if (notionResult.success) {
         console.log('✅ Added to Notion Sales Pipeline');
@@ -133,10 +140,10 @@ function BookCallContent() {
         console.warn('⚠️ Notion sync skipped:', notionResult.error);
       }
 
-      router.push("/book-call/schedule");
+      router.push('/book-call/schedule');
     } catch (error) {
-      console.error("Error submitting form:", error);
-      alert("There was an error submitting your information. Please try again.");
+      console.error('Error submitting form:', error);
+      alert('There was an error submitting your information. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -144,288 +151,140 @@ function BookCallContent() {
 
   const isFormValid = bookingIntakeSchema.safeParse({
     ...formData,
-    websiteUrl: formData.websiteUrl?.startsWith("http")
+    websiteUrl: formData.websiteUrl?.startsWith('http')
       ? formData.websiteUrl
       : `https://${formData.websiteUrl}`,
   }).success;
 
+  const getError = (field: keyof BookingIntakeData) =>
+    errors.find((issue) => issue.path[0] === field)?.message;
+
   return (
-    <BookingLayout>
-        <BookingCard>
-      {/* Page Header */}
-      <div className="w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-          Tell us a little about your business
-        </h1>
-        <p className="mt-3 text-base leading-relaxed text-gray-600">
-          Help us make your Website Game Plan Call worth your time. This takes
-          2-3 minutes. Your answers let us tailor the plan to your goals.
-        </p>
-      </div>
+    <div className={`${inter.className} flex min-h-screen flex-col bg-[#f3f4f6]`}>
+      <BookServiceHeader variant="transparent" />
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="w-full space-y-6">
-        <div>
-            <Label
-              htmlFor="firstName"
-              className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
-            >
-              Business Owner First Name
-            </Label>
-            <Input
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleInputChange}
-              placeholder="Mike"
-              className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
-            />
-            {errors.find((e) => e.path[0] === "firstName") && (
-              <p className="mt-2 text-sm text-red-600">
-                {errors.find((e) => e.path[0] === "firstName")?.message}
-              </p>
-            )}
-        </div>
-        <div>
-            <Label
-              htmlFor="lastName"
-              className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
-            >
-              Business Owner Last Name
-            </Label>
-            <Input
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleInputChange}
-              placeholder="Johnson"
-              className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
-            />
-            {errors.find((e) => e.path[0] === "lastName") && (
-              <p className="mt-2 text-sm text-red-600">
-                {errors.find((e) => e.path[0] === "lastName")?.message}
-              </p>
-            )}
-        </div>
-
-        {/* Business Name */}
-        <div>
-          <Label
-            htmlFor="businessName"
-            className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
+      <main className="flex flex-1 flex-col items-center px-4 pt-8 pb-8">
+        <div className="flex w-full max-w-[700px] flex-1 flex-col rounded-t-2xl bg-white p-6">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-1 flex-col justify-between gap-6"
           >
-            Business name
-          </Label>
-          <Input
-            id="businessName"
-            name="businessName"
-            value={formData.businessName}
-            onChange={handleInputChange}
-            placeholder="Red Maple Plumbing"
-            className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
-          />
-          {errors.find((e) => e.path[0] === "businessName") && (
-              <p className="mt-2 text-sm text-red-600">
-                {errors.find((e) => e.path[0] === "businessName")?.message}
-              </p>
-            )}
-        </div>
-
-        {/* Business Email */}
-        <div>
-          <Label
-            htmlFor="email"
-            className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
-          >
-            Business email
-          </Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            placeholder="mike@redmapleplumbing.com"
-            className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
-          />
-          {errors.find((e) => e.path[0] === "email") && (
-            <p className="mt-2 text-sm text-red-600">
-              {errors.find((e) => e.path[0] === "email")?.message}
-            </p>
-          )}
-        </div>
-
-        {/* Website URL */}
-        <div>
-          <Label
-            htmlFor="websiteUrl"
-            className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
-          >
-            Business Website URL
-          </Label>
-          <Input
-            id="websiteUrl"
-            name="websiteUrl"
-            value={formData.websiteUrl}
-            onChange={handleInputChange}
-            placeholder="www.redmapleplumbing.com"
-            className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
-          />
-          {errors.find((e) => e.path[0] === "websiteUrl") && (
-            <p className="mt-2 text-sm text-red-600">
-              {errors.find((e) => e.path[0] === "websiteUrl")?.message}
-            </p>
-          )}
-        </div>
-        <div>
-            <Label
-              htmlFor="tradeType"
-              className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
-            >
-              Trade / service type
-            </Label>
-            <select
-              id="tradeType"
-              name="tradeType"
-              value={formData.tradeType}
-              onChange={handleInputChange}
-              className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border border-[#B5B6B5] bg-white px-4 py-2.5 text-gray-900 shadow-sm transition-colors focus:border-green-500 focus:ring-green-500"
-            >
-              <option value="" className="text-gray-400">
-                Please select one
-              </option>
-              {tradeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            {errors.find((e) => e.path[0] === "tradeType") && (
-              <p className="mt-2 text-sm text-red-600">
-                {errors.find((e) => e.path[0] === "tradeType")?.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <Label
-              htmlFor="numEmployees"
-              className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
-            >
-              Number of employees
-            </Label>
-            <Input
-              id="numEmployees"
-              name="numEmployees"
-              type="text"
-              value={formData.numEmployees}
-              onChange={handleInputChange}
-              placeholder="5"
-              className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border-gray-300 px-4 py-2.5 text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500"
-            />
-            {errors.find((e) => e.path[0] === "numEmployees") && (
-              <p className="mt-2 text-sm text-red-600">
-                {errors.find((e) => e.path[0] === "numEmployees")?.message}
-              </p>
-            )}
-          </div>
-
-        {/* Biggest Frustration */}
-        <div>
-          <Label
-            htmlFor="biggestFrustration"
-            className="mx-auto max-w-[600px] block text-sm font-semibold text-gray-900"
-          >
-            Biggest frustration with your website today
-          </Label>
-          <select
-            id="biggestFrustration"
-            name="biggestFrustration"
-            value={formData.biggestFrustration}
-            onChange={handleInputChange}
-            className="mx-auto max-w-[600px] mt-2 block w-full rounded-md border border-[#B5B6B5] bg-white px-4 py-2.5 text-gray-900 shadow-sm transition-colors focus:border-green-500 focus:ring-green-500"
-          >
-            <option value="" className="text-gray-400">
-              Please select one
-            </option>
-            {frustrationOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          {errors.find((e) => e.path[0] === "biggestFrustration") && (
-            <p className="mt-2 text-sm text-red-600">
-              {
-                errors.find((e) => e.path[0] === "biggestFrustration")
-                  ?.message
-              }
-            </p>
-          )}
-        </div>
-
-        {/* Submit Button */}
-        <div className="flex w-full justify-center pt-2">
-          <Button
-            type="submit"
-            disabled={!isFormValid || isLoading}
-            className={`min-w-[264px] rounded-[360px] px-6 py-3 text-base font-semibold transition-all ${
-              !isFormValid || isLoading
-                ? "cursor-not-allowed bg-gray-200 text-gray-500"
-                : "bg-green-500 text-[#1B4A41] shadow-sm hover:bg-green-600 hover:shadow-md active:scale-[0.98]"
-            }`}
-          >
-            {isLoading ? (
-               <span className="flex items-center justify-center">
-                <svg
-                  className="-ml-1 mr-3 h-5 w-5 animate-spin text-[#1B4A41]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <h1
+                  className={`${ratch.className} text-2xl font-bold leading-[1.2] tracking-[-0.24px] text-[#030712]`}
                 >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Saving...
-              </span>
-            ) : (
-              "Continue to scheduling"
-            )}
-          </Button>
-        </div>
-      </form>
+                  Tell us a little about your business
+                </h1>
+                <p className="text-base leading-[1.35] text-[#030712]">
+                  Help us make your Website Game Plan Call worth your time. This
+                  takes 2–3 minutes. Your answers let us tailor the plan to your
+                  goals.
+                </p>
+              </div>
 
-      {/* Privacy Notice */}
-      <p className="w-full text-center text-sm leading-relaxed text-gray-500">
-        We keep this simple and confidential. We'll never share your
-        information, and we won't touch your website without permission.
-      </p>
-      </BookingCard>
-    </BookingLayout>
+              <FormField
+                id="firstName"
+                label="Business Owner First Name"
+                error={getError('firstName')}
+              >
+                <input
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  placeholder="Mike"
+                  className={FIELD_CLASS}
+                />
+              </FormField>
+
+              <FormField
+                id="lastName"
+                label="Business Owner Last Name"
+                error={getError('lastName')}
+              >
+                <input
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  placeholder="Johnson"
+                  className={FIELD_CLASS}
+                />
+              </FormField>
+
+              <FormField
+                id="businessName"
+                label="Business name"
+                error={getError('businessName')}
+              >
+                <input
+                  id="businessName"
+                  name="businessName"
+                  value={formData.businessName}
+                  onChange={handleInputChange}
+                  placeholder="All Star Plumbing DMV"
+                  className={FIELD_CLASS}
+                />
+              </FormField>
+
+              <FormField
+                id="email"
+                label="Business email"
+                error={getError('email')}
+              >
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="mike@allstarplumbingdmv.com"
+                  className={FIELD_CLASS}
+                />
+              </FormField>
+
+              <FormField
+                id="websiteUrl"
+                label="Business Website URL"
+                error={getError('websiteUrl')}
+              >
+                <input
+                  id="websiteUrl"
+                  name="websiteUrl"
+                  value={formData.websiteUrl}
+                  onChange={handleInputChange}
+                  placeholder="www.allstarplumbingdmv.com"
+                  className={FIELD_CLASS}
+                />
+              </FormField>
+            </div>
+
+            <div className="flex flex-col items-center gap-6 pt-2">
+              <button
+                type="submit"
+                disabled={!isFormValid || isLoading}
+                className="flex min-h-[40px] min-w-[80px] items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2 text-base font-bold leading-[1.5] text-white shadow-[4px_8px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#211880] disabled:cursor-not-allowed disabled:bg-[#d1d5db] disabled:text-[#52525b] disabled:shadow-none"
+              >
+                {isLoading ? 'Saving...' : 'Continue To Scheduling'}
+              </button>
+
+              <p className="text-center text-xs leading-[1.5] tracking-[-0.12px] text-[#52525b]">
+                We keep this simple and confidential. We&apos;ll never share your
+                information, and we won&apos;t touch your website without
+                permission.
+              </p>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
   );
 }
 
 export default function BookCallPage() {
   return (
-    <Suspense fallback={
-      <BookingLayout>
-        <BookingCard>
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B4A41]" />
-          </div>
-        </BookingCard>
-      </BookingLayout>
-    }>
+    <Suspense fallback={<BookCallLoadingFallback />}>
       <BookCallContent />
     </Suspense>
   );

@@ -1,15 +1,22 @@
 'use client';
 
-import { useEffect, useRef } from "react";
-import { BookingLayout } from "@/components/layout/booking-layout";
-import { BookingCard } from "@/components/ui/booking-card";
-import { trackGamePlanCallConfirmationViewed } from "@/lib/analytics";
-import { useAuth } from "@/contexts/AuthContext";
+import { Inter } from 'next/font/google';
+import { useEffect, useRef } from 'react';
+
+import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
+import { ratch } from '@/lib/fonts/ratch';
+import { trackGamePlanCallConfirmationViewed } from '@/lib/analytics';
+import { useAuth } from '@/contexts/AuthContext';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  display: 'swap',
+});
 
 export default function ConfirmationPage() {
   const { user, loading: authLoading } = useAuth();
 
-  // Mixpanel: track confirmation page view (once per page load, after auth settles)
   const hasTrackedRef = useRef(false);
   useEffect(() => {
     if (authLoading || hasTrackedRef.current) return;
@@ -18,38 +25,33 @@ export default function ConfirmationPage() {
       booking_flow_type: user ? 'logged_in_dashboard' : 'anonymous_site',
     });
   }, [user, authLoading]);
+
   return (
-    <BookingLayout>
-      <BookingCard>
-        <div className="mx-auto flex max-w-[600px] flex-col items-center gap-8 py-12">
-          {/* Success Icon - Teal checkmark in circle */}
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-[#1B4A41]">
-            <svg
-              className="h-8 w-8 text-[#1B4A41]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth={3}
+    <div className={`${inter.className} flex min-h-screen flex-col bg-[#f3f4f6]`}>
+      <BookServiceHeader variant="transparent" />
+
+      <main className="flex flex-1 flex-col items-center px-4 pt-8 pb-8">
+        <div className="flex w-full max-w-[700px] flex-col items-center justify-center rounded-2xl bg-white p-6">
+          <div className="flex w-full max-w-[600px] flex-col items-center gap-2">
+            <img
+              src="/brand/check-circle.png"
+              alt=""
+              className="size-10 shrink-0"
+              aria-hidden
+            />
+
+            <h1
+              className={`${ratch.className} text-center text-2xl font-bold leading-[1.2] tracking-[-0.24px] text-[#030712]`}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+              You&apos;re booked for our TradeSiteGenie Website Game Plan Call!
+            </h1>
+
+            <p className="w-full text-center text-base leading-[1.35] text-[#030712]">
+              A meeting invite has been sent to your email.
+            </p>
           </div>
-
-          {/* Heading */}
-          <h1 className="text-center text-3xl font-bold text-gray-900">
-            You're booked for our TradeSiteGenie Website Game Plan Call!
-          </h1>
-
-          {/* Subheading */}
-          <p className="text-center text-base text-gray-600">
-            A meeting invite has been sent to your email.
-          </p>
         </div>
-      </BookingCard>
-    </BookingLayout>
+      </main>
+    </div>
   );
 }
