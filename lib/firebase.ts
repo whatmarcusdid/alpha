@@ -72,6 +72,20 @@ if (typeof window !== 'undefined') {
       firebaseExports.db = getFirestore(app);
       firebaseExports.storage = getStorage(app);
 
+      // Opt-in only (e.g. Playwright E2E runs against the Firebase Emulator
+      // Suite) — guarded against HMR re-running this block, since connecting
+      // an already-connected emulator throws.
+      if (
+        process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true' &&
+        !(globalThis as any).__firebaseEmulatorConnected
+      ) {
+        const { connectAuthEmulator } = require('firebase/auth');
+        const { connectFirestoreEmulator } = require('firebase/firestore');
+        connectAuthEmulator(firebaseExports.auth, 'http://127.0.0.1:9099');
+        connectFirestoreEmulator(firebaseExports.db, '127.0.0.1', 8080);
+        (globalThis as any).__firebaseEmulatorConnected = true;
+      }
+
       console.log('✅ Firebase initialized successfully');
       console.log('🔥 Firebase Config Check:', {
         apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 20)}...` : 'MISSING',

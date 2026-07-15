@@ -254,7 +254,10 @@ export async function applyRateLimit(
     };
   } catch (error) {
     console.error('❌ Rate limit check failed:', error);
-    
+    console.warn(
+      '[rate-limit] Upstash unreachable — request allowed without rate limiting'
+    );
+
     // On error, allow the request (fail open for availability)
     // In production, you might want to fail closed for security
     return {

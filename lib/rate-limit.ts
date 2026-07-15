@@ -1,6 +1,15 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
+/**
+ * Standalone rate limiter used only by the debug route
+ * app/api/test-sentry-error/route.ts. Real traffic (/api/audit,
+ * /api/book-service/checkout, etc.) goes through the separate
+ * lib/middleware/rateLimiting.ts instead — this file is not a shared
+ * dependency, just an older, debug-route-only implementation kept isolated
+ * so it doesn't affect production rate limiting.
+ */
+
 // Type definitions for rate limit response
 type RateLimitResponse = {
   success: boolean;

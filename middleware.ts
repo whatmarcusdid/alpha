@@ -11,9 +11,11 @@ import { NextRequest, NextResponse } from 'next/server';
  * - /dashboard/* — existing subscription dashboard
  * - /admin/* — Book Service admin dashboard
  * - /book-service/access — access submission (requires account)
- * - /book-service/signup — account creation (requires pending order context)
+ * - /book-service/confirm-details — details confirmation (requires account)
  *
  * Public Book Service routes (not protected):
+ * - /book-service/signup — account creation (intentionally public; the pending-order
+ *   context comes from the orderId query param, not from auth)
  * - /book-service/confirmation — post-payment confirmation (public, no account yet)
  * - /book-service/confirm-details?preview=1 — dev-only design preview (development only)
  * - /book-service/access?preview=1 — dev-only design preview (development only)

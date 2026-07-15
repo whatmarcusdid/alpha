@@ -1,5 +1,7 @@
 import Stripe from 'stripe';
 
+import { getAppBaseUrl } from '@/lib/base-url';
+
 let stripeInstance: Stripe | null = null;
 
 /**
@@ -32,10 +34,7 @@ export async function getStripeCustomerPortalUrl(
 
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url:
-      returnUrl ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      'https://app.tradesitegenie.com',
+    return_url: returnUrl || getAppBaseUrl(),
   });
 
   return session.url;

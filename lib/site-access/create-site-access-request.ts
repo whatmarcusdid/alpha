@@ -2,10 +2,10 @@ import 'server-only';
 
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
+import { getAppBaseUrl } from '@/lib/base-url';
 import { sendAccessReRequestEmail } from '@/lib/site-access/emails';
 import { generateAccessToken, hashAccessToken } from '@/lib/site-access/token';
 import {
-  getAppBaseUrl,
   resolveBusinessName,
   resolveCustomerEmail,
   resolveCustomerName,

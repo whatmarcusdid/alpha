@@ -5,6 +5,8 @@ import { withRateLimit } from '@/lib/middleware/apiHandler';
 import { checkoutLimiter as bookServiceCheckoutLimiter } from '@/lib/middleware/rateLimiting';
 import { buildSiteFixMetadata } from '@/lib/book-service/stripe-metadata';
 import { getSKUPriceMap } from '@/lib/book-service/skus';
+import { warnIfBaseUrlLooksWrong } from '@/lib/book-service/validate-base-url';
+import { getAppBaseUrl as resolveAppBaseUrl } from '@/lib/base-url';
 import { getStripe } from '@/lib/stripe-server';
 
 const bookServiceCheckoutSchema = z.object({
@@ -19,11 +21,8 @@ const bookServiceCheckoutSchema = z.object({
 });
 
 function getAppBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    'http://localhost:3000'
-  );
+  warnIfBaseUrlLooksWrong();
+  return resolveAppBaseUrl();
 }
 
 export const POST = withRateLimit(async (req: NextRequest) => {

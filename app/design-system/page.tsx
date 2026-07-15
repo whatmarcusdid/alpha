@@ -3356,13 +3356,13 @@ const [showAllPages, setShowAllPages] = useState(false);
               {/* Visual Demo */}
               <div className="mb-6 p-6 bg-[#FAF9F5] rounded-lg border border-gray-200 space-y-6">
                 <div>
-                  <p className="text-sm text-gray-600 mb-4 font-semibold">Preview — variant=&quot;bar&quot; (package selection):</p>
+                  <p className="text-sm text-gray-600 mb-4 font-semibold">Preview — variant=&quot;bar&quot; (package selection, audit loading/results):</p>
                   <div className="rounded-lg overflow-hidden border border-gray-200">
                     <BookServiceHeader variant="bar" />
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-4 font-semibold">Preview — variant=&quot;inline&quot; (audit, onboarding, confirmation, access):</p>
+                  <p className="text-sm text-gray-600 mb-4 font-semibold">Preview — variant=&quot;inline&quot; (onboarding, confirmation, access):</p>
                   <div className="rounded-lg border border-gray-200 bg-white p-6">
                     <BookServiceHeader variant="inline" />
                   </div>
@@ -3373,8 +3373,8 @@ const [showAllPages, setShowAllPages] = useState(false);
               <div className="mb-6">
                 <p className="text-sm font-semibold text-[#232521] mb-2">Key Features:</p>
                 <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li><code className="text-xs">variant=&quot;bar&quot;</code> — full-width header with white background and bottom border; used on <code className="text-xs">/book-service/select</code></li>
-                  <li><code className="text-xs">variant=&quot;inline&quot;</code> — logo-only row without border; used on audit loading/results, signup, confirmation, confirm-details, access, and access-request pages</li>
+                  <li><code className="text-xs">variant=&quot;bar&quot;</code> — full-width header with white background and bottom border; used on <code className="text-xs">/book-service/select</code> and audit loading/results</li>
+                  <li><code className="text-xs">variant=&quot;inline&quot;</code> — logo-only row without border; used on signup, confirmation, confirm-details, access, and access-request pages</li>
                   <li>Built from <code className="text-xs">BookServiceLogo</code> — see standalone logo component above</li>
                   <li>Responsive padding: px-6 py-4 on mobile, md:px-10 on desktop (bar variant)</li>
                   <li>Single header component across all Book Service pages</li>
@@ -3386,10 +3386,10 @@ const [showAllPages, setShowAllPages] = useState(false);
                 <code className="text-xs text-gray-700 block whitespace-pre">
 {`import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 
-// Package selection page (bordered bar)
+// Package selection, audit loading/results pages (bordered bar)
 <BookServiceHeader variant="bar" />
 
-// Audit, onboarding, confirmation, and access pages (inline logo)
+// Onboarding, confirmation, and access pages (inline logo)
 <BookServiceHeader variant="inline" />`}
                 </code>
               </div>

@@ -11,7 +11,7 @@ This document outlines the testing approach for TradeSiteGenie Dashboard, includ
 ```
                     /\
                    /  \
-                  / E2E \          (TBD - Not yet implemented)
+                  / E2E \          (Playwright — see e2e/)
                  /______\
                 /        \
                / Integration\       (Partial - API tests exist)
@@ -25,7 +25,7 @@ This document outlines the testing approach for TradeSiteGenie Dashboard, includ
 
 **Unit Tests:** ⚠️ Not systematically implemented  
 **Integration Tests:** ✅ Delivery Scout API test suite exists  
-**E2E Tests:** ❌ Not implemented  
+**E2E Tests:** ✅ Playwright specs in `e2e/` (audit→checkout, full payment + webhook, signup→access, auth guard)  
 **Manual Testing:** ✅ Primary testing method
 
 ---
@@ -835,21 +835,21 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 
 ---
 
-### Priority 2: E2E Tests
+### Priority 2: E2E Tests — ✅ Done for Book Service launch
 
-**Goal:** Automated browser testing of critical flows
+**Tool:** Playwright, `e2e/` (`npm run test:e2e`, or `test:e2e:ui` for the UI runner).
 
-**Tools to consider:**
-- Playwright (recommended)
-- Cypress
-- Puppeteer
+**Setup required to run:**
+1. Firebase Emulator Suite: `firebase emulators:start --only firestore,auth,storage` (Firestore 8080, Auth 9099, UI 4000). `.env.local` already sets `FIRESTORE_EMULATOR_HOST`/`FIREBASE_AUTH_EMULATOR_HOST`, so the Admin SDK is emulator-bound automatically once it's running.
+2. `playwright.config.ts`'s `webServer.env` overrides three things for the spawned `next dev` only (not `.env.local`): `NEXT_PUBLIC_APP_URL`/`NEXT_PUBLIC_BASE_URL` (so Stripe's checkout `success_url` redirects back to localhost instead of `.env.local`'s production domain), `NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true` (routes the browser-side Firebase SDK to the emulator — see the gated hook in `lib/firebase.ts`), and `SITE_FIX_ENCRYPTION_KEY` (a test-only key — `.env.local` has none, so access-credential encryption is otherwise untestable, and unusable in real dev, without one).
 
-**Flows to automate:**
-- New user signup and checkout
-- Subscription upgrade
-- Payment method update
+**Flows covered:**
+- `e2e/journey-a-b.audit-to-checkout.spec.ts` — Audit → Package Select → Checkout redirect (stops before payment)
+- `e2e/journey-b.full-checkout-confirmation.spec.ts` — completes a real Stripe test-mode payment, then signs and POSTs a synthetic `checkout.session.completed` webhook event (avoids depending on `stripe listen` as a second process) to drive the confirmation page deterministically
+- `e2e/journey-c.signup-to-access.spec.ts` — Signup → Confirm Details → Access → Dashboard, including the `passwordEncrypted` security assertion
+- `e2e/auth-guard.spec.ts` — unauthenticated redirects on `/dashboard` and `/book-service/access`
 
-**Effort:** 2-3 weeks
+**Known environment gap surfaced while building these:** the Upstash rate limiter's REST endpoint (`actual-flamingo-51226.upstash.io`) doesn't resolve in this dev environment (DNS `ENOTFOUND`) — routes fail the check open, but only after the lookup times out, adding real latency. `playwright.config.ts` raises the default `expect` timeout to cover it; worth investigating separately since it affects real local dev, not just tests.
 
 ---
 
@@ -882,15 +882,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 
 ## Test Environment Variables
 
-For testing, use separate credentials from production:
-
-```bash
-# Create .env.test (TBD - not yet implemented)
-# Same structure as .env.local but with test credentials
-STRIPE_SECRET_KEY=sk_test_...
-FIREBASE_PROJECT_ID=tradesitegenie-dev
-# ... etc
-```
+No separate `.env.test` file — the Vitest suite (`app/api/webhooks/stripe/__tests__/route.test.ts` is the pattern to follow) mocks `adminDb` entirely rather than touching Firestore, and the Playwright specs in `e2e/` reuse `.env.local` as-is: its `STRIPE_SECRET_KEY` is already a `sk_test_...` value, and its Firebase Admin credentials are already emulator-bound whenever the Firebase Emulator Suite is running (see the E2E section above for the handful of test-only overrides layered on top via `playwright.config.ts`, none of which touch `.env.local` itself).
 
 **Best practice:** Never run automated tests against production Firebase or Stripe.
 

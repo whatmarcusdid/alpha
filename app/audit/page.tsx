@@ -201,7 +201,7 @@ export default function AuditPage() {
 
       {view === 'form' && (
         <div
-          className={`${inter.className} relative flex min-h-screen flex-1 flex-col items-center justify-center overflow-hidden bg-[#0c0a28] px-8 pb-[120px] pt-10 md:px-16 lg:px-[140px]`}
+          className={`${inter.className} relative flex min-h-screen flex-1 flex-col items-center justify-center overflow-hidden bg-[#0c0a28] px-8 pb-[120px] pt-24 md:px-16 lg:px-[140px]`}
         >
           <video
             autoPlay

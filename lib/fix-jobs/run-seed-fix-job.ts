@@ -2,12 +2,12 @@ import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore, Timestamp, type Firestore } from 'firebase-admin/firestore';
 
+import { getAppBaseUrl } from '@/lib/base-url';
 import { encryptSecret } from '@/lib/book-service/encryption';
 import { ONBOARDING_STATUS } from '@/lib/book-service/onboarding-constants';
 import { buildInitialFixProgress } from '@/lib/fix-jobs/helpers';
 import {
   buildSeedAuditLeadDoc,
-  getAppBaseUrl,
   parseSeedCliArgs,
   PILLAR_MAP,
   pillarsToSku,

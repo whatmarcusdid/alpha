@@ -28,6 +28,9 @@ export async function checkEmailRateLimit(email: string): Promise<boolean> {
     return !snapshot.empty;
   } catch (error) {
     console.error('checkEmailRateLimit:', error);
+    console.warn(
+      '[email-rate-limit] Firestore limiter failed — request allowed without limiting'
+    );
     return false;
   }
 }

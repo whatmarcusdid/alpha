@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { getAppBaseUrl } from '@/lib/base-url';
 import { validateRequestBody, checkoutSchema } from '@/lib/validation';
 
 // Map tier names to Stripe Price IDs
@@ -34,8 +35,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/confirmation?session_id={CHECKOUT_SESSION_ID}&tier=${tier}&billingCycle=${billingCycle}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout?tier=${tier}`,
+      success_url: `${getAppBaseUrl()}/checkout/confirmation?session_id={CHECKOUT_SESSION_ID}&tier=${tier}&billingCycle=${billingCycle}`,
+      cancel_url: `${getAppBaseUrl()}/checkout?tier=${tier}`,
       automatic_tax: {
         enabled: true,
       },

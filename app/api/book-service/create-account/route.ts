@@ -10,6 +10,8 @@ import {
 import { sendSiteFixAccountCreatedEmail } from '@/lib/book-service/emails';
 import { formatEntitlementLabels } from '@/lib/book-service/entitlement-labels';
 import type { SiteFixPendingOrder } from '@/lib/book-service/types';
+import { warnIfBaseUrlLooksWrong } from '@/lib/book-service/validate-base-url';
+import { getAppBaseUrl as resolveAppBaseUrl } from '@/lib/base-url';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { withRateLimit } from '@/lib/middleware/apiHandler';
 import { bookServiceCreateAccountLimiter } from '@/lib/middleware/rateLimiting';
@@ -21,11 +23,8 @@ const createAccountSchema = z.object({
 });
 
 function getAppBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    'http://localhost:3000'
-  );
+  warnIfBaseUrlLooksWrong();
+  return resolveAppBaseUrl();
 }
 
 export const POST = withRateLimit(async (req: NextRequest) => {

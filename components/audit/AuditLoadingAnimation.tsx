@@ -127,9 +127,9 @@ export function AuditLoadingAnimation({
 
   return (
     <div className={`${inter.className} flex min-h-screen w-full flex-col bg-white`}>
-      <div className="mx-auto flex w-full flex-1 flex-col items-center gap-16 px-8 pb-[120px] pt-10 md:px-16 lg:px-[140px]">
-        <BookServiceHeader variant="inline" />
+      <BookServiceHeader variant="bar" />
 
+      <div className="mx-auto flex w-full flex-1 flex-col items-center gap-16 px-8 pb-[120px] pt-10 md:px-16 lg:px-[140px]">
         <div className="flex w-full flex-col gap-6 lg:w-[800px]">
           <div className="flex flex-col gap-3">
             <p className="text-base font-semibold leading-[1.5] text-[#2920a5]">

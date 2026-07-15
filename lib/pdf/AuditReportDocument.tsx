@@ -7,6 +7,7 @@ import {
   View,
 } from '@react-pdf/renderer';
 
+import { getAppBaseUrl } from '@/lib/base-url';
 import type { Grade, SecurityFlag, SecurityFlagTier } from '@/lib/types/audit';
 import {
   SEO_SIGNAL_DISPLAY_NAMES,
@@ -187,7 +188,7 @@ function GradeSummaryBlock({
 
 export function AuditReportDocument({ data }: AuditReportDocumentProps) {
   const isSeoNa = data.seoGrade === 'N/A';
-  const siteFixUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/book-service/select`;
+  const siteFixUrl = `${getAppBaseUrl()}/book-service/select`;
 
   return (
     <Document>

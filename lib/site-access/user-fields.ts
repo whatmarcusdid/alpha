@@ -33,11 +33,3 @@ export function resolveBusinessName(userData: Record<string, unknown>): string {
 export function resolveCustomerEmail(userData: Record<string, unknown>): string {
   return typeof userData.email === 'string' ? userData.email.trim() : '';
 }
-
-export function getAppBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    'http://localhost:3000'
-  );
-}

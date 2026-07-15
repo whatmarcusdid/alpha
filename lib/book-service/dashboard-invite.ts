@@ -4,6 +4,8 @@ import { adminAuth, adminDb } from '@/lib/firebase/admin';
 
 import { sendDashboardInviteEmail } from './emails';
 import { expandEntitlements, type SiteFixSKU } from './skus';
+import { warnIfBaseUrlLooksWrong } from './validate-base-url';
+import { getAppBaseUrl as resolveAppBaseUrl } from '@/lib/base-url';
 
 export type DashboardInviteParams = {
   userId: string;
@@ -13,11 +15,8 @@ export type DashboardInviteParams = {
 };
 
 function getAppBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    'http://localhost:3000'
-  );
+  warnIfBaseUrlLooksWrong();
+  return resolveAppBaseUrl();
 }
 
 export async function resolveOrCreateUserIdForInvite(email: string): Promise<string | null> {
