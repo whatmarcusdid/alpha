@@ -7,6 +7,7 @@ import type { SiteFixUserNamespace } from '@/lib/book-service/createUser';
 import { getEntitlementDisplayName } from '@/lib/book-service/entitlement-labels';
 import { ONBOARDING_STATUS } from '@/lib/book-service/onboarding-constants';
 import type { SiteFixEntitlement } from '@/lib/book-service/skus';
+import { SUPPORT_EMAIL } from '@/lib/config';
 import { getCurrentUser } from '@/lib/auth';
 import { db } from '@/lib/firebase';
 
@@ -81,10 +82,10 @@ export function SiteFixOnboardingPanel() {
           Contact support to complete your setup.
         </p>
         <a
-          href="mailto:support@tradesitegenie.com"
+          href={`mailto:${SUPPORT_EMAIL}`}
           className="mt-2 inline-block text-[#2563EB] underline"
         >
-          support@tradesitegenie.com
+          {SUPPORT_EMAIL}
         </a>
       </div>
     );

@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, ShieldCheck } from 'lucide-react';
 
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { getCurrentUser } from '@/lib/auth';
 import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import {
@@ -12,6 +12,7 @@ import {
   SAMPLE_CONFIRM_DETAILS_ORDER_ID,
   isDevPreviewEnabled,
 } from '@/lib/book-service/dev-preview';
+import { SUPPORT_EMAIL } from '@/lib/config';
 
 const ACCESS_METHODS = [
   'WordPress login',
@@ -33,13 +34,13 @@ type AccessForm = {
 };
 
 const FILLED_INPUT_CLASS =
-  'flex h-[40px] min-h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-[rgba(29,78,216,0.1)] px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-[40px] min-h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-[rgba(41,32,165,0.1)] px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2920A5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const OPTIONAL_INPUT_CLASS =
-  'flex h-[40px] min-h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-white px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-[40px] min-h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-white px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2920A5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const OPTIONAL_TEXTAREA_CLASS =
-  'h-[140px] min-h-[140px] w-full resize-none rounded-[6px] border border-[#d1d5db] bg-white px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+  'h-[140px] min-h-[140px] w-full resize-none rounded-[6px] border border-[#d1d5db] bg-white px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2920A5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const FIELD_HINT_CLASS =
   'text-[10px] leading-[1.5] tracking-[-0.1px] text-[#030712]';
@@ -185,12 +186,9 @@ function AccessContent() {
           <p className="text-lg leading-[1.5] text-[#52525b]">
             Missing order information. Please return to your dashboard.
           </p>
-          <Link
-            href="/dashboard"
-            className="flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#1d4ed8] px-6 py-[10px] text-base font-bold leading-[1.5] text-white"
-          >
+          <PrimaryButton href="/dashboard" className="w-full">
             Go to dashboard
-          </Link>
+          </PrimaryButton>
         </div>
       </AccessPageShell>
     );
@@ -200,7 +198,7 @@ function AccessContent() {
     return (
       <AccessPageShell>
         <div className="flex items-center justify-center py-8">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#1d4ed8] border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#2920A5] border-t-transparent" />
         </div>
       </AccessPageShell>
     );
@@ -395,21 +393,15 @@ function AccessContent() {
           </span>
         </label>
 
-        <button
+        <PrimaryButton
           type="submit"
-          disabled={
-            !isFullSubmitReady || loadingAction !== null || isPreview
-          }
+          disabled={!isFullSubmitReady || loadingAction !== null || isPreview}
           title={isPreview ? 'Disabled in preview mode' : undefined}
-          className={`flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg px-6 py-[10px] text-base font-bold leading-[1.5] transition-colors disabled:cursor-not-allowed ${
-            isFullSubmitReady && !isPreview
-              ? 'bg-[#1d4ed8] text-white hover:bg-[#1e40af]'
-              : 'bg-[#dadada] text-[#737373]'
-          }`}
+          className="w-full"
         >
           <ShieldCheck className="size-6 shrink-0" aria-hidden="true" />
           {loadingAction === 'submit' ? 'Submitting…' : 'Submit access'}
-        </button>
+        </PrimaryButton>
 
         {submitError ? (
           <p className="text-left text-sm font-semibold leading-[1.5] text-[#e7000b]">
@@ -422,7 +414,7 @@ function AccessContent() {
           disabled={loadingAction !== null || isPreview}
           title={isPreview ? 'Disabled in preview mode' : undefined}
           onClick={() => void submitAccess(true)}
-          className="flex min-h-[44px] w-full items-center justify-center rounded-lg border-2 border-[#1d4ed8] bg-white px-6 py-[10px] text-base font-semibold leading-[1.5] text-[#1d4ed8] transition-colors hover:bg-[#eff6ff] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-[44px] w-full items-center justify-center rounded-lg border-2 border-[#2920A5] bg-white px-6 py-[10px] text-base font-semibold leading-[1.5] text-[#2920A5] transition-colors hover:bg-[#f4f3ff] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loadingAction === 'save' ? 'Saving…' : 'Save and finish later'}
         </button>
@@ -430,10 +422,10 @@ function AccessContent() {
         <p className="text-center text-sm leading-[1.5] tracking-[-0.14px] text-[#52525b]">
           Real people, real support. Questions before you submit? Email us at{' '}
           <a
-            href="mailto:hello@bookservice.com"
+            href={`mailto:${SUPPORT_EMAIL}`}
             className="underline decoration-solid underline-offset-2"
           >
-            hello@bookservice.com
+            {SUPPORT_EMAIL}
           </a>
         </p>
       </form>

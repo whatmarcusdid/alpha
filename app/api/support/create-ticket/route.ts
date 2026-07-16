@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { requireAuth, isAuthError } from '@/lib/middleware/auth';
 import { createConversation } from '@/lib/helpscout/client';
 import { adminDb } from '@/lib/firebase/admin';
+import { SUPPORT_EMAIL } from '@/lib/config';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const createTicketSchema = z.object({
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     if (!helpScoutResult.success) {
       console.error('❌ Failed to create Help Scout conversation:', helpScoutResult.error);
       return NextResponse.json(
-        { error: 'Failed to create support ticket. Please try again or email support@tradesitegenie.com directly.' },
+        { error: `Failed to create support ticket. Please try again or email ${SUPPORT_EMAIL} directly.` },
         { status: 500 }
       );
     }

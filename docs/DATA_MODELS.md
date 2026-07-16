@@ -605,7 +605,7 @@ When modifying Firestore schema:
 **Implemented:**
 - **Request API:** POST `/api/user/request-deletion` (optional `reason` in body)
 - **Firestore logging:** Each request written to `deletionRequests` collection
-- **Notifications:** Loops email to support@tradesitegenie.com, Slack to support channel
+- **Notifications:** Loops email to support@bookservice.tech, Slack to support channel
 - **UI:** Confirmation modal on Settings page with optional reason textarea
 
 **Manual processing (within 48 hours):** Team processes requests from `deletionRequests` and performs:

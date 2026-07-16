@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { trackBookServiceEvent } from '@/lib/book-service/analytics-client';
 import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import { isDevPreviewEnabled } from '@/lib/book-service/dev-preview';
@@ -12,20 +12,18 @@ import {
   buildConfirmationHeading,
   buildConfirmationSubtext,
   formatConfirmationDate,
-  formatLinkedAuditLabel,
+  formatConfirmationEmail,
   formatOrderTotal,
   getFixItemsForOrder,
   getPlanSummary,
   getPreviewOrder,
 } from '@/lib/book-service/order-confirmation';
 import type { SiteFixOrderStatusResponse } from '@/lib/book-service/types';
+import { SUPPORT_EMAIL } from '@/lib/config';
 
 type ConfirmationView = 'loading' | 'confirmed' | 'timeout' | 'invalid';
 
 const POLL_DELAYS_MS = [1000, 2000, 4000, 8000, 8000];
-
-const BS_PRIMARY_BTN =
-  'flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#1d4ed8] px-6 py-[10px] text-base font-bold leading-[1.5] text-white transition-colors hover:bg-[#1e40af] disabled:cursor-not-allowed disabled:opacity-50';
 
 const LIST_CLASS =
   'list-disc space-y-0 text-lg leading-[1.5] text-[#030712] [&_ul]:mt-0 [&_ul]:list-disc [&>li]:ms-[27px] [&_ul>li]:ms-[54px]';
@@ -54,10 +52,8 @@ function ConfirmationPageShell({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <div className="mx-auto flex w-full max-w-[880px] flex-1 flex-col items-center gap-20 px-6 pb-[120px] pt-10 md:px-[140px]">
-        <div className="w-full">
-          <BookServiceHeader variant="inline" />
-        </div>
+      <BookServiceHeader variant="bar" />
+      <div className="mx-auto flex w-full max-w-[880px] flex-1 flex-col items-center px-6 pb-[120px] pt-10 md:px-[140px]">
         <div className="flex w-full max-w-[600px] flex-col gap-6">{children}</div>
       </div>
     </div>
@@ -74,7 +70,7 @@ function OrderConfirmationDetails({
   continueDisabled?: boolean;
 }) {
   const fixItems = getFixItemsForOrder(order.sku, order.entitlements);
-  const linkedAudit = formatLinkedAuditLabel(order.websiteUrl, order.auditLeadId);
+  const confirmationEmail = formatConfirmationEmail(order);
 
   return (
     <>
@@ -95,6 +91,11 @@ function OrderConfirmationDetails({
           <li>
             <span className="leading-[1.5]">Plan: {getPlanSummary(order)}</span>
           </li>
+          {confirmationEmail ? (
+            <li>
+              <span className="leading-[1.5]">Email: {confirmationEmail}</span>
+            </li>
+          ) : null}
           <li>
             <span className="leading-[1.5]">Fixes included:</span>
             <ul>
@@ -118,11 +119,6 @@ function OrderConfirmationDetails({
               Date: {formatConfirmationDate(order.createdAt)}
             </span>
           </li>
-          <li>
-            <span className="leading-[1.5]">
-              Linked Audit: {linkedAudit}
-            </span>
-          </li>
         </ul>
       </div>
 
@@ -139,15 +135,13 @@ function OrderConfirmationDetails({
         </ul>
       </div>
 
-      <button
-        type="button"
+      <PrimaryButton
         onClick={onContinue}
         disabled={continueDisabled}
-        title={continueDisabled ? 'Disabled in preview mode' : undefined}
-        className={BS_PRIMARY_BTN}
+        className="w-full"
       >
         Continue
-      </button>
+      </PrimaryButton>
     </>
   );
 }
@@ -236,9 +230,9 @@ function ConfirmationPageContent() {
             This link is missing order information. Return to your confirmation
             email or contact support.
           </p>
-          <Link href="/audit" className={BS_PRIMARY_BTN}>
+          <PrimaryButton href="/audit" className="w-full">
             Return to audit
-          </Link>
+          </PrimaryButton>
         </div>
       </ConfirmationPageShell>
     );
@@ -249,7 +243,7 @@ function ConfirmationPageContent() {
       <ConfirmationPageShell>
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-4 border-[#1d4ed8] border-t-transparent"
+            className="h-10 w-10 animate-spin rounded-full border-4 border-[#2920A5] border-t-transparent"
             aria-hidden="true"
           />
           <p className="text-lg font-semibold leading-[1.5] text-[#030712]">
@@ -272,10 +266,10 @@ function ConfirmationPageContent() {
             please contact support.
           </p>
           <a
-            href="mailto:support@tradesitegenie.com"
-            className="text-base font-semibold leading-[1.5] text-[#1d4ed8] underline"
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="text-base font-semibold leading-[1.5] text-[#2920A5] underline"
           >
-            support@tradesitegenie.com
+            {SUPPORT_EMAIL}
           </a>
         </div>
       </ConfirmationPageShell>
@@ -304,7 +298,7 @@ export default function ConfirmationPage() {
         <ConfirmationPageShell>
           <div className="flex items-center justify-center py-8">
             <div
-              className="h-10 w-10 animate-spin rounded-full border-4 border-[#1d4ed8] border-t-transparent"
+              className="h-10 w-10 animate-spin rounded-full border-4 border-[#2920A5] border-t-transparent"
               aria-hidden="true"
             />
           </div>

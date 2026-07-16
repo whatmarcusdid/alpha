@@ -1,5 +1,5 @@
-export const SUPPORT_PHONE = 'REPLACE_WITH_REAL_NUMBER';
-export const SUPPORT_EMAIL = 'REPLACE_WITH_REAL_EMAIL';
+export const SUPPORT_PHONE = '(240) 221-6007';
+export const SUPPORT_EMAIL = 'support@bookservice.tech';
 
 export const config = {
   supportEmail: SUPPORT_EMAIL,

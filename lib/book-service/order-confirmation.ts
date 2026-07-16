@@ -34,26 +34,22 @@ export function formatConfirmationDate(isoDate: string): string {
 export function formatOrderTotal(sku: SiteFixSKU): string {
   const price = SITE_FIX_SKUS[sku].price;
   if (price === null) {
+    if (sku === 'full_bundle') {
+      const bundleTotal = (
+        ['speed_fix', 'security_fix', 'seo_ai_visibility_fix'] as const
+      ).reduce((sum, item) => sum + (SITE_FIX_SKUS[item].price ?? 0), 0);
+      return `$${bundleTotal.toLocaleString('en-US')}`;
+    }
+
     return 'Bundle pricing';
   }
 
   return `$${price.toLocaleString('en-US')}`;
 }
 
-export function formatLinkedAuditLabel(websiteUrl?: string, auditLeadId?: string): string {
-  if (websiteUrl) {
-    try {
-      return new URL(websiteUrl).hostname.replace(/^www\./, '');
-    } catch {
-      return websiteUrl;
-    }
-  }
-
-  if (auditLeadId) {
-    return auditLeadId;
-  }
-
-  return 'Your audit';
+export function formatConfirmationEmail(order: SiteFixOrderStatusResponse): string | null {
+  const email = order.normalizedEmail?.trim();
+  return email ? email : null;
 }
 
 export function buildConfirmationHeading(order: SiteFixOrderStatusResponse): string {

@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { requireAuth, isAuthError } from '@/lib/middleware/auth';
 import { addCustomerReply } from '@/lib/helpscout/client';
 import { adminDb } from '@/lib/firebase/admin';
+import { SUPPORT_EMAIL } from '@/lib/config';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const replyTicketSchema = z.object({
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
     if (!helpScoutResult.success) {
       console.error('❌ Failed to send reply to Help Scout:', helpScoutResult.error);
       return NextResponse.json(
-        { error: 'Failed to send reply. Please try emailing support@tradesitegenie.com directly.' },
+        { error: `Failed to send reply. Please try emailing ${SUPPORT_EMAIL} directly.` },
         { status: 500 }
       );
     }

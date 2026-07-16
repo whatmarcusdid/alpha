@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import { StickyBottomBar } from '@/components/ui/StickyBottomBar';
 import { AlertTriangle } from 'lucide-react';
+import { SUPPORT_EMAIL } from '@/lib/config';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -422,14 +423,24 @@ export default function SettingsPage() {
       <div className="mb-6 w-full max-w-[600px]">
         <h2 className="text-2xl font-bold text-[#232521] mb-4 w-full">WordPress Dashboard Access</h2>
         <div className="max-w-[600px] mx-auto">
-          <p className="text-sm text-gray-600 mb-4">We maintain secure admin access to your WordPress site to deliver maintenance services.</p>
+          <p className="text-sm text-gray-600 mb-4">
+            We maintain secure admin access to your WordPress site to deliver maintenance
+            services. Access is through a dedicated service account, not your personal
+            login.
+          </p>
 
-          <div className="mb-3">
-              <span className="text-sm text-gray-600">Username: </span>
-              <span className="text-sm font-medium text-[#232521]">tsg-maintenance@tradesitegenie.com</span>
-          </div>
+          <p className="text-sm text-gray-600 mb-3">
+            Need to verify our access or update credentials? Email{' '}
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-[#1B4A41] hover:underline">
+              {SUPPORT_EMAIL}
+            </a>
+            .
+          </p>
 
-          <p className="text-sm text-gray-600 mb-3">You can view or revoke our access anytime. Revoking access will pause your maintenance services until access is restored.</p>
+          <p className="text-sm text-gray-600 mb-3">
+            You can view or revoke our access anytime. Revoking access will pause your
+            maintenance services until access is restored.
+          </p>
 
           <span
             onClick={handleGoToWordPressDashboard}
@@ -470,7 +481,7 @@ export default function SettingsPage() {
 
           <div className="mt-6">
             <p className="text-sm text-gray-600 mb-2">Last updated: July 1, 2025</p>
-            <p className="text-sm text-gray-600">Questions about these policies? Contact us at <a href="mailto:support@tradesitegenie.com" className="text-[#1B4A41] hover:underline">support@tradesitegenie.com</a></p>
+            <p className="text-sm text-gray-600">Questions about these policies? Contact us at <a href={`mailto:${SUPPORT_EMAIL}`} className="text-[#1B4A41] hover:underline">{SUPPORT_EMAIL}</a></p>
           </div>
         </div>
       </div>

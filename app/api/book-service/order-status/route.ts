@@ -55,6 +55,7 @@ export const GET = withRateLimit(async (req: NextRequest) => {
 
   let firstName: string | undefined;
   let websiteUrl: string | undefined;
+  let auditLeadEmail: string | undefined;
   const auditLeadId = data.auditLeadId as string | undefined;
 
   if (auditLeadId) {
@@ -65,8 +66,15 @@ export const GET = withRateLimit(async (req: NextRequest) => {
         typeof auditLead.firstName === 'string' ? auditLead.firstName : undefined;
       websiteUrl =
         typeof auditLead.websiteUrl === 'string' ? auditLead.websiteUrl : undefined;
+      auditLeadEmail =
+        typeof auditLead.email === 'string' ? auditLead.email.trim().toLowerCase() : undefined;
     }
   }
+
+  const orderEmail =
+    typeof data.normalizedEmail === 'string' && data.normalizedEmail.trim()
+      ? data.normalizedEmail.trim().toLowerCase()
+      : undefined;
 
   const response: SiteFixOrderStatusResponse = {
     orderId: data.orderId as string,
@@ -74,8 +82,7 @@ export const GET = withRateLimit(async (req: NextRequest) => {
     entitlements: data.entitlements as SiteFixOrderStatusResponse['entitlements'],
     status: 'paid',
     createdAt: createdAt ? createdAt.toISOString() : new Date().toISOString(),
-    normalizedEmail:
-      typeof data.normalizedEmail === 'string' ? data.normalizedEmail : undefined,
+    normalizedEmail: orderEmail ?? auditLeadEmail,
     firstName,
     websiteUrl,
     auditLeadId,

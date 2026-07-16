@@ -17,6 +17,7 @@ import {
 } from '@/lib/book-service/parse-skus-param';
 import { readAuditLeadId } from '@/lib/book-service/storage';
 import type { SiteFixSKU } from '@/lib/book-service/skus';
+import { SUPPORT_EMAIL } from '@/lib/config';
 
 function ReviewPageContent() {
   const params = useParams<{ sku: string }>();
@@ -130,10 +131,10 @@ function ReviewPageContent() {
                   <p className="text-sm leading-[1.5] tracking-[-0.14px] text-[#52525b]">
                     Need help? Email{' '}
                     <a
-                      href="mailto:support@tradesitegenie.com"
+                      href={`mailto:${SUPPORT_EMAIL}`}
                       className="underline"
                     >
-                      support@tradesitegenie.com
+                      {SUPPORT_EMAIL}
                     </a>
                   </p>
                 </div>

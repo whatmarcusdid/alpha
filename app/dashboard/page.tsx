@@ -11,7 +11,6 @@ import {
 import { SiteFixDetailModal } from '@/components/dashboard/SiteFixDetailModal';
 import { RightColumnSidebar } from '@/components/dashboard/RightColumnSidebar';
 import { SupportContactModule } from '@/components/dashboard/SupportContactModule';
-import { WelcomeModule } from '@/components/dashboard/WelcomeModule';
 import {
   MilestoneTimeline,
   parseMilestoneTimelineProps,
@@ -121,31 +120,13 @@ function DashboardPageContent() {
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [fixSession, setFixSession] = useState<FixSession | null>(null);
   const [userData, setUserData] = useState<{
-    firstName: string;
     businessName: string;
     inviteStatus: string | null;
     siteFix: Record<string, unknown> | null;
   } | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [welcomeDismissed, setWelcomeDismissed] = useState<boolean>(false);
   const inviteAcceptedMarkedRef = useRef<boolean>(false);
   const { context: clientContext, status: clientContextStatus } = useClientContext();
-
-  useEffect(() => {
-    if (!uid) return;
-
-    const key = `bsd_welcome_dismissed_${uid}`;
-    if (localStorage.getItem(key) === 'true') {
-      setWelcomeDismissed(true);
-    }
-  }, [uid]);
-
-  const handleWelcomeDismiss = () => {
-    if (!uid) return;
-
-    localStorage.setItem(`bsd_welcome_dismissed_${uid}`, 'true');
-    setWelcomeDismissed(true);
-  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -177,7 +158,6 @@ function DashboardPageContent() {
       (snapshot: { exists: () => boolean; data: () => FirestoreData | undefined }) => {
         if (!snapshot.exists()) {
           setUserData({
-            firstName: 'there',
             businessName: '',
             inviteStatus: null,
             siteFix: null,
@@ -193,10 +173,6 @@ function DashboardPageContent() {
             : null;
 
         setUserData({
-          firstName:
-            typeof data.fullName === 'string'
-              ? data.fullName.split(' ')[0]
-              : 'there',
           businessName: company?.legalName ?? '',
           inviteStatus:
             siteFix != null && typeof siteFix.inviteStatus === 'string'
@@ -208,7 +184,6 @@ function DashboardPageContent() {
       (error: Error) => {
         console.error('[Dashboard] user fetch error:', error);
         setUserData({
-          firstName: 'there',
           businessName: '',
           inviteStatus: null,
           siteFix: null,
@@ -293,8 +268,6 @@ function DashboardPageContent() {
     day: 'numeric',
   });
 
-  const firstName =
-    clientContext?.fullName?.split(' ')[0] || userData?.firstName || 'there';
   const businessName =
     clientContext?.businessName || userData?.businessName || 'Your business';
   const packageLabel = clientContext?.packageLabel ?? null;
@@ -369,20 +342,12 @@ function DashboardPageContent() {
 
   return (
     <main className="min-h-[calc(100vh-120px)] rounded-t-2xl bg-white p-5 pb-24 shadow-[0_5px_12px_0_rgba(0,0,0,0.10)] md:p-6 lg:p-6 lg:pb-6">
-      {authReady && !welcomeDismissed && (
-        <WelcomeModule
-          firstName={firstName}
-          packageLabel={packageLabel}
-          onDismiss={handleWelcomeDismiss}
-        />
-      )}
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[381px_1fr_381px]">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <p className="text-base leading-[1.5] text-zinc-600 lg:text-lg">{formattedDate}</p>
             <h1 className="text-[28px] font-semibold leading-[1.2] tracking-[-0.28px] text-gray-950 md:text-[30px] md:tracking-[-0.3px] lg:text-[32px] lg:tracking-[-0.32px]">
-              {greeting} {firstName}
+              {greeting}
             </h1>
           </div>
           <SupportContactModule />

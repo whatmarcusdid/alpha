@@ -45,7 +45,7 @@ The `reason` field is optional. If omitted, the request is still processed and "
 
 1. **Fetch user** - Get email and fullName from Firestore user document
 2. **Log to Firestore** - Add document to `deletionRequests` collection (always, even if notifications fail)
-3. **Send Loops email** - Transactional email to support@tradesitegenie.com with deletion request details
+3. **Send Loops email** - Transactional email to support@bookservice.tech with deletion request details
 4. **Send Slack notification** - Message to SLACK_SUPPORT_WEBHOOK_URL channel
 5. **Return success** - User receives confirmation regardless of Loops/Slack success
 
