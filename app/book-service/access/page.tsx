@@ -396,7 +396,6 @@ function AccessContent() {
         <PrimaryButton
           type="submit"
           disabled={!isFullSubmitReady || loadingAction !== null || isPreview}
-          title={isPreview ? 'Disabled in preview mode' : undefined}
           className="w-full"
         >
           <ShieldCheck className="size-6 shrink-0" aria-hidden="true" />
