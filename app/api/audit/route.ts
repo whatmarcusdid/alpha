@@ -17,7 +17,7 @@ import { getAuditNarratives, getSEONarrative } from '@/lib/audit/gemini';
 import { applyPipelineToAuditState, deriveAuditStatus } from '@/lib/audit/applyPipelineResult';
 import { runAuditPipeline } from '@/lib/audit/runAuditPipeline';
 import { checkEmailRateLimit } from '@/lib/audit/rateLimit';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase/admin';
 import { sendAuditReportEmail } from '@/lib/loops';
 import { createAuditLeadRecord } from '@/lib/notion';
 import { sendAuditLeadNotification } from '@/lib/slack';

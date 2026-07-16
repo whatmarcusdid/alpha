@@ -89,17 +89,19 @@ TradeSiteGenie Dashboard is a Next.js 16 App Router application that provides su
 
 ### Firebase/Firestore
 
-**Location:** `/lib/firebase` (client), `/lib/firebase/admin` (server), `/lib/firebase-admin` (alternative)
+**Location:** `/lib/firebase` (client), `/lib/firebase/admin` (server)
 
 **Client SDK (`/lib/firebase.ts`):**
 - Browser-only initialization with environment variables
 - Exports: `auth`, `db`, `app`
 - Used in client components and pages
 
-**Admin SDK:**
-- **Primary:** `/lib/firebase/admin.ts` - Exports `adminAuth`, `adminDb`; used by middleware, Delivery Scout, most API routes
-- **Alternative:** `/lib/firebase-admin.ts` - Modular imports (firebase-admin/app, firestore, auth); used by user settings, export, and request-deletion endpoints
-- Both provide server-side Firebase Admin for API routes; never import in client components
+**Admin SDK (`/lib/firebase/admin.ts`):**
+- Single server-side initialization module; exports `adminAuth`, `adminDb`
+- Used by auth middleware, Delivery Scout, and all API routes that need Firestore or Admin Auth
+- Includes build-time guard (skips init during Vercel/CI builds) and null-safe exports
+- Never import in client components
+- Runtime helpers: `/lib/firebase/helpers.ts` (`getAdminDb`, `getAdminAuth`)
 
 **Collections:**
 - `users/{userId}` - User profiles, subscriptions, metrics, company info, settings

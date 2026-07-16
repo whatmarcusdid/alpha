@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
 import { generalLimiter } from '@/lib/middleware/rateLimiting';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase/admin';
+import { SUPPORT_EMAIL } from '@/lib/config';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export const POST = withAuthAndRateLimit(
@@ -66,7 +67,7 @@ export const POST = withAuthAndRateLimit(
             },
             body: JSON.stringify({
               transactionalId: loopsTemplateId,
-              email: 'support@tradesitegenie.com',
+              email: SUPPORT_EMAIL,
               dataVariables: {
                 subject: `Account Deletion Request - ${userName}`,
                 customerName: userName,

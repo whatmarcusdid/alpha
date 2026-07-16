@@ -9,7 +9,6 @@ import { BookServiceLogo } from '@/lib/book-service/BookServiceHeader';
 import {
   Home,
   Building,
-  FileText,
   Settings,
   ChevronDown,
   LogOut,
@@ -18,7 +17,6 @@ import {
 const desktopNavTabs = [
   { name: 'Home', href: '/dashboard', icon: Home },
   { name: 'Company', href: '/dashboard/my-company', icon: Building },
-  { name: 'Transactions', href: '/dashboard/transactions', icon: FileText },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 

@@ -43,7 +43,7 @@ vi.mock('@/lib/audit/gemini', () => ({
   getAuditNarratives,
 }));
 
-vi.mock('@/lib/firebase-admin', () => ({
+vi.mock('@/lib/firebase/admin', () => ({
   adminDb: null,
 }));
 

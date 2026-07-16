@@ -1,10 +1,9 @@
-import { AuthPageLayout } from '@/components/auth/AuthPageLayout';
-import { SignUpForm } from '@/components/auth/SignUpForm';
+import { redirect } from 'next/navigation';
 
+/**
+ * Subscription signup disabled (Phase 1).
+ * Site Fix signup uses /book-service/signup — unaffected.
+ */
 export default function SignUpPage() {
-  return (
-    <AuthPageLayout>
-      <SignUpForm />
-    </AuthPageLayout>
-  );
+  redirect('/');
 }

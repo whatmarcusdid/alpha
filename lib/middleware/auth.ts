@@ -87,6 +87,12 @@ export async function verifyAuthToken(req: NextRequest): Promise<AuthResult> {
 
   } catch (error: any) {
     console.error('Auth verification error:', error);
+    // Temporary diagnostic — surfaces the real Firebase failure in Vercel logs
+    // while the client still receives the mapped generic message below.
+    console.error('[auth] verifyIdToken diagnostic:', {
+      code: error?.code ?? 'unknown',
+      message: error?.message ?? 'unknown',
+    });
 
     // Handle Firebase-specific auth errors
     if (error.code === 'auth/argument-error') {

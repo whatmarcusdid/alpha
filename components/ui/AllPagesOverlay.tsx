@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X, Home, Building, MonitorSmartphone, BarChart3, Headphones, FileText, User, Settings } from 'lucide-react';
+import { X, Home, Building, MonitorSmartphone, BarChart3, Headphones, User, Settings } from 'lucide-react';
 
 export interface AllPagesNavItem {
   name: string;
@@ -17,7 +17,6 @@ const allPagesNavItems: AllPagesNavItem[] = [
   { name: 'Sites', href: '/dashboard/sites', icon: MonitorSmartphone },
   { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
   { name: 'Support', href: '/dashboard/support', icon: Headphones },
-  { name: 'Transactions', href: '/dashboard/transactions', icon: FileText },
   { name: 'My Profile', href: '/dashboard/profile', icon: User },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];

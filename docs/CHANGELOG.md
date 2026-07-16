@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - **Firestore Rules** - Added `passwordResets` collection with `allow read, write: if false`; excluded from catch-all to prevent client access
 
+### Changed
+- **Firebase Admin SDK** - Consolidated `lib/firebase-admin.ts` into `lib/firebase/admin.ts` as the single server-side initialization module; all API routes and middleware now import from `@/lib/firebase/admin`
+
 ### Added (continued)
 - **Growth Engine Automations** - Stripe Payment → Onboarding flow
   - `lib/loops.ts` - Loops API helper for transactional emails (payment confirmed, dashboard ready)
@@ -61,7 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Notifies team via Loops (email to Help Scout) and Slack
   - Logs to `deletionRequests` collection
 - **StickyBottomBar** - Reusable fixed bottom bar component for edit forms (Settings, My Company)
-- **lib/firebase-admin.ts** - Alternative Firebase Admin initialization with modular imports
 - **lib/firestore/settings.ts** - Client-side helpers for user settings (browser-only pattern)
 - **Slack + HelpScout integrations** for Delivery Scout ticket handlers
   - Slack notifications on ticket create/update (`SLACK_SUPPORT_WEBHOOK_URL`)
