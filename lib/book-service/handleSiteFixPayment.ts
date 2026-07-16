@@ -35,6 +35,36 @@ function getAppBaseUrl(): string {
   return resolveAppBaseUrl();
 }
 
+function normalizeEmail(email: string): string {
+  return email.toLowerCase().trim();
+}
+
+/**
+ * Prefer Stripe's checkout-collected email over metadata.
+ * Metadata normalizedEmail is often empty when the audit funnel never passed
+ * ?email= through to checkout session creation.
+ */
+export function resolveSiteFixNormalizedEmail(
+  session: Stripe.Checkout.Session,
+  metadataNormalizedEmail: string
+): string {
+  const stripeEmail = session.customer_details?.email;
+  if (typeof stripeEmail === 'string' && stripeEmail.trim()) {
+    return normalizeEmail(stripeEmail);
+  }
+
+  if (typeof metadataNormalizedEmail === 'string' && metadataNormalizedEmail.trim()) {
+    return normalizeEmail(metadataNormalizedEmail);
+  }
+
+  const orderId =
+    typeof session.metadata?.orderId === 'string' ? session.metadata.orderId : 'unknown';
+  console.warn(
+    `handleSiteFixPayment: no email resolved for orderId=${orderId} — writing empty normalizedEmail`
+  );
+  return '';
+}
+
 export async function handleSiteFixPayment(
   session: Stripe.Checkout.Session
 ): Promise<void> {
@@ -54,7 +84,12 @@ export async function handleSiteFixPayment(
     return;
   }
 
-  const { orderId, auditLeadId, sku, normalizedEmail } = parsedMetadata;
+  const { orderId, auditLeadId, sku, normalizedEmail: metadataNormalizedEmail } =
+    parsedMetadata;
+  const normalizedEmail = resolveSiteFixNormalizedEmail(
+    session,
+    metadataNormalizedEmail
+  );
   const skuKey = sku;
   const entitlements = expandEntitlements(skuKey);
 

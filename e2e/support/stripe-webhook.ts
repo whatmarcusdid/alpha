@@ -11,6 +11,8 @@ export type SiteFixWebhookMetadata = {
   auditLeadId: string;
   sku: string;
   normalizedEmail: string;
+  /** Stripe checkout customer_details.email — preferred over metadata when set */
+  customerEmail?: string;
 };
 
 export async function postSignedCheckoutSessionCompleted(
@@ -25,6 +27,24 @@ export async function postSignedCheckoutSessionCompleted(
     );
   }
 
+  const customerEmail = metadata.customerEmail?.trim();
+  const sessionObject: Record<string, unknown> = {
+    id: `cs_e2e_${Date.now()}`,
+    object: 'checkout.session',
+    payment_intent: `pi_e2e_${Date.now()}`,
+    metadata: {
+      productType: 'site_fix',
+      orderId: metadata.orderId,
+      auditLeadId: metadata.auditLeadId,
+      sku: metadata.sku,
+      normalizedEmail: metadata.normalizedEmail,
+    },
+  };
+
+  if (customerEmail) {
+    sessionObject.customer_details = { email: customerEmail };
+  }
+
   const payload = JSON.stringify({
     id: `evt_e2e_${Date.now()}`,
     object: 'event',
@@ -35,15 +55,7 @@ export async function postSignedCheckoutSessionCompleted(
     pending_webhooks: 0,
     request: { id: null, idempotency_key: null },
     data: {
-      object: {
-        id: `cs_e2e_${Date.now()}`,
-        object: 'checkout.session',
-        payment_intent: `pi_e2e_${Date.now()}`,
-        metadata: {
-          productType: 'site_fix',
-          ...metadata,
-        },
-      },
+      object: sessionObject,
     },
   });
 

@@ -3,6 +3,10 @@ import { test, expect } from '@playwright/test';
 import { AUDIT_LEAD_ID_STORAGE_KEY, SKU_DISPLAY_NAMES } from './support/constants';
 import { postSignedCheckoutSessionCompleted } from './support/stripe-webhook';
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * The one spec in this suite that completes a real Stripe test-mode payment
  * (card 4242...). Requires the Firebase emulator suite running (writes must
@@ -65,7 +69,8 @@ test('real checkout payment + synthetic webhook -> confirmation page resolves', 
   await page.waitForURL(/^https:\/\/checkout\.stripe\.com\//, { timeout: 20_000 });
 
   await expect(page.getByRole('heading', { name: 'Payment method' })).toBeVisible();
-  await page.getByPlaceholder('email@example.com').fill(`bs-e2e-pay-${Date.now()}@example.com`);
+  const checkoutEmail = `bs-e2e-pay-${Date.now()}@example.com`;
+  await page.getByPlaceholder('email@example.com').fill(checkoutEmail);
   // "Card" is collapsed by default when multiple payment methods are
   // offered. The radio's visual overlay (an accordion toggle button) fails
   // Playwright's pointer-interception check, so force the click directly
@@ -91,7 +96,13 @@ test('real checkout payment + synthetic webhook -> confirmation page resolves', 
   await page.locator('button[type="submit"]').click();
 
   // Real Stripe payment processing + redirect back to our confirmation page.
-  await page.waitForURL(/\/book-service\/confirmation\?orderId=/, { timeout: 30_000 });
+  // Assert full origin — path-only matching would pass on a production URL
+  // (e.g. .env.local's NEXT_PUBLIC_BASE_URL) and leave the browser on a dead
+  // page while the synthetic webhook hits localhost.
+  const localConfirmationUrl = new RegExp(
+    `^${escapeRegExp(baseURL!)}/book-service/confirmation\\?orderId=`
+  );
+  await expect(page).toHaveURL(localConfirmationUrl, { timeout: 30_000 });
 
   const orderId = new URL(page.url()).searchParams.get('orderId');
   expect(orderId).toBeTruthy();
@@ -101,6 +112,7 @@ test('real checkout payment + synthetic webhook -> confirmation page resolves', 
     auditLeadId: auditLeadId!,
     sku,
     normalizedEmail: '',
+    customerEmail: checkoutEmail,
   });
   expect(webhookResponse.status).toBe(200);
 
