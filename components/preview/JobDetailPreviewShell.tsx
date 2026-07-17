@@ -8,7 +8,7 @@ import { PreviewBanner } from '@/components/preview/PreviewBanner';
 import {
   FIXTURE_SESSION_ID,
   FIXTURE_UID,
-} from '@/app/(admin)/preview/_fixtures/fix-job';
+} from '@/app/admin/preview/_fixtures/fix-job';
 import {
   createPreviewJobDetailApiState,
   createPreviewJobDetailFetchHandler,

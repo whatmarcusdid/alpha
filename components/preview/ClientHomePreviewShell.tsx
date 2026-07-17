@@ -24,7 +24,7 @@ import {
   CLIENT_FIXTURE_EMPTY,
   getClientEmptyFixtureContext,
   toClientDashboardFixture,
-} from '@/app/(admin)/preview/_fixtures/client';
+} from '@/app/admin/preview/_fixtures/client';
 import type { ClientDashboardPreviewFixture } from '@/lib/preview/fixtures';
 import { SUPPORT_EMAIL } from '@/lib/config';
 import type { SiteFixEntitlement } from '@/lib/types/client-context';

@@ -10,7 +10,7 @@ import {
 export type AdminSessionContext = VerifiedSession;
 
 /**
- * Server-side admin guard for app/(admin) layouts and pages.
+ * Server-side admin guard for app/admin layouts and pages.
  * Redirects before any admin UI renders when auth fails.
  */
 export async function requireAdminSession(): Promise<AdminSessionContext> {
@@ -18,13 +18,13 @@ export async function requireAdminSession(): Promise<AdminSessionContext> {
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (!sessionCookie) {
-    redirect('/signin?redirect=/admin/fix-jobs');
+    redirect('/signin?redirect=/admin');
   }
 
   const session = await verifySessionCookie(sessionCookie);
 
   if (!session) {
-    redirect('/signin?redirect=/admin/fix-jobs');
+    redirect('/signin?redirect=/admin');
   }
 
   if (!session.isAdmin) {

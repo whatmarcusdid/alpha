@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { fetchWithAdminAuth } from '@/lib/admin/fetch-with-auth';
@@ -210,10 +211,13 @@ export function FixJobsQueueScreen() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-[-0.24px] text-gray-950">
-          Fix jobs
+          Fix jobs — table view
         </h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Site Fix fulfillment queue — every purchased job across all customers.
+          Site Fix fulfillment queue — every purchased job across all customers.{' '}
+          <Link href="/admin" className="font-medium text-[#1D4ED8] hover:underline">
+            Back to home
+          </Link>
         </p>
       </div>
 

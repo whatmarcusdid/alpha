@@ -493,7 +493,7 @@ Use this checklist when adding new features or reviewing code:
 - No use of `dangerouslySetInnerHTML` in codebase
 
 **Additional protection:**
-- Content Security Policy headers (TBD - not yet implemented)
+- Content Security Policy headers (managed in Cloudflare — see [Security Headers](#security-headers))
 - Input sanitization on server
 
 ---
@@ -686,23 +686,20 @@ wordpressCredentials: {
 - `X-Content-Type-Options: nosniff` - Prevents MIME sniffing
 - `X-XSS-Protection: 1; mode=block` - XSS filter (legacy browsers)
 
-### Recommended Additional Headers (TBD)
+### Content Security Policy
 
-**Content Security Policy:**
-```typescript
-// next.config.js (TBD - not yet implemented)
-headers: async () => [
-  {
-    source: '/(.*)',
-    headers: [
-      {
-        key: 'Content-Security-Policy',
-        value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; connect-src 'self' https://*.stripe.com https://*.firebase.com; frame-src https://js.stripe.com;"
-      }
-    ]
-  }
-]
-```
+CSP is managed at the network edge via **Cloudflare**, not in this codebase.
+
+- **Where:** Cloudflare dashboard → `bookservice.tech` zone → Rules → Transform Rules → "Security Headers"
+- **Why:** Applied before traffic reaches Vercel; edits don't require a deploy.
+- **Do not add a CSP header in `next.config.js`, `middleware.ts`, or `vercel.json`.** A duplicate app-level policy can silently conflict with or override the Cloudflare policy, causing hard-to-diagnose failures (see: signup sign-in blocked in production, 2026-07-17, root cause took ~2 hours to trace to this).
+- **To change the policy:** edit the Transform Rule directly in Cloudflare, then purge cache (Caching → Purge Everything) since Cloudflare can serve stale headers from cache after a rule change.
+- **Current `connect-src` allowlist should include:**
+  - Firebase Auth: `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `www.googleapis.com`
+  - Firestore: `firestore.googleapis.com`
+  - Firebase Storage: `firebasestorage.googleapis.com`, `storage.googleapis.com`
+  - Mixpanel: `api-js.mixpanel.com`, `api.mixpanel.com`, `decide.mixpanel.com`
+  - Stripe.js: `api.stripe.com`, `m.stripe.com`, `q.stripe.com`, `r.stripe.com`
 
 **HSTS (Strict-Transport-Security):**
 - Enforces HTTPS only

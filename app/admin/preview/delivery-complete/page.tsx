@@ -1,5 +1,5 @@
 import { JobDetailPreviewShell } from '@/components/preview/JobDetailPreviewShell';
-import { PREVIEW_DETAIL_DELIVERY_COMPLETE } from '@/app/(admin)/preview/_fixtures/fix-job';
+import { PREVIEW_DETAIL_DELIVERY_COMPLETE } from '@/app/admin/preview/_fixtures/fix-job';
 
 export default function DeliveryCompletePreviewPage() {
   return (

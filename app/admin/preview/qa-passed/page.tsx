@@ -1,5 +1,5 @@
 import { JobDetailPreviewShell } from '@/components/preview/JobDetailPreviewShell';
-import { PREVIEW_DETAIL_QA_PASSED } from '@/app/(admin)/preview/_fixtures/fix-job';
+import { PREVIEW_DETAIL_QA_PASSED } from '@/app/admin/preview/_fixtures/fix-job';
 
 export default function QaPassedPreviewPage() {
   return (

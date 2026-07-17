@@ -1,5 +1,5 @@
 import { JobDetailPreviewShell } from '@/components/preview/JobDetailPreviewShell';
-import { PREVIEW_DETAIL_FIX_EXECUTION } from '@/app/(admin)/preview/_fixtures/fix-job';
+import { PREVIEW_DETAIL_FIX_EXECUTION } from '@/app/admin/preview/_fixtures/fix-job';
 
 export default function FixExecutionPreviewPage() {
   return (

@@ -27,7 +27,7 @@ type AdminNavTab = {
 };
 
 const adminNavTabs: AdminNavTab[] = [
-  { name: 'Home', href: '/admin/fix-jobs', icon: Home },
+  { name: 'Home', href: '/admin', icon: Home },
   {
     name: 'Needs Link',
     href: '/admin/needs-audit-lead-link',
@@ -49,8 +49,12 @@ function isTabActive(pathname: string, href: string): boolean {
     return pathname.startsWith('/admin/preview/');
   }
 
+  if (href === '/admin') {
+    return pathname === '/admin';
+  }
+
   if (href === '/admin/fix-jobs') {
-    return pathname === '/admin' || pathname.startsWith('/admin/fix-jobs');
+    return pathname.startsWith('/admin/fix-jobs');
   }
 
   return pathname.startsWith(href);
@@ -168,7 +172,7 @@ export function AdminNav() {
     <>
       <nav className="hidden px-6 pt-6 lg:block">
         <div className="mx-auto flex max-w-[1408px] items-center justify-between">
-          <Link href="/admin/fix-jobs" className="flex shrink-0 items-center gap-2">
+          <Link href="/admin" className="flex shrink-0 items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-[#1E3A8A]" aria-hidden="true" />
             <span className="text-[25px] font-bold uppercase leading-[1.5] tracking-wide text-gray-950">
               Book Service
@@ -183,7 +187,7 @@ export function AdminNav() {
 
       <div className="px-5 py-4 lg:hidden md:px-6">
         <div className="flex items-center justify-between">
-          <Link href="/admin/fix-jobs" className="flex items-center gap-2">
+          <Link href="/admin" className="flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-[#1E3A8A]" aria-hidden="true" />
             <span className="text-sm font-bold uppercase tracking-widest text-gray-950">
               Book Service

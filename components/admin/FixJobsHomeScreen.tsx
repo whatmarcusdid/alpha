@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Plus, Search } from 'lucide-react';
 
@@ -8,14 +9,15 @@ import { CreateFixJobModal } from '@/components/admin/CreateFixJobModal';
 import { CampaignGoalsWidget } from '@/components/admin/CampaignGoalsWidget';
 import { FixJobCard } from '@/components/admin/FixJobCard';
 import {
-  computeActiveSummaryCounts,
-  getFixJobListColumn,
-  matchesEntitlementFilter,
-} from '@/lib/fix-jobs/bucketing';
-import type { EntitlementFilter, FixJob } from '@/lib/types/fix-job';
+  computeSessionActiveSummaryCounts,
+  getSessionListColumn,
+  matchesHomeEntitlementFilter,
+  type AdminHomeJob,
+} from '@/lib/fix-jobs/home-bucketing';
+import type { EntitlementFilter } from '@/lib/types/fix-job';
 
 type Props = {
-  jobs: FixJob[];
+  jobs: AdminHomeJob[];
   adminFirstName: string;
 };
 
@@ -52,7 +54,7 @@ function formatHeaderDate(): string {
   }).format(new Date());
 }
 
-function filterJobsBySearch(jobs: FixJob[], query: string): FixJob[] {
+function filterJobsBySearch(jobs: AdminHomeJob[], query: string): AdminHomeJob[] {
   const normalizedQuery = query.trim().toLowerCase();
 
   if (!normalizedQuery) {
@@ -67,7 +69,7 @@ function filterJobsBySearch(jobs: FixJob[], query: string): FixJob[] {
 
 type JobColumnProps = {
   title: string;
-  jobs: FixJob[];
+  jobs: AdminHomeJob[];
   searchQuery?: string;
   onSearchChange?: (value: string) => void;
   emptyTitle: string;
@@ -142,7 +144,7 @@ function JobColumn({
       ) : (
         <div className="flex flex-col gap-4">
           {visibleJobs.map((job) => (
-            <FixJobCard key={job.id} job={job} />
+            <FixJobCard key={`${job.uid}-${job.sessionId}`} job={job} />
           ))}
 
           {hasMore && (
@@ -192,14 +194,18 @@ export function FixJobsHomeScreen({ jobs, adminFirstName }: Props) {
   }, [searchParams]);
 
   const newJobs = useMemo(
-    () => filterJobsBySearch(jobs.filter((job) => getFixJobListColumn(job) === 'new'), newJobsSearch),
+    () =>
+      filterJobsBySearch(
+        jobs.filter((job) => getSessionListColumn(job.stage) === 'new'),
+        newJobsSearch
+      ),
     [jobs, newJobsSearch]
   );
 
   const activeJobs = useMemo(() => {
     const filtered = jobs
-      .filter((job) => getFixJobListColumn(job) === 'active')
-      .filter((job) => matchesEntitlementFilter(job, entitlementFilter));
+      .filter((job) => getSessionListColumn(job.stage) === 'active')
+      .filter((job) => matchesHomeEntitlementFilter(job, entitlementFilter));
 
     return filtered;
   }, [jobs, entitlementFilter]);
@@ -207,13 +213,13 @@ export function FixJobsHomeScreen({ jobs, adminFirstName }: Props) {
   const completedJobs = useMemo(
     () =>
       filterJobsBySearch(
-        jobs.filter((job) => getFixJobListColumn(job) === 'completed'),
+        jobs.filter((job) => getSessionListColumn(job.stage) === 'completed'),
         completedJobsSearch
       ),
     [jobs, completedJobsSearch]
   );
 
-  const summaryCounts = useMemo(() => computeActiveSummaryCounts(jobs), [jobs]);
+  const summaryCounts = useMemo(() => computeSessionActiveSummaryCounts(jobs), [jobs]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -228,6 +234,11 @@ export function FixJobsHomeScreen({ jobs, adminFirstName }: Props) {
           <h1 className="text-[32px] leading-[1.2] tracking-[-0.32px] text-gray-950">
             {getGreetingPrefix()} {adminFirstName}
           </h1>
+          <p className="text-sm text-zinc-600">
+            <Link href="/admin/fix-jobs" className="font-medium text-[#1D4ED8] hover:underline">
+              Open table view
+            </Link>
+          </p>
         </header>
 
         <CampaignGoalsWidget />
@@ -298,7 +309,7 @@ export function FixJobsHomeScreen({ jobs, adminFirstName }: Props) {
           ) : (
             <div className="flex flex-col gap-4">
               {activeJobs.map((job) => (
-                <FixJobCard key={job.id} job={job} />
+                <FixJobCard key={`${job.uid}-${job.sessionId}`} job={job} />
               ))}
             </div>
           )}
