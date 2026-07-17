@@ -1,83 +1,86 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     // Password resets — server-only via Admin SDK
     match /passwordResets/{tokenId} {
       allow read, write: if false;
     }
-
     // auditLeads — server-only via Admin SDK
     match /auditLeads/{auditId} {
       allow read, write: if false;
     }
-
     // Admin fix jobs — server-only via Admin SDK
     match /fixJobs/{fixJobId} {
       allow read, write: if false;
-
       match /loops/{loopKey} {
         allow read, write: if false;
       }
-
       match /approvals/{approvalId} {
         allow read, write: if false;
       }
-
       match /qa/{qaDocId} {
         allow read, write: if false;
       }
-
       match /reports/{reportId} {
         allow read, write: if false;
       }
-
       match /accessRevocations/{credentialType} {
         allow read, write: if false;
       }
     }
-
     // Admin metadata (display-ID counter) — server-only via Admin SDK
     match /meta/{docId} {
       allow read, write: if false;
     }
-
-    // adminAuditLog: server-only via Admin SDK. No client access.
-    match /adminAuditLog/{logId} {
-      allow read, write: if false;
-    }
-
-    // siteAccessRequests: server-only via Admin SDK. Public grant/decline routes use token validation, not Firestore rules.
-    match /siteAccessRequests/{requestId} {
-      allow read, write: if false;
-    }
-
-    // User profiles — authenticated user can read/write their own document
+    // User profiles — authenticated user can read their own document.
+    // Writes are restricted to an explicit allowlist of client-safe
+    // top-level fields. Anything billing-, credential-, or admin-related
+    // must be written by the Admin SDK (server) only.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Legacy client-side signup still creates the doc directly today.
+      // Restrict creation to the same safe fields as updates below.
+      allow create: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+             'email', 'fullName', 'phone', 'role', 'createdAt',
+             'company', 'settings', 'metrics'
+           ]);
+
+      allow update: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly([
+               'company', 'settings', 'fullName', 'phone', 'role',
+               'upcomingMeetings', 'siteFix'
+             ])
+        // If siteFix is touched, only its contact-name fields may change —
+        // access_request, onboardingStatus, sku, entitlements, etc. stay
+        // server-only even though they live in the same map.
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['siteFix'])
+          ||
+          request.resource.data.siteFix.diff(resource.data.siteFix).affectedKeys()
+            .hasOnly(['contactName', 'contactLastName'])
+        );
+
+      allow delete: if false;
 
       // Reports subcollection — read-only for the owning user
       match /reports/{reportId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }
-
       // Fix sessions — read-only for the owning user, admin writes only
       match /fixSessions/{sessionId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
-        // Admin fulfillment fields (stage, fixProgress, qa, afterAudit, report, etc.) are written
-        // exclusively via Firebase Admin SDK in API routes. No client-write rules are added for these fields.
-        // Client read of own fixSession is handled by the existing rule above.
       }
-
       // Client-facing fix updates — read-only for the owning user, admin writes only
       match /fixUpdates/{updateId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }
     }
-
     // Support tickets — authenticated user can create and read their own
     match /supportTickets/{ticketId} {
       allow create: if request.auth != null
@@ -86,18 +89,15 @@ service cloud.firestore {
         && resource.data.userId == request.auth.uid;
       allow update, delete: if false;
     }
-
     // Pending subscriptions — server-only
     match /pending_subscriptions/{email} {
       allow read, write: if false;
     }
-
     // Sites — authenticated user can read their own site records
     match /sites/{siteId} {
       allow read: if request.auth != null
         && resource.data.userId == request.auth.uid;
       allow write: if false;
     }
-
   }
 }
