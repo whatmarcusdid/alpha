@@ -11,20 +11,14 @@ import {
 import { SiteFixDetailModal } from '@/components/dashboard/SiteFixDetailModal';
 import { RightColumnSidebar } from '@/components/dashboard/RightColumnSidebar';
 import { SupportContactModule } from '@/components/dashboard/SupportContactModule';
-import {
-  MilestoneTimeline,
-  parseMilestoneTimelineProps,
-} from '@/components/dashboard/MilestoneTimeline';
 import { AccessRequestCard } from '@/components/dashboard/AccessRequestCard';
 import { ClientUpdatesFeed } from '@/components/dashboard/ClientUpdatesFeed';
 import { DeliverablesModule } from '@/components/dashboard/DeliverablesModule';
 import { DashboardEmptyState } from '@/components/dashboard/DashboardEmptyState';
 import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBoundary';
-import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
 import { useClientContext } from '@/lib/hooks/useClientContext';
 import { SUPPORT_EMAIL } from '@/lib/config';
-import type { SiteFixEntitlement } from '@/lib/types/client-context';
-import { mapOnboardingData } from '@/lib/types/onboarding';
+import { formatDashboardGreeting } from '@/lib/dashboard/greeting';
 
 type FirestoreTimestamp = {
   toDate?: () => Date;
@@ -85,31 +79,13 @@ function mapFirestoreSessionToFixSession(data: FirestoreData): FixSession {
     reportUrl: typeof data.reportUrl === 'string' ? data.reportUrl : null,
     loomUrl: typeof data.loomUrl === 'string' ? data.loomUrl : null,
     googleReviewUrl: typeof data.googleReviewUrl === 'string' ? data.googleReviewUrl : null,
-    onboarding: mapOnboardingData(data.onboarding),
+    onboarding: null,
     fixProgress: {
       speed: mapPillarProgress(fixProgress.speed),
       security: mapPillarProgress(fixProgress.security),
       seo: mapPillarProgress(fixProgress.seo),
     },
   };
-}
-
-function areAllPurchasedPillarsDone(
-  session: FixSession,
-  entitlements: SiteFixEntitlement[]
-): boolean {
-  const pillarKeys: Array<'speed' | 'security' | 'seo'> =
-    entitlements.length === 0
-      ? ['speed', 'security', 'seo']
-      : entitlements.map((entitlement) =>
-          entitlement === 'speed'
-            ? 'speed'
-            : entitlement === 'security'
-              ? 'security'
-              : 'seo'
-        );
-
-  return pillarKeys.every((key) => session.fixProgress[key].status === 'done');
 }
 
 const supportMailto = `mailto:${SUPPORT_EMAIL}`;
@@ -260,8 +236,11 @@ function DashboardPageContent() {
     );
   }
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const contactName =
+    typeof userData?.siteFix?.contactName === 'string'
+      ? userData.siteFix.contactName
+      : '';
+  const greeting = formatDashboardGreeting(contactName);
   const formattedDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -272,12 +251,6 @@ function DashboardPageContent() {
     clientContext?.businessName || userData?.businessName || 'Your business';
   const packageLabel = clientContext?.packageLabel ?? null;
   const entitlements = clientContext?.entitlements ?? [];
-  const milestoneTimelineProps = parseMilestoneTimelineProps({
-    siteFix: userData?.siteFix ?? null,
-    deliveryStatus: fixSession?.deliveryStatus ?? null,
-    allPillarsDone:
-      fixSession != null ? areAllPurchasedPillarsDone(fixSession, entitlements) : false,
-  });
 
   const renderCenterColumn = () => {
     if (clientContextStatus === 'error') {
@@ -315,7 +288,6 @@ function DashboardPageContent() {
         <h2 className="text-xl font-semibold leading-[1.2] tracking-[-0.2px] text-gray-950 md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]">
           Active site fixes
         </h2>
-        <MilestoneTimeline {...milestoneTimelineProps} />
         {fixSession.accessStatus != null && (
           <AccessRequestCard
             accessStatus={fixSession.accessStatus}
@@ -351,9 +323,6 @@ function DashboardPageContent() {
             </h1>
           </div>
           <SupportContactModule />
-          {fixSession?.onboarding != null && (
-            <OnboardingChecklist onboarding={fixSession.onboarding} />
-          )}
         </div>
 
         <div className="flex flex-col gap-4">{renderCenterColumn()}</div>

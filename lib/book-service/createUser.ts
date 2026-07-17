@@ -50,6 +50,7 @@ export interface SiteFixUserNamespace {
   businessName: string;
   websiteUrl: string;
   contactName: string;
+  contactLastName?: string;
   contactEmail: string;
   access_request: {
     submittedAt: Timestamp | null;
@@ -65,10 +66,121 @@ export interface SiteFixUserNamespace {
   accountCreatedAt: Timestamp;
   siteConfirmedAt?: Timestamp;
   websiteUrlCorrected?: boolean;
+  /** Written by processDashboardInvite before signup completes. */
+  sku?: string;
+  entitlements?: SiteFixEntitlement[];
+  inviteStatus?: string;
+  invitedAt?: Timestamp;
+  acceptedAt?: Timestamp | null;
+  purchasedAt?: Timestamp;
+  activeFixSessionId?: string | null;
 }
+
+/** Firestore siteFix during invite-first or partial signup — all namespace fields optional. */
+type PartialSiteFix = Partial<SiteFixUserNamespace>;
 
 function normalizeEmail(email: string): string {
   return email.toLowerCase().trim();
+}
+
+/** True when signup has already completed account setup for this order. */
+export function isSiteFixAccountSetupComplete(
+  siteFix: PartialSiteFix | undefined,
+  uid: string
+): boolean {
+  if (!siteFix || siteFix.orderId === undefined) {
+    return false;
+  }
+
+  if (siteFix.claimedByUserId !== uid) {
+    return false;
+  }
+
+  return siteFix.accountCreatedAt != null;
+}
+
+function buildAuditLeadPrefill(
+  auditLead: AuditLeadSnapshot | null,
+  auditLeadLinked: boolean,
+  normalizedEmail: string
+): Pick<
+  SiteFixUserNamespace,
+  'businessName' | 'websiteUrl' | 'contactName' | 'contactEmail'
+> {
+  if (!auditLeadLinked || !auditLead) {
+    return {
+      businessName: '',
+      websiteUrl: '',
+      contactName: '',
+      contactEmail: normalizedEmail,
+    };
+  }
+
+  return {
+    businessName: auditLead.businessName ?? '',
+    websiteUrl: auditLead.websiteUrl ?? '',
+    contactName: auditLead.firstName ?? '',
+    contactEmail: auditLead.email ?? normalizedEmail,
+  };
+}
+
+/** Merge audit pre-fill into siteFix without clobbering invite or user-edited fields. */
+export function mergeSiteFixForAccountSetup(params: {
+  existingSiteFix: PartialSiteFix | undefined;
+  uid: string;
+  orderId: string;
+  auditLeadId: string;
+  entitlements: SiteFixEntitlement[];
+  auditLead: AuditLeadSnapshot | null;
+  auditLeadLinked: boolean;
+  normalizedEmail: string;
+}): SiteFixUserNamespace & {
+  accountCreatedAt: SiteFixUserNamespace['accountCreatedAt'] | ReturnType<
+    typeof FieldValue.serverTimestamp
+  >;
+} {
+  const existing = params.existingSiteFix ?? {};
+  const prefill = buildAuditLeadPrefill(
+    params.auditLead,
+    params.auditLeadLinked,
+    params.normalizedEmail
+  );
+
+  const pickNonEmpty = (existingValue: unknown, fallback: string): string => {
+    if (typeof existingValue === 'string' && existingValue.trim() !== '') {
+      return existingValue;
+    }
+    return fallback;
+  };
+
+  return {
+    ...(existing as SiteFixUserNamespace),
+    orderId: params.orderId,
+    auditLeadId: params.auditLeadId,
+    claimedByUserId: params.uid,
+    purchasedPackages:
+      (Array.isArray(existing.purchasedPackages)
+        ? existing.purchasedPackages
+        : undefined) ?? params.entitlements,
+    onboardingStatus:
+      (existing.onboardingStatus as OnboardingStatus | undefined) ??
+      ONBOARDING_STATUS.AWAITING_ACCESS,
+    businessName: pickNonEmpty(existing.businessName, prefill.businessName),
+    websiteUrl: pickNonEmpty(existing.websiteUrl, prefill.websiteUrl),
+    contactName: pickNonEmpty(existing.contactName, prefill.contactName),
+    contactEmail: pickNonEmpty(existing.contactEmail, prefill.contactEmail),
+    access_request:
+      (existing.access_request as SiteFixUserNamespace['access_request']) ?? {
+        submittedAt: null,
+        method: null,
+        notes: null,
+      },
+    onboardingCompletedAt:
+      (existing.onboardingCompletedAt as Timestamp | null) ?? null,
+    accountCreatedAt:
+      (existing.accountCreatedAt as Timestamp | undefined) ??
+      (FieldValue.serverTimestamp() as SiteFixUserNamespace['accountCreatedAt']),
+  };
 }
 
 export async function createUserWithSiteFixOrder(params: {
@@ -96,20 +208,23 @@ export async function createUserWithSiteFixOrder(params: {
     const claimedUserRef = adminDb.collection('users').doc(pending.claimedByUserId);
     const claimedUserSnap = await claimedUserRef.get();
     const existingSiteFix = claimedUserSnap.data()?.siteFix as
-      | SiteFixUserNamespace
+      | PartialSiteFix
       | undefined;
 
-    if (existingSiteFix?.orderId === orderId) {
+    if (
+      existingSiteFix?.orderId === orderId &&
+      isSiteFixAccountSetupComplete(existingSiteFix, pending.claimedByUserId)
+    ) {
       return { uid: pending.claimedByUserId, orderId };
     }
 
-    throw new ClaimError(
-      'ORDER_ALREADY_CLAIMED',
-      'This order has already been claimed'
-    );
-  }
-
-  if (pending.claimState !== 'unclaimed') {
+    if (existingSiteFix?.orderId !== orderId) {
+      throw new ClaimError(
+        'ORDER_ALREADY_CLAIMED',
+        'This order has already been claimed'
+      );
+    }
+  } else if (pending.claimState !== 'unclaimed') {
     throw new ClaimError(
       'ORDER_ALREADY_CLAIMED',
       'This order has already been claimed'
@@ -127,6 +242,7 @@ export async function createUserWithSiteFixOrder(params: {
     : null;
 
   let uid: string;
+  let authUserAlreadyExisted = false;
 
   try {
     const userRecord = await adminAuth.createUser({
@@ -137,69 +253,83 @@ export async function createUserWithSiteFixOrder(params: {
   } catch (err: unknown) {
     const firebaseErr = err as { code?: string; message?: string };
     if (firebaseErr.code === 'auth/email-already-exists') {
+      authUserAlreadyExisted = true;
       const existingUser = await adminAuth.getUserByEmail(normalizedEmail);
       uid = existingUser.uid;
 
       const existingUserSnap = await adminDb.collection('users').doc(uid).get();
       const existingSiteFix = existingUserSnap.data()?.siteFix as
-        | SiteFixUserNamespace
+        | PartialSiteFix
         | undefined;
 
-      if (existingSiteFix?.orderId === orderId) {
-        return { uid, orderId };
+      if (existingSiteFix?.orderId && existingSiteFix.orderId !== orderId) {
+        throw new AuthError(
+          firebaseErr.code,
+          firebaseErr.message ?? 'Email already in use'
+        );
       }
-
-      throw new AuthError(
-        firebaseErr.code,
-        firebaseErr.message ?? 'Email already in use'
-      );
+    } else {
+      throw err;
     }
-
-    throw err;
   }
 
   const userRef = adminDb.collection('users').doc(uid);
   const existingUserSnap = await userRef.get();
-  const existingSiteFix = existingUserSnap.data()?.siteFix as
-    | SiteFixUserNamespace
-    | undefined;
+  const existingUserData = existingUserSnap.data() ?? {};
+  const existingSiteFix = existingUserData.siteFix as PartialSiteFix | undefined;
 
-  if (existingSiteFix?.orderId === orderId) {
+  const setupComplete = isSiteFixAccountSetupComplete(existingSiteFix, uid);
+
+  if (
+    setupComplete &&
+    pending.claimState === 'claimed' &&
+    pending.claimedByUserId === uid
+  ) {
     return { uid, orderId };
   }
 
-  const siteFix: Omit<
-    SiteFixUserNamespace,
-    'accountCreatedAt' | 'onboardingCompletedAt'
-  > & {
-    accountCreatedAt: ReturnType<typeof FieldValue.serverTimestamp>;
-    onboardingCompletedAt: null;
-  } = {
+  if (setupComplete && pending.claimState === 'unclaimed') {
+    const batch = adminDb.batch();
+    batch.update(pendingRef, {
+      claimState: 'claimed',
+      claimedByUserId: uid,
+      claimedAt: FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+    return { uid, orderId };
+  }
+
+  if (authUserAlreadyExisted) {
+    await adminAuth.updateUser(uid, { password });
+  }
+
+  const siteFix = mergeSiteFixForAccountSetup({
+    existingSiteFix,
+    uid,
     orderId,
     auditLeadId: pending.auditLeadId,
-    claimedByUserId: uid,
-    purchasedPackages: pending.entitlements,
-    onboardingStatus: ONBOARDING_STATUS.AWAITING_ACCESS,
-    businessName: auditLead?.businessName ?? '',
-    websiteUrl: auditLead?.websiteUrl ?? '',
-    contactName: auditLead?.firstName ?? '',
-    contactEmail: auditLead?.email ?? normalizedEmail,
-    access_request: {
-      submittedAt: null,
-      method: null,
-      notes: null,
-    },
-    onboardingCompletedAt: null,
-    accountCreatedAt: FieldValue.serverTimestamp(),
-  };
+    entitlements: pending.entitlements,
+    auditLead,
+    auditLeadLinked,
+    normalizedEmail,
+  });
 
   const batch = adminDb.batch();
-  batch.set(userRef, { siteFix, auditLeadLinked }, { merge: true });
-  batch.update(pendingRef, {
-    claimState: 'claimed',
-    claimedByUserId: uid,
-    claimedAt: FieldValue.serverTimestamp(),
-  });
+  const userPayload: Record<string, unknown> = { siteFix };
+
+  if (existingUserData.auditLeadLinked === undefined) {
+    userPayload.auditLeadLinked = auditLeadLinked;
+  }
+
+  batch.set(userRef, userPayload, { merge: true });
+
+  if (pending.claimState === 'unclaimed') {
+    batch.update(pendingRef, {
+      claimState: 'claimed',
+      claimedByUserId: uid,
+      claimedAt: FieldValue.serverTimestamp(),
+    });
+  }
 
   await batch.commit();
 

@@ -61,19 +61,19 @@ export async function processDashboardInvite(
   const dashboardUrl = `${getAppBaseUrl()}/dashboard`;
 
   try {
+    // Dot-path fields only — a nested siteFix object would replace the entire map
+    // and wipe audit pre-fill written by createUserWithSiteFixOrder.
     await adminDb.collection('users').doc(userId).set(
       {
         email: normalizedEmail,
-        siteFix: {
-          sku,
-          entitlements,
-          orderId,
-          inviteStatus: 'sent',
-          invitedAt: FieldValue.serverTimestamp(),
-          acceptedAt: null,
-          purchasedAt: FieldValue.serverTimestamp(),
-          activeFixSessionId: null,
-        },
+        'siteFix.sku': sku,
+        'siteFix.entitlements': entitlements,
+        'siteFix.orderId': orderId,
+        'siteFix.inviteStatus': 'sent',
+        'siteFix.invitedAt': FieldValue.serverTimestamp(),
+        'siteFix.acceptedAt': null,
+        'siteFix.purchasedAt': FieldValue.serverTimestamp(),
+        'siteFix.activeFixSessionId': null,
       },
       { merge: true }
     );

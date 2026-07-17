@@ -9,7 +9,15 @@ if (typeof window !== 'undefined') {
   firestoreFunctions = { doc, getDoc, updateDoc, collection };
 }
 
+import {
+  buildContactNameUpdatePayload,
+  isContactNameFormField,
+  readContactNameFields,
+} from '@/lib/firestore/company-contact-fields';
+
 export interface CompanyData {
+  contactFirstName: string;
+  contactLastName: string;
   legalName: string;
   websiteUrl: string;
   yearFounded: string;
@@ -36,8 +44,12 @@ export async function getCompanyData(userId: string): Promise<CompanyData | null
     if (userDoc.exists()) {
       const data = userDoc.data();
       const company = data.company || {};
-      
+      const contactNames = readContactNameFields(
+        data.siteFix as Record<string, unknown> | undefined
+      );
+
       return {
+        ...contactNames,
         legalName: company.legalName || '',
         websiteUrl: company.websiteUrl || '',
         yearFounded: company.yearFounded || '',
@@ -71,10 +83,39 @@ export async function updateCompanyData(
   try {
     const userRef = firestoreFunctions.doc(firestoreFunctions.collection(db, 'users'), userId);
     
-    const updatePayload: { [key: string]: any } = {};
+    const updatePayload: { [key: string]: string } = {};
+    let contactFirstName = '';
+    let contactLastName = '';
+
     for (const [key, value] of Object.entries(companyData)) {
+      if (typeof value !== 'string') {
+        continue;
+      }
+
+      if (key === 'contactFirstName') {
+        contactFirstName = value;
+        continue;
+      }
+
+      if (key === 'contactLastName') {
+        contactLastName = value;
+        continue;
+      }
+
+      if (isContactNameFormField(key)) {
+        continue;
+      }
+
       updatePayload[`company.${key}`] = value;
     }
+
+    if ('contactFirstName' in companyData || 'contactLastName' in companyData) {
+      Object.assign(
+        updatePayload,
+        buildContactNameUpdatePayload(contactFirstName, contactLastName)
+      );
+    }
+
     updatePayload['company.lastUpdated'] = new Date().toISOString();
 
     await firestoreFunctions.updateDoc(userRef, updatePayload);

@@ -24,6 +24,8 @@ export default function MyCompanyPage() {
   }>({ show: false, type: 'success', message: '', subtitle: '' });
   
   const [formData, setFormData] = useState<CompanyData>({
+    contactFirstName: '',
+    contactLastName: '',
     legalName: '',
     websiteUrl: '',
     yearFounded: '',
@@ -57,6 +59,8 @@ export default function MyCompanyPage() {
       } else {
         // New user - set empty defaults
         const emptyData = {
+          contactFirstName: '',
+          contactLastName: '',
           legalName: '',
           websiteUrl: '',
           yearFounded: '',
@@ -161,6 +165,51 @@ export default function MyCompanyPage() {
               <span>Edit</span>
             </SecondaryButton>
           )}
+        </div>
+
+        {/* Contact name */}
+        <div className="max-w-[600px] w-full mb-6">
+          <h2 className="text-2xl font-bold text-[#232521] mb-6">Contact name</h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-[#232521] mb-2">
+                First name
+              </label>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  name="contactFirstName"
+                  value={formData.contactFirstName}
+                  onChange={handleInputChange}
+                  className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                />
+              ) : (
+                <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  {formData.contactFirstName || '-'}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#232521] mb-2">
+                Last name (Optional)
+              </label>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  name="contactLastName"
+                  value={formData.contactLastName}
+                  onChange={handleInputChange}
+                  className="w-full min-h-[40px] px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b4a41]"
+                />
+              ) : (
+                <div className="w-full min-h-[40px] px-4 flex items-center bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                  {formData.contactLastName || '-'}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* General Information Section */}

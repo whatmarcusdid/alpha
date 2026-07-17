@@ -2,18 +2,11 @@
 
 import { useMemo, useState } from 'react';
 
-import {
-  ActiveSiteFixesCard,
-  type FixSession,
-} from '@/components/dashboard/ActiveSiteFixesCard';
+import { ActiveSiteFixesCard } from '@/components/dashboard/ActiveSiteFixesCard';
 import { SiteFixDetailModal } from '@/components/dashboard/SiteFixDetailModal';
 import { ClientUpdatesFeed } from '@/components/dashboard/ClientUpdatesFeed';
 import { DashboardEmptyState } from '@/components/dashboard/DashboardEmptyState';
 import { DeliverablesModule } from '@/components/dashboard/DeliverablesModule';
-import {
-  MilestoneTimeline,
-  parseMilestoneTimelineProps,
-} from '@/components/dashboard/MilestoneTimeline';
 import { RightColumnSidebar } from '@/components/dashboard/RightColumnSidebar';
 import { SupportContactModule } from '@/components/dashboard/SupportContactModule';
 import WhileYouWaitCard from '@/components/dashboard/WhileYouWaitCard';
@@ -27,32 +20,12 @@ import {
 } from '@/app/admin/preview/_fixtures/client';
 import type { ClientDashboardPreviewFixture } from '@/lib/preview/fixtures';
 import { SUPPORT_EMAIL } from '@/lib/config';
-import type { SiteFixEntitlement } from '@/lib/types/client-context';
-
 export type ClientHomePreviewState = 'active' | 'delivered' | 'empty';
 
 type ClientHomePreviewShellProps = {
   state: ClientHomePreviewState;
   designQuestion?: string;
 };
-
-function areAllPurchasedPillarsDone(
-  session: FixSession,
-  entitlements: SiteFixEntitlement[]
-): boolean {
-  const pillarKeys: Array<'speed' | 'security' | 'seo'> =
-    entitlements.length === 0
-      ? ['speed', 'security', 'seo']
-      : entitlements.map((entitlement) =>
-          entitlement === 'speed'
-            ? 'speed'
-            : entitlement === 'security'
-              ? 'security'
-              : 'seo'
-        );
-
-  return pillarKeys.every((key) => session.fixProgress[key].status === 'done');
-}
 
 function resolveFixture(state: ClientHomePreviewState): ClientDashboardPreviewFixture | null {
   if (state === 'active') {
@@ -80,7 +53,6 @@ function ClientHomePreviewLayout({
   const emptyContext = getClientEmptyFixtureContext();
   const context = fixture?.context ?? emptyContext;
   const fixSession = fixture?.fixSession ?? null;
-  const siteFix = fixture?.siteFix ?? null;
   const fixUpdates = fixture?.fixUpdates ?? [];
 
   const firstName = context.fullName.split(' ')[0] || 'there';
@@ -91,13 +63,6 @@ function ClientHomePreviewLayout({
   });
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-
-  const milestoneTimelineProps = parseMilestoneTimelineProps({
-    siteFix,
-    deliveryStatus: fixSession?.deliveryStatus ?? null,
-    allPillarsDone:
-      fixSession != null ? areAllPurchasedPillarsDone(fixSession, context.entitlements) : false,
-  });
 
   return (
     <>
@@ -126,8 +91,6 @@ function ClientHomePreviewLayout({
                 <h2 className="text-xl font-semibold leading-[1.2] tracking-[-0.2px] text-gray-950 md:text-[22px] md:tracking-[-0.22px] lg:text-2xl lg:tracking-[-0.24px]">
                   Active site fixes
                 </h2>
-
-                <MilestoneTimeline {...milestoneTimelineProps} />
 
                 <ClientUpdatesFeed userId={context.userId} previewUpdates={fixUpdates} />
 

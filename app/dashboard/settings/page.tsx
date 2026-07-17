@@ -27,6 +27,8 @@ export default function SettingsPage() {
   const [wordpressDashboardUrl, setWordpressDashboardUrl] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState<CompanyData>({
+    contactFirstName: '',
+    contactLastName: '',
     legalName: '',
     websiteUrl: '',
     yearFounded: '',
