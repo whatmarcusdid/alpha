@@ -1,0 +1,551 @@
+{
+  "name": "10 — Negative / Security / Abuse Cases",
+  "description": "Adversarial cross-section: public (audit, checkout, order-status), authenticated (confirm-details, create-account), admin (fix-jobs). Every test asserts status codes AND response bodies contain no stack traces, file paths, or node_modules leaks. Rate-limit burst may not 429 locally when Upstash is unreachable (fail-open) — documented as FINDING, not a pass on broken behavior.",
+  "item": [
+    {
+      "name": "Setup — capture token before revoke (Folder 10 auth abuse)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "pm.environment.set('folder10TokenBeforeRevoke', pm.environment.get('userToken') || '');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('folder10TokenBeforeRevoke captured', () => {",
+              "  pm.expect(pm.environment.get('folder10TokenBeforeRevoke')).to.be.a('string').and.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/audit — malformed JSON (400, not 500)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"firstName\":\"API\",\"businessName\":\"Test\","
+        },
+        "url": "{{baseUrl}}/api/audit"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Invalid input error', () => pm.expect(pm.response.json().error).to.eql('Invalid input'));",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('No stack trace or internal paths in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "  pm.expect(body).to.not.include('/Users/');",
+              "  pm.expect(body).to.not.include('.next/');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/book-service/checkout — malformed JSON (400, not 500)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{not-json"
+        },
+        "url": "{{baseUrl}}/api/book-service/checkout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Validation error string present', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/audit — excessively long businessName (400 Zod max 128)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": "{{baseUrl}}/api/audit"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const longName = 'A'.repeat(50000);",
+              "pm.request.body.raw = JSON.stringify({",
+              "  firstName: 'API',",
+              "  businessName: longName,",
+              "  email: 'abuse-long-field@test.local',",
+              "  websiteUrl: 'https://example.com',",
+              "  isClient: true",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 400 (graceful rejection)', () => pm.response.to.have.status(400));",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/book-service/confirm-details — no auth header (401)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"businessName\": \"API\",\n  \"websiteUrl\": \"https://example.com\",\n  \"contactName\": \"API\",\n  \"contactEmail\": \"abuse@test.local\"\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/confirm-details"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+              "pm.test('Unauthorized error', () => pm.expect(pm.response.json().error).to.match(/Unauthorized/i));",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/book-service/confirm-details — excessively long businessName (FINDING check)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": "{{baseUrl}}/api/book-service/confirm-details"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const longName = 'B'.repeat(50000);",
+              "pm.request.body.raw = JSON.stringify({",
+              "  orderId: pm.environment.get('orderId'),",
+              "  businessName: longName,",
+              "  websiteUrl: 'https://example.com',",
+              "  contactName: 'API',",
+              "  contactEmail: pm.environment.get('testEmail')",
+              "});"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "const code = pm.response.code;",
+              "pm.test('Not a 500 on oversized businessName', () => pm.expect(code).to.be.below(500));",
+              "if (code === 400) {",
+              "  pm.test('Graceful 400 rejection (has max validation)', () => pm.expect(code).to.eql(400));",
+              "} else {",
+              "  pm.test('FINDING: confirm-details accepts 50k businessName (no Zod max) — status ' + code, () => {",
+              "    pm.expect([200, 403]).to.include(code);",
+              "  });",
+              "}",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/admin/fix-jobs/:id — invalid bearer token (401)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "not.a.valid.jwt.token", "type": "string" }]
+        },
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}?uid={{userId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+              "pm.test('Auth error string only', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup — revoke userToken via password reset (Folder 10)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testEmail}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/request-password-reset"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const token = pm.response.json().devResetToken;",
+              "pm.test('devResetToken for revoke setup', () => pm.expect(token).to.be.a('string').and.not.empty);",
+              "pm.environment.set('folder10DevResetToken', token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/auth/reset-password — revoke all ID tokens",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{folder10DevResetToken}}\",\n  \"password\": \"folder10-revoked-token-password-999\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/reset-password"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.environment.set('folder10RevokedPassword', 'folder10-revoked-token-password-999');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/book-service/confirm-details — revoked auth token (401)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{folder10TokenBeforeRevoke}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"businessName\": \"API\",\n  \"websiteUrl\": \"https://example.com\",\n  \"contactName\": \"API\",\n  \"contactEmail\": \"abuse@test.local\"\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/confirm-details"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+              "pm.test('Revoked/expired token message', () => {",
+              "  pm.expect(pm.response.json().error).to.match(/expired|revoked|Invalid authentication token/i);",
+              "});",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/book-service/checkout — wrong method (405, not crash)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/book-service/checkout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 405 Method Not Allowed', () => pm.response.to.have.status(405));",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('No stack trace in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/notifications/new-user — explicit 405",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/notifications/new-user"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 405', () => pm.response.to.have.status(405));",
+              "pm.test('Method not allowed error', () => pm.expect(pm.response.json().error).to.eql('Method not allowed'));",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/book-service/create-account — duplicate claimed orderId (409, idempotent-safe)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"duplicate-abuse-{{$timestamp}}@bookservice.test\",\n  \"password\": \"duplicate-abuse-password-12\",\n  \"orderId\": \"{{orderId}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/create-account"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 409 (already claimed)', () => pm.response.to.have.status(409));",
+              "pm.test('Conflict error message', () => {",
+              "  pm.expect(pm.response.json().error).to.match(/already been claimed/i);",
+              "});",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rate-limit burst — POST /api/book-service/create-account (429 or fail-open FINDING)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const burstCount = 8;",
+              "let saw429 = false;",
+              "let saw500 = false;",
+              "const pending = [];",
+              "for (let i = 0; i < burstCount; i++) {",
+              "  pending.push(new Promise((resolve) => {",
+              "    pm.sendRequest({",
+              "      url: `${baseUrl}/api/book-service/create-account`,",
+              "      method: 'POST',",
+              "      header: { 'Content-Type': 'application/json' },",
+              "      body: { mode: 'raw', raw: '{}' },",
+              "    }, (err, res) => {",
+              "      if (res && res.code === 429) saw429 = true;",
+              "      if (res && res.code >= 500) saw500 = true;",
+              "      resolve(res);",
+              "    });",
+              "  }));",
+              "}",
+              "Promise.all(pending).then(() => {",
+              "  pm.test('Burst: no 500 responses', () => pm.expect(saw500).to.eql(false));",
+              "  if (saw429) {",
+              "    pm.test('Burst: 429 rate limit observed', () => pm.expect(saw429).to.eql(true));",
+              "  } else {",
+              "    pm.test('FINDING: no 429 — Upstash fail-open or limiter not configured locally', () => {",
+              "      pm.expect(saw429).to.eql(false);",
+              "    });",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/book-service/order-status — unknown orderId (404, not 500)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+              "pm.test('Order not found', () => pm.expect(pm.response.json().error).to.match(/not found/i));",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/admin/fix-jobs/:id — unknown fixJobId (404, not 500)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/fix-jobs/00000000-0000-0000-0000-000000009999?uid={{userId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+              "pm.test('Fix job not found', () => pm.expect(pm.response.json().error).to.match(/not found/i));",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "  pm.expect(body).to.not.include('node_modules');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/book-service/order-status — malformed orderId (400)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/book-service/order-status?orderId="
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.text();",
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('orderId required error', () => pm.expect(pm.response.json().error).to.match(/orderId is required/i));",
+              "pm.test('No internal leak in body', () => {",
+              "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

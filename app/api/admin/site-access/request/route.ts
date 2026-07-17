@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { isDevTokenExposureEnabled } from '@/lib/firebase/emulator-env';
 import { createSiteAccessRequest } from '@/lib/site-access/create-site-access-request';
 import { withAdmin } from '@/lib/middleware/apiHandler';
 import {
@@ -49,5 +50,6 @@ export const POST = withAdmin(async (req: NextRequest, context) => {
   return NextResponse.json({
     success: true,
     data: { requestId: result.requestId },
+    ...(isDevTokenExposureEnabled() ? { devAccessToken: result.accessToken } : {}),
   });
 });

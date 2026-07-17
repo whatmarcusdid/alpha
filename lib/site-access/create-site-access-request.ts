@@ -25,7 +25,7 @@ export type CreateSiteAccessRequestInput = {
 };
 
 export type CreateSiteAccessRequestResult =
-  | { success: true; requestId: string }
+  | { success: true; requestId: string; accessToken: string }
   | { success: false; status: 404 | 409 | 500; error: string };
 
 export async function createSiteAccessRequest(
@@ -125,7 +125,7 @@ export async function createSiteAccessRequest(
     console.error('[site-access] Failed to send re-request email:', error);
   });
 
-  return { success: true, requestId };
+  return { success: true, requestId, accessToken: rawToken };
 }
 
 export function buildSiteAccessRequestDocForTests(

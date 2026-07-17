@@ -1,0 +1,231 @@
+{
+  "name": "4 — Performance / Load Spot Checks (§4.4)",
+  "description": "Lightweight sanity only — not load testing. Audit timing is asserted in Folder 1 upstream. This folder: short bursts on checkout (validation 400s, fast) and analytics (200s) plus immediate recovery requests. Different from Folder 10 rate-limit burst (429 hunting).",
+  "item": [
+    {
+      "name": "Burst stability — POST /api/book-service/checkout (15× validation, no hang)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+              "  pm.execution.skipRequest();",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const burstSize = 15;",
+              "const hangCeilingMs = 30000;",
+              "let pending = burstSize;",
+              "const stats = [];",
+              "const body = JSON.stringify({",
+              "  sku: 'speed_fix',",
+              "  normalizedEmail: pm.environment.get('testEmail') || 'burst@bookservice.test',",
+              "});",
+              "for (let i = 0; i < burstSize; i++) {",
+              "  pm.sendRequest({",
+              "    url: `${baseUrl}/api/book-service/checkout`,",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: { mode: 'raw', raw: body },",
+              "  }, (err, res) => {",
+              "    stats.push({ code: res && res.code, ms: res && res.responseTime, err: !!err });",
+              "    pending -= 1;",
+              "    if (pending === 0) {",
+              "      const codes = stats.map((s) => s.code);",
+              "      const times = stats.map((s) => s.ms).filter((n) => typeof n === 'number');",
+              "      const min = times.length ? Math.min(...times) : 0;",
+              "      const max = times.length ? Math.max(...times) : 0;",
+              "      const avg = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0;",
+              "      console.log(`[§4.4] checkout burst n=${burstSize} codes=${codes.join(',')} min=${min}ms max=${max}ms avg=${avg.toFixed(0)}ms`);",
+              "      pm.environment.set('perfCheckoutBurstStats', JSON.stringify({ codes, min, max, avg }));",
+              "      pm.test('Checkout burst: no transport errors', () => {",
+              "        stats.forEach((s) => pm.expect(s.err).to.eql(false));",
+              "      });",
+              "      pm.test('Checkout burst: no 500+ responses', () => {",
+              "        stats.forEach((s) => pm.expect(s.code).to.be.below(500));",
+              "      });",
+              "      pm.test('Checkout burst: expected stable 400 validation (missing auditLeadId)', () => {",
+              "        stats.forEach((s) => pm.expect(s.code).to.eql(400));",
+              "      });",
+              "      pm.test('Checkout burst: no request exceeded 30s', () => {",
+              "        times.forEach((ms) => pm.expect(ms).to.be.below(hangCeilingMs));",
+              "      });",
+              "    }",
+              "  });",
+              "}",
+              "pm.test('Checkout burst launched (15 requests)', () => pm.expect(burstSize).to.eql(15));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recovery — POST /api/book-service/checkout (200 after burst)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"auditLeadId\": \"{{auditLeadId}}\",\n  \"sku\": \"speed_fix\",\n  \"normalizedEmail\": \"{{testEmail}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/checkout"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+              "  pm.execution.skipRequest();",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const ms = pm.response.responseTime;",
+              "console.log(`[§4.4] checkout recovery responseTime=${ms}ms code=${pm.response.code}`);",
+              "pm.environment.set('perfCheckoutRecoveryMs', String(ms));",
+              "pm.test('Recovery checkout: status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Recovery checkout: success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "pm.test('Recovery checkout: Stripe URL returned', () => {",
+              "  pm.expect(pm.response.json().data.url).to.match(/^https:\\/\\/checkout\\.stripe\\.com\\//);",
+              "});",
+              "pm.test('Recovery checkout: completes within 30s', () => pm.expect(ms).to.be.below(30000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Burst stability — POST /api/book-service/analytics (15×, no hang)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+              "  pm.execution.skipRequest();",
+              "}",
+              "pm.environment.set('perfAnalyticsBurstMarker', `perf-burst-${Date.now()}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const marker = pm.environment.get('perfAnalyticsBurstMarker');",
+              "const burstSize = 15;",
+              "const hangCeilingMs = 15000;",
+              "let pending = burstSize;",
+              "const stats = [];",
+              "for (let i = 0; i < burstSize; i++) {",
+              "  const body = JSON.stringify({",
+              "    event: 'site_fix_offer_viewed',",
+              "    properties: { smokeMarker: marker, burstIndex: i, source: 'api-smoke-folder-4' },",
+              "  });",
+              "  pm.sendRequest({",
+              "    url: `${baseUrl}/api/book-service/analytics`,",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: { mode: 'raw', raw: body },",
+              "  }, (err, res) => {",
+              "    stats.push({ code: res && res.code, ms: res && res.responseTime, err: !!err });",
+              "    pending -= 1;",
+              "    if (pending === 0) {",
+              "      const codes = stats.map((s) => s.code);",
+              "      const times = stats.map((s) => s.ms).filter((n) => typeof n === 'number');",
+              "      const min = times.length ? Math.min(...times) : 0;",
+              "      const max = times.length ? Math.max(...times) : 0;",
+              "      const avg = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0;",
+              "      console.log(`[§4.4] analytics burst n=${burstSize} codes=${codes.join(',')} min=${min}ms max=${max}ms avg=${avg.toFixed(0)}ms`);",
+              "      pm.environment.set('perfAnalyticsBurstStats', JSON.stringify({ codes, min, max, avg }));",
+              "      pm.test('Analytics burst: no transport errors', () => {",
+              "        stats.forEach((s) => pm.expect(s.err).to.eql(false));",
+              "      });",
+              "      pm.test('Analytics burst: all 200 (stable)', () => {",
+              "        stats.forEach((s) => pm.expect(s.code).to.eql(200));",
+              "      });",
+              "      pm.test('Analytics burst: no 500+ responses', () => {",
+              "        stats.forEach((s) => pm.expect(s.code).to.be.below(500));",
+              "      });",
+              "      pm.test('Analytics burst: no request exceeded 15s', () => {",
+              "        times.forEach((ms) => pm.expect(ms).to.be.below(hangCeilingMs));",
+              "      });",
+              "    }",
+              "  });",
+              "}",
+              "pm.test('Analytics burst launched (15 requests)', () => pm.expect(burstSize).to.eql(15));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recovery — POST /api/book-service/analytics (200 after burst)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event\": \"site_fix_offer_viewed\",\n  \"properties\": {\n    \"smokeMarker\": \"perf-recovery-{{$timestamp}}\",\n    \"source\": \"api-smoke-folder-4-recovery\"\n  }\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/analytics"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+              "  pm.execution.skipRequest();",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const ms = pm.response.responseTime;",
+              "console.log(`[§4.4] analytics recovery responseTime=${ms}ms code=${pm.response.code}`);",
+              "pm.environment.set('perfAnalyticsRecoveryMs', String(ms));",
+              "pm.test('Recovery analytics: status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Recovery analytics: success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "pm.test('Recovery analytics: completes within 15s', () => pm.expect(ms).to.be.below(15000));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

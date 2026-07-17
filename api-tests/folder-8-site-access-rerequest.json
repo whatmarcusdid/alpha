@@ -1,0 +1,506 @@
+{
+  "name": "8 — Site Access Re-Request Flow",
+  "description": "Admin site-access re-request flow. Chains userId/fixJobId/adminToken from Folders 1–7. Verifies Firestore state via emulator-only GET /api/test/smoke/site-access-request. devAccessToken exposed when FIREBASE_AUTH_EMULATOR_HOST is set (same pattern as Folder 5 devResetToken).",
+  "item": [
+    {
+      "name": "POST /api/admin/site-access/request — happy path",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"wp_admin\",\n  \"scopeDescription\": \"API smoke: re-request updated WordPress admin credentials for grant flow.\",\n  \"expiryDays\": 7\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/site-access/request"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "if (!pm.environment.get('userId') || !pm.environment.get('fixJobId') || !pm.environment.get('adminToken')) {",
+              "  throw new Error('userId, fixJobId, adminToken required — run Folders 1–7 first.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+              "pm.test('requestId returned', () => {",
+              "  pm.expect(json.data.requestId).to.be.a('string').and.not.empty;",
+              "  pm.environment.set('siteAccessRequestId', json.data.requestId);",
+              "});",
+              "pm.test('devAccessToken returned in emulator', () => {",
+              "  pm.expect(json.devAccessToken).to.be.a('string').and.not.empty;",
+              "  pm.environment.set('grantedToken', json.devAccessToken);",
+              "});",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const requestId = json.data.requestId;",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: new request is pending', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('pending');",
+              "    pm.expect(res.json().data.tokenUsed).to.eql(false);",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/admin/site-access/request — duplicate pending (409)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"wp_admin\",\n  \"scopeDescription\": \"API smoke: duplicate pending should be rejected by route.\",\n  \"expiryDays\": 7\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/site-access/request"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 409 (pending request already exists)', () => pm.response.to.have.status(409));",
+              "pm.test('Conflict error message', () => {",
+              "  pm.expect(pm.response.json().error).to.eql('A pending access request already exists for this job');",
+              "});",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const requestId = pm.environment.get('siteAccessRequestId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: original pending request unchanged', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('pending');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/site-access/grant — happy path",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{grantedToken}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/site-access/grant"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+              "pm.test('expiresAt returned', () => {",
+              "  pm.expect(json.data.expiresAt).to.be.a('string').and.not.empty;",
+              "  pm.environment.set('siteAccessGrantedExpiresAt', json.data.expiresAt);",
+              "});",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const requestId = pm.environment.get('siteAccessRequestId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: status is granted', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('granted');",
+              "  });",
+              "  pm.test('Firestore: tokenUsed=true after grant', () => {",
+              "    pm.expect(res.json().data.tokenUsed).to.eql(true);",
+              "  });",
+              "  pm.test('Firestore: expiresAt set', () => {",
+              "    pm.expect(res.json().data.expiresAt).to.be.a('string').and.not.empty;",
+              "  });",
+              "  pm.test('Firestore: grantedAt set', () => {",
+              "    pm.expect(res.json().data.grantedAt).to.be.a('string').and.not.empty;",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/site-access/grant — reused token (400)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{grantedToken}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/site-access/grant"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400 on reused token', () => pm.response.to.have.status(400));",
+              "pm.test('Generic invalid/expired error (tokenUsed excludes doc from lookup)', () => {",
+              "  pm.expect(pm.response.json().error).to.eql('Invalid or expired access link');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/admin/site-access/request — fresh request for decline flow",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"hosting_panel\",\n  \"scopeDescription\": \"API smoke: separate pending request for decline flow testing.\",\n  \"expiryDays\": 3\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/site-access/request"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.environment.set('declineSiteAccessRequestId', json.data.requestId);",
+              "pm.environment.set('declineToken', json.devAccessToken);",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${json.data.requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: decline request is pending', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('pending');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/site-access/decline — happy path",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{declineToken}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/site-access/decline"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const requestId = pm.environment.get('declineSiteAccessRequestId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: status is declined', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('declined');",
+              "  });",
+              "  pm.test('Firestore: tokenUsed=true after decline', () => {",
+              "    pm.expect(res.json().data.tokenUsed).to.eql(true);",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/admin/site-access/request — fresh request for revoke flow",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"sftp\",\n  \"scopeDescription\": \"API smoke: pending request for revoke flow after grant.\",\n  \"expiryDays\": 14\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/site-access/request"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.environment.set('revokeSiteAccessRequestId', json.data.requestId);",
+              "pm.environment.set('revokeToken', json.devAccessToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/site-access/grant — grant before revoke",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{revokeToken}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/site-access/grant"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const requestId = pm.environment.get('revokeSiteAccessRequestId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: revoke-path request is granted', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('granted');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/site-access/:requestId/revoke — happy path",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/site-access/{{revokeSiteAccessRequestId}}/revoke"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const requestId = pm.environment.get('revokeSiteAccessRequestId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: status is revoked', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('revoked');",
+              "  });",
+              "  pm.test('Firestore: revokedAt set', () => {",
+              "    pm.expect(res.json().data.revokedAt).to.be.a('string').and.not.empty;",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/admin/site-access/request — fresh request for cron expire flow",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"ftp\",\n  \"scopeDescription\": \"API smoke: granted request to expire via cron job.\",\n  \"expiryDays\": 1\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/site-access/request"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.environment.set('expireSiteAccessRequestId', json.data.requestId);",
+              "pm.environment.set('expireToken', json.devAccessToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/site-access/grant — grant before cron expire",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{expireToken}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/site-access/grant"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const requestId = pm.environment.get('expireSiteAccessRequestId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: expire-path request is granted before backdate', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('granted');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH smoke — backdate expiresAt for cron test",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"backdateExpiresAt\": true\n}"
+        },
+        "url": "{{baseUrl}}/api/test/smoke/site-access-request?requestId={{expireSiteAccessRequestId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('expiresAt backdated to past', () => {",
+              "  pm.expect(json.data.expiresAt).to.be.a('string');",
+              "  pm.expect(new Date(json.data.expiresAt).getTime()).to.be.below(Date.now());",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/cron/expire-access-requests — happy path",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/cron/expire-access-requests"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const cronSecret = pm.environment.get('cronSecret');",
+              "if (cronSecret) {",
+              "  pm.request.headers.add({ key: 'Authorization', value: `Bearer ${cronSecret}` });",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+              "pm.test('expired count is at least 1', () => {",
+              "  pm.expect(json.data.expired).to.be.at.least(1);",
+              "});",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const requestId = pm.environment.get('expireSiteAccessRequestId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: status is expired after cron', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.status).to.eql('expired');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

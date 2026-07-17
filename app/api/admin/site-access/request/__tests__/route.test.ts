@@ -55,6 +55,9 @@ function makePostRequest(body: unknown): NextRequest {
 describe('POST /api/admin/site-access/request', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.stubEnv('FIREBASE_AUTH_EMULATOR_HOST', '127.0.0.1:9099');
+    vi.stubEnv('NODE_ENV', 'development');
     requireAdmin.mockResolvedValue({ userId: 'admin_1', isAdmin: true as const });
     applyRateLimit.mockResolvedValue({
       success: true,
@@ -124,6 +127,7 @@ describe('POST /api/admin/site-access/request', () => {
     createSiteAccessRequest.mockResolvedValueOnce({
       success: true,
       requestId: 'req_1',
+      accessToken: 'dev-token-abc',
     });
 
     const response = await POST(
@@ -138,7 +142,8 @@ describe('POST /api/admin/site-access/request', () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({ success: true, data: { requestId: 'req_1' } });
+    expect(body.data).toEqual({ requestId: 'req_1' });
+    expect(body.devAccessToken).toBe('dev-token-abc');
     expect(createSiteAccessRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         uid: 'user_1',
@@ -167,5 +172,63 @@ describe('POST /api/admin/site-access/request', () => {
     );
 
     expect(response.status).toBe(429);
+  });
+
+  describe('devAccessToken gate', () => {
+    async function postHappyPath() {
+      createSiteAccessRequest.mockResolvedValueOnce({
+        success: true,
+        requestId: 'req_1',
+        accessToken: 'dev-token-abc',
+      });
+
+      const response = await POST(
+        makePostRequest({
+          uid: 'user_1',
+          sessionId: 'session_1',
+          accessType: 'wp_admin',
+          scopeDescription: 'Submitted WordPress credentials no longer work for this job.',
+        })
+      );
+
+      expect(response.status).toBe(200);
+      return response.json() as Promise<{ devAccessToken?: string }>;
+    }
+
+    it('includes devAccessToken when emulator host and non-production NODE_ENV', async () => {
+      vi.stubEnv('FIREBASE_AUTH_EMULATOR_HOST', '127.0.0.1:9099');
+      vi.stubEnv('NODE_ENV', 'development');
+
+      const body = await postHappyPath();
+
+      expect(body.devAccessToken).toBe('dev-token-abc');
+    });
+
+    it('omits devAccessToken when emulator host set but NODE_ENV is production', async () => {
+      vi.stubEnv('FIREBASE_AUTH_EMULATOR_HOST', '127.0.0.1:9099');
+      vi.stubEnv('NODE_ENV', 'production');
+
+      const body = await postHappyPath();
+
+      expect(body.devAccessToken).toBeUndefined();
+    });
+
+    it('omits devAccessToken when NODE_ENV is non-production but emulator host unset', async () => {
+      vi.stubEnv('FIREBASE_AUTH_EMULATOR_HOST', '');
+      vi.stubEnv('NODE_ENV', 'development');
+
+      const body = await postHappyPath();
+
+      expect(body.devAccessToken).toBeUndefined();
+    });
+
+    it('omits devAccessToken when neither emulator host nor non-production NODE_ENV', async () => {
+      vi.stubEnv('FIREBASE_AUTH_EMULATOR_HOST', '');
+      vi.stubEnv('NODE_ENV', 'production');
+
+      const body = await postHappyPath();
+
+      expect(body.devAccessToken).toBeUndefined();
+    });
   });
 });

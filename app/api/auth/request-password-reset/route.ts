@@ -4,6 +4,8 @@ import { sendPasswordResetEmail } from '@/lib/loops';
 import { FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
+import { isDevTokenExposureEnabled } from '@/lib/firebase/emulator-env';
+
 // In-memory rate limit: max 5 requests per hour per email
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -146,6 +148,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'If an account exists with this email, you will receive password reset instructions shortly.',
+      ...(isDevTokenExposureEnabled() ? { devResetToken: token } : {}),
     });
   } catch (error) {
     console.error('[Password Reset] Error:', error);

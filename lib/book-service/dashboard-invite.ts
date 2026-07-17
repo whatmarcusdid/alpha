@@ -61,22 +61,26 @@ export async function processDashboardInvite(
   const dashboardUrl = `${getAppBaseUrl()}/dashboard`;
 
   try {
-    // Dot-path fields only — a nested siteFix object would replace the entire map
-    // and wipe audit pre-fill written by createUserWithSiteFixOrder.
-    await adminDb.collection('users').doc(userId).set(
-      {
-        email: normalizedEmail,
-        'siteFix.sku': sku,
-        'siteFix.entitlements': entitlements,
-        'siteFix.orderId': orderId,
-        'siteFix.inviteStatus': 'sent',
-        'siteFix.invitedAt': FieldValue.serverTimestamp(),
-        'siteFix.acceptedAt': null,
-        'siteFix.purchasedAt': FieldValue.serverTimestamp(),
-        'siteFix.activeFixSessionId': null,
-      },
-      { merge: true }
-    );
+    const userRef = adminDb.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+
+    // Dot-path fields via .update() nest under siteFix without replacing the map.
+    // .set() with dotted keys creates literal top-level field names (Admin SDK quirk).
+    if (!userSnap.exists) {
+      await userRef.set({ email: normalizedEmail }, { merge: true });
+    }
+
+    await userRef.update({
+      email: normalizedEmail,
+      'siteFix.sku': sku,
+      'siteFix.entitlements': entitlements,
+      'siteFix.orderId': orderId,
+      'siteFix.inviteStatus': 'sent',
+      'siteFix.invitedAt': FieldValue.serverTimestamp(),
+      'siteFix.acceptedAt': null,
+      'siteFix.purchasedAt': FieldValue.serverTimestamp(),
+      'siteFix.activeFixSessionId': null,
+    });
   } catch (error) {
     console.error('[dashboard-invite] Failed to write invite status:', error);
     return { success: true };

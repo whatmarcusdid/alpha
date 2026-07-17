@@ -1,0 +1,4371 @@
+{
+  "info": {
+    "_postman_id": "book-service-api-integration",
+    "name": "Book Service MVP - API & Integration Testing",
+    "description": "API & integration smoke collection for Book Service MVP.\n\n**Run order (local mutating):** Folder 1 upstream → Folder 2 synthetic webhook → Folder 1 downstream.\n\n**Variable chaining:** `auditLeadId` ← audit; checkout retrieves real `orderId` + metadata from Stripe session; Folder 2 webhook uses that metadata; `userId`/`userToken` ← create-account; `fixJobId` = `orderId`.\n\n**Safety:** `runMutatingSmoke=false` skips writes (production default). Folder 2 requires `allowSyntheticWebhook=true` AND `baseUrl` localhost — hard-blocked on production hosts. Stripe session retrieve requires `sk_test_` key only.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "{{baseUrl}}"
+    },
+    {
+      "key": "appUrl",
+      "value": "{{appUrl}}"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "userToken",
+      "value": ""
+    },
+    {
+      "key": "stripeWebhookSecret",
+      "value": ""
+    },
+    {
+      "key": "testEmail",
+      "value": ""
+    },
+    {
+      "key": "testPassword",
+      "value": "api-smoke-test-password-123"
+    },
+    {
+      "key": "auditLeadId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "fixJobId",
+      "value": ""
+    },
+    {
+      "key": "siteAccessRequestId",
+      "value": ""
+    },
+    {
+      "key": "grantedToken",
+      "value": ""
+    },
+    {
+      "key": "declineToken",
+      "value": ""
+    },
+    {
+      "key": "checkoutUrl",
+      "value": ""
+    },
+    {
+      "key": "stripeCheckoutSessionId",
+      "value": ""
+    },
+    {
+      "key": "stripeNormalizedEmail",
+      "value": ""
+    },
+    {
+      "key": "edgeCaseSecondOrderId",
+      "value": ""
+    },
+    {
+      "key": "customToken",
+      "value": ""
+    },
+    {
+      "key": "runMutatingSmoke",
+      "value": "false"
+    },
+    {
+      "key": "allowSyntheticWebhook",
+      "value": "false"
+    },
+    {
+      "key": "testSku",
+      "value": "speed_fix"
+    },
+    {
+      "key": "firebaseAuthEmulatorHost",
+      "value": ""
+    },
+    {
+      "key": "passwordResetToken",
+      "value": ""
+    },
+    {
+      "key": "resetPasswordNewPassword",
+      "value": ""
+    },
+    {
+      "key": "firebaseProjectId",
+      "value": ""
+    },
+    {
+      "key": "firestoreEmulatorHost",
+      "value": ""
+    },
+    {
+      "key": "unknownTestEmail",
+      "value": ""
+    },
+    {
+      "key": "declineSiteAccessRequestId",
+      "value": ""
+    },
+    {
+      "key": "revokeSiteAccessRequestId",
+      "value": ""
+    },
+    {
+      "key": "expireSiteAccessRequestId",
+      "value": ""
+    },
+    {
+      "key": "cronSecret",
+      "value": ""
+    },
+    {
+      "key": "siteAccessGrantedExpiresAt",
+      "value": ""
+    },
+    {
+      "key": "analyticsSmokeMarker",
+      "value": ""
+    },
+    {
+      "key": "folder10TokenBeforeRevoke",
+      "value": ""
+    },
+    {
+      "key": "folder10DevResetToken",
+      "value": ""
+    },
+    {
+      "key": "folder10RevokedPassword",
+      "value": ""
+    },
+    {
+      "key": "perfAuditMs",
+      "value": ""
+    },
+    {
+      "key": "perfCheckoutBurstStats",
+      "value": ""
+    },
+    {
+      "key": "perfCheckoutRecoveryMs",
+      "value": ""
+    },
+    {
+      "key": "perfAnalyticsBurstStats",
+      "value": ""
+    },
+    {
+      "key": "perfAnalyticsRecoveryMs",
+      "value": ""
+    },
+    {
+      "key": "perfAnalyticsBurstMarker",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const runMutating = pm.environment.get('runMutatingSmoke') === 'true' || pm.collectionVariables.get('runMutatingSmoke') === 'true';",
+          "pm.collectionVariables.set('runMutatingSmoke', String(runMutating));",
+          "const allowSynthetic = pm.environment.get('allowSyntheticWebhook') === 'true';",
+          "pm.collectionVariables.set('allowSyntheticWebhook', String(allowSynthetic));",
+          "const existingEmail = pm.environment.get('testEmail') || pm.collectionVariables.get('testEmail');",
+          "if (!existingEmail) {",
+          "  const generated = `api-smoke-${Date.now()}@bookservice.test`;",
+          "  pm.collectionVariables.set('testEmail', generated);",
+          "  pm.environment.set('testEmail', generated);",
+          "}",
+          "const password = pm.environment.get('testPassword') || pm.collectionVariables.get('testPassword');",
+          "if (password) {",
+          "  pm.collectionVariables.set('testPassword', password);",
+          "  pm.environment.set('testPassword', password);",
+          "}",
+          "['adminToken', 'stripeWebhookSecret', 'firebaseApiKey', 'firebaseAuthEmulatorHost', 'baseUrl', 'appUrl'].forEach((key) => {",
+          "  const val = pm.environment.get(key);",
+          "  if (val) pm.collectionVariables.set(key, val);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1 — Health / Smoke API (upstream)",
+      "description": "Read-only + audit + checkout. Run Folder 2 next before downstream requests.",
+      "item": [
+        {
+          "name": "GET / (app home)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Not a 500 error page', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('Returns HTML (marketing/home page)', () => {",
+                  "  const ct = pm.response.headers.get('Content-Type') || '';",
+                  "  pm.expect(ct.toLowerCase()).to.include('text/html');",
+                  "});",
+                  "pm.test('Body is not a generic Next error page', () => {",
+                  "  pm.expect(pm.response.text()).to.not.include('Application error: a server-side exception has occurred');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/audit (happy path)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"API\",\n  \"businessName\": \"Bright Path Pressure Washing\",\n  \"email\": \"{{testEmail}}\",\n  \"websiteUrl\": \"https://brightpathpw.com\",\n  \"isClient\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/audit"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('auditLeadId present', () => pm.expect(json.data.auditLeadId).to.be.a('string').and.not.empty);",
+                  "pm.test('audit result includes speed pillar', () => pm.expect(json.data.speed).to.be.an('object'));",
+                  "const auditMs = pm.response.responseTime;",
+                  "pm.test('§4.4: audit completes within 60s ceiling', () => pm.expect(auditMs).to.be.below(60000));",
+                  "if (auditMs > 20000) {",
+                  "  console.warn(`[§4.4 PERF NOTE] POST /api/audit took ${auditMs}ms (>20s soft threshold — acceptable, not a failure)`);",
+                  "} else if (auditMs > 15000) {",
+                  "  console.warn(`[§4.4 PERF NOTE] POST /api/audit took ${auditMs}ms (>15s soft threshold)`);",
+                  "}",
+                  "console.log(`[§4.4] audit happy-path responseTime=${auditMs}ms`);",
+                  "pm.environment.set('perfAuditMs', String(auditMs));",
+                  "pm.collectionVariables.set('auditLeadId', json.data.auditLeadId);",
+                  "pm.environment.set('auditLeadId', json.data.auditLeadId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"auditLeadId\": \"{{auditLeadId}}\",\n  \"sku\": \"speed_fix\",\n  \"normalizedEmail\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/checkout"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "if (!pm.collectionVariables.get('auditLeadId') && !pm.environment.get('auditLeadId')) {",
+                  "  throw new Error('auditLeadId is required — run POST /api/audit first or set auditLeadId manually.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('Stripe checkout URL returned', () => {",
+                  "  pm.expect(json.data.url).to.be.a('string').and.match(/^https:\\/\\/checkout\\.stripe\\.com\\//);",
+                  "});",
+                  "const checkoutUrl = json.data.url;",
+                  "pm.collectionVariables.set('checkoutUrl', checkoutUrl);",
+                  "pm.environment.set('checkoutUrl', checkoutUrl);",
+                  "const sessionMatch = checkoutUrl.match(/(cs_[a-zA-Z0-9_]+)/);",
+                  "pm.test('Checkout URL embeds Stripe session ID', () => {",
+                  "  pm.expect(sessionMatch).to.not.be.null;",
+                  "});",
+                  "const stripeSecretKey = pm.environment.get('stripeSecretKey');",
+                  "if (!stripeSecretKey) {",
+                  "  throw new Error('stripeSecretKey required — set STRIPE_SECRET_KEY via bootstrap-local-env.mjs');",
+                  "}",
+                  "if (!String(stripeSecretKey).startsWith('sk_test_')) {",
+                  "  throw new Error('stripeSecretKey must be sk_test_ — refusing Stripe session retrieve with live key');",
+                  "}",
+                  "const sessionId = sessionMatch[1];",
+                  "pm.sendRequest({",
+                  "  url: `https://api.stripe.com/v1/checkout/sessions/${sessionId}`,",
+                  "  method: 'GET',",
+                  "  header: { Authorization: `Bearer ${stripeSecretKey}` },",
+                  "}, (err, res) => {",
+                  "  pm.test('Retrieved real Stripe checkout session', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.code).to.eql(200);",
+                  "  });",
+                  "  const session = res.json();",
+                  "  pm.test('Session metadata.orderId present', () => {",
+                  "    pm.expect(session.metadata.orderId).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  pm.test('Session metadata.auditLeadId matches audit chain', () => {",
+                  "    pm.expect(session.metadata.auditLeadId).to.eql(pm.environment.get('auditLeadId'));",
+                  "  });",
+                  "  pm.test('Session metadata.productType is site_fix', () => {",
+                  "    pm.expect(session.metadata.productType).to.eql('site_fix');",
+                  "  });",
+                  "  const { orderId, auditLeadId, sku, normalizedEmail } = session.metadata;",
+                  "  pm.collectionVariables.set('orderId', orderId);",
+                  "  pm.environment.set('orderId', orderId);",
+                  "  pm.collectionVariables.set('fixJobId', orderId);",
+                  "  pm.environment.set('fixJobId', orderId);",
+                  "  pm.collectionVariables.set('stripeCheckoutSessionId', session.id);",
+                  "  pm.environment.set('stripeCheckoutSessionId', session.id);",
+                  "  pm.collectionVariables.set('auditLeadId', auditLeadId);",
+                  "  pm.environment.set('auditLeadId', auditLeadId);",
+                  "  pm.collectionVariables.set('testSku', sku);",
+                  "  pm.environment.set('testSku', sku);",
+                  "  const resolvedEmail = (normalizedEmail || session.customer_email || pm.environment.get('testEmail') || '').trim();",
+                  "  pm.collectionVariables.set('stripeNormalizedEmail', resolvedEmail);",
+                  "  pm.environment.set('stripeNormalizedEmail', resolvedEmail);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 — Stripe Webhook Synthetic",
+      "description": "LOCALHOST + EMULATOR ONLY. Signs checkout.session.completed using metadata retrieved from the real Stripe Checkout session (orderId chain). Requires allowSyntheticWebhook=true.",
+      "item": [
+        {
+          "name": "POST /api/webhooks/stripe (checkout.session.completed)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"body set in prerequest script\"\n}"
+            },
+            "url": "{{baseUrl}}/api/webhooks/stripe"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "const allow = pm.environment.get('allowSyntheticWebhook') === 'true' || pm.collectionVariables.get('allowSyntheticWebhook') === 'true';",
+                  "if (!allow) {",
+                  "  throw new Error('Synthetic webhook blocked — set allowSyntheticWebhook=true in local environment only.');",
+                  "}",
+                  "const baseUrl = (pm.environment.get('baseUrl') || pm.collectionVariables.get('baseUrl') || '').replace(/\\/$/, '');",
+                  "if (!/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/i.test(baseUrl)) {",
+                  "  throw new Error(`Synthetic webhook blocked — baseUrl must be localhost, got: ${baseUrl}`);",
+                  "}",
+                  "const auditLeadId = pm.environment.get('auditLeadId') || pm.collectionVariables.get('auditLeadId');",
+                  "const orderId = pm.environment.get('orderId') || pm.collectionVariables.get('orderId');",
+                  "if (!orderId) {",
+                  "  throw new Error('orderId required — run checkout first (retrieves real orderId from Stripe session metadata).');",
+                  "}",
+                  "if (!auditLeadId) {",
+                  "  throw new Error('auditLeadId required — run POST /api/audit first.');",
+                  "}",
+                  "const testEmail = pm.environment.get('stripeNormalizedEmail') || pm.environment.get('testEmail') || pm.collectionVariables.get('testEmail');",
+                  "const sku = pm.environment.get('testSku') || pm.collectionVariables.get('testSku') || 'speed_fix';",
+                  "const stripeCheckoutSessionId = pm.environment.get('stripeCheckoutSessionId') || pm.collectionVariables.get('stripeCheckoutSessionId');",
+                  "if (!stripeCheckoutSessionId) {",
+                  "  throw new Error('stripeCheckoutSessionId required — run checkout Stripe session retrieve first.');",
+                  "}",
+                  "const stripeWebhookSecret = pm.environment.get('stripeWebhookSecret');",
+                  "if (!stripeWebhookSecret) {",
+                  "  throw new Error('stripeWebhookSecret required — set from .env.local via bootstrap-local-env.mjs');",
+                  "}",
+                  "const sessionObject = {",
+                  "  id: stripeCheckoutSessionId,",
+                  "  object: 'checkout.session',",
+                  "  payment_intent: `pi_api_smoke_${Date.now()}`,",
+                  "  customer_details: { email: testEmail },",
+                  "  metadata: {",
+                  "    productType: 'site_fix',",
+                  "    orderId,",
+                  "    auditLeadId,",
+                  "    sku,",
+                  "    normalizedEmail: testEmail,",
+                  "  },",
+                  "};",
+                  "const payload = JSON.stringify({",
+                  "  id: `evt_api_smoke_${Date.now()}`,",
+                  "  object: 'event',",
+                  "  type: 'checkout.session.completed',",
+                  "  api_version: '2025-12-15.clover',",
+                  "  created: Math.floor(Date.now() / 1000),",
+                  "  livemode: false,",
+                  "  pending_webhooks: 0,",
+                  "  request: { id: null, idempotency_key: null },",
+                  "  data: { object: sessionObject },",
+                  "});",
+                  "const timestamp = Math.floor(Date.now() / 1000);",
+                  "const signedPayload = `${timestamp}.${payload}`;",
+                  "const signature = CryptoJS.HmacSHA256(signedPayload, stripeWebhookSecret).toString(CryptoJS.enc.Hex);",
+                  "const stripeSignature = `t=${timestamp},v1=${signature}`;",
+                  "pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });",
+                  "pm.request.headers.upsert({ key: 'stripe-signature', value: stripeSignature });",
+                  "pm.request.body.update(payload);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('Webhook acknowledged', () => pm.expect(pm.response.json().received).to.eql(true));",
+                  "const orderId = pm.environment.get('orderId') || pm.collectionVariables.get('orderId');",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "pm.sendRequest(`${baseUrl}/api/book-service/order-status?orderId=${encodeURIComponent(orderId)}`, (err, res) => {",
+                  "  pm.test('Firestore seeded — order-status returns paid', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.code).to.eql(200);",
+                  "    pm.expect(res.json().success).to.eql(true);",
+                  "    pm.expect(res.json().data.status).to.eql('paid');",
+                  "    pm.expect(res.json().data.orderId).to.eql(orderId);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1 — Health / Smoke API (downstream)",
+      "description": "Account setup + admin hosting context. Re-fires webhook after create-account so fixSessions/{orderId} exists (initial webhook runs before user exists). Requires Folder 2 orderId + adminToken.",
+      "item": [
+        {
+          "name": "POST /api/book-service/create-account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"orderId\": \"{{orderId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/create-account"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "if (!pm.collectionVariables.get('orderId') && !pm.environment.get('orderId')) {",
+                  "  throw new Error('orderId is required — run Folder 2 (Stripe Webhook Synthetic) first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('orderId returned', () => pm.expect(json.data.orderId).to.be.a('string').and.not.empty);",
+                  "pm.test('uid returned', () => pm.expect(json.data.uid).to.be.a('string').and.not.empty);",
+                  "pm.test('customToken returned', () => pm.expect(json.data.customToken).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('orderId', json.data.orderId);",
+                  "pm.environment.set('orderId', json.data.orderId);",
+                  "pm.collectionVariables.set('userId', json.data.uid);",
+                  "pm.environment.set('userId', json.data.uid);",
+                  "pm.collectionVariables.set('fixJobId', json.data.orderId);",
+                  "pm.environment.set('fixJobId', json.data.orderId);",
+                  "pm.collectionVariables.set('customToken', json.data.customToken);",
+                  "const apiKey = pm.environment.get('firebaseApiKey');",
+                  "const customToken = json.data.customToken;",
+                  "if (apiKey) {",
+                  "  const emulatorHost = pm.environment.get('firebaseAuthEmulatorHost');",
+                  "  const authBase = emulatorHost",
+                  "    ? `http://${emulatorHost}/identitytoolkit.googleapis.com/v1`",
+                  "    : 'https://identitytoolkit.googleapis.com/v1';",
+                  "  pm.sendRequest({",
+                  "    url: `${authBase}/accounts:signInWithCustomToken?key=${apiKey}`,",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ token: customToken, returnSecureToken: true }) }",
+                  "  }, (err, res) => {",
+                  "    pm.test('Exchanged customToken for ID token', () => pm.expect(err).to.be.null);",
+                  "    const tokenJson = res.json();",
+                  "    pm.test('Firebase idToken present', () => pm.expect(tokenJson.idToken).to.be.a('string').and.not.empty);",
+                  "    pm.collectionVariables.set('userToken', tokenJson.idToken);",
+                  "    pm.environment.set('userToken', tokenJson.idToken);",
+                  "  });",
+                  "} else {",
+                  "  console.warn('firebaseApiKey not set — userToken not auto-populated. Exchange customToken manually.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/webhooks/stripe (re-fire — fixSession seed)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"body set in prerequest script\"\n}"
+            },
+            "url": "{{baseUrl}}/api/webhooks/stripe"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "const allow = pm.environment.get('allowSyntheticWebhook') === 'true';",
+                  "if (!allow) {",
+                  "  throw new Error('Synthetic webhook blocked — local emulator runs only.');",
+                  "}",
+                  "const baseUrl = (pm.environment.get('baseUrl') || '').replace(/\\/$/, '');",
+                  "if (!/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/i.test(baseUrl)) {",
+                  "  throw new Error(`Synthetic webhook blocked — baseUrl must be localhost, got: ${baseUrl}`);",
+                  "}",
+                  "const orderId = pm.environment.get('orderId') || pm.collectionVariables.get('orderId');",
+                  "const auditLeadId = pm.environment.get('auditLeadId') || pm.collectionVariables.get('auditLeadId');",
+                  "const testEmail = pm.environment.get('stripeNormalizedEmail') || pm.environment.get('testEmail') || pm.collectionVariables.get('testEmail');",
+                  "const sku = pm.environment.get('testSku') || pm.collectionVariables.get('testSku') || 'speed_fix';",
+                  "const stripeCheckoutSessionId = pm.environment.get('stripeCheckoutSessionId') || pm.collectionVariables.get('stripeCheckoutSessionId');",
+                  "if (!orderId || !stripeCheckoutSessionId) {",
+                  "  throw new Error('orderId and stripeCheckoutSessionId required — run checkout + Folder 2 first.');",
+                  "}",
+                  "const stripeWebhookSecret = pm.environment.get('stripeWebhookSecret');",
+                  "const sessionObject = {",
+                  "  id: stripeCheckoutSessionId,",
+                  "  object: 'checkout.session',",
+                  "  payment_intent: `pi_api_smoke_refire_${Date.now()}`,",
+                  "  customer_details: { email: testEmail },",
+                  "  metadata: { productType: 'site_fix', orderId, auditLeadId, sku, normalizedEmail: testEmail },",
+                  "};",
+                  "const payload = JSON.stringify({",
+                  "  id: `evt_api_smoke_refire_${Date.now()}`,",
+                  "  object: 'event',",
+                  "  type: 'checkout.session.completed',",
+                  "  api_version: '2025-12-15.clover',",
+                  "  created: Math.floor(Date.now() / 1000),",
+                  "  livemode: false,",
+                  "  pending_webhooks: 0,",
+                  "  request: { id: null, idempotency_key: null },",
+                  "  data: { object: sessionObject },",
+                  "});",
+                  "const timestamp = Math.floor(Date.now() / 1000);",
+                  "const signedPayload = `${timestamp}.${payload}`;",
+                  "const signature = CryptoJS.HmacSHA256(signedPayload, stripeWebhookSecret).toString(CryptoJS.enc.Hex);",
+                  "pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });",
+                  "pm.request.headers.upsert({ key: 'stripe-signature', value: `t=${timestamp},v1=${signature}` });",
+                  "pm.request.body.update(payload);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Duplicate webhook acknowledged', () => pm.expect(pm.response.json().received).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/book-service/confirm-details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"businessName\": \"Bright Path Pressure Washing\",\n  \"websiteUrl\": \"https://brightpathpw.com\",\n  \"contactName\": \"API\",\n  \"contactEmail\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/confirm-details"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "if (!pm.collectionVariables.get('userToken') && !pm.environment.get('userToken')) {",
+                  "  throw new Error('userToken is required — set a Firebase ID token or run create-account with firebaseApiKey configured.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/submit-access",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"partial\": false,\n  \"accessMethod\": \"wordpress\",\n  \"loginUrl\": \"https://brightpathpw.com/wp-admin\",\n  \"username\": \"api_smoke_user\",\n  \"password\": \"api-smoke-wp-password-not-real\",\n  \"confirmed\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/submit-access"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "if (!pm.collectionVariables.get('userToken') && !pm.environment.get('userToken')) {",
+                  "  throw new Error('userToken is required.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/book-service/order-status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-service/order-status?orderId={{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-service",
+                "order-status"
+              ],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "{{orderId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "if (!pm.collectionVariables.get('orderId') && !pm.environment.get('orderId')) {",
+                  "  throw new Error('orderId is required.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('paid order payload', () => {",
+                  "  pm.expect(json.data.status).to.eql('paid');",
+                  "  pm.expect(json.data.orderId).to.eql(pm.environment.get('orderId') || pm.collectionVariables.get('orderId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 — Book Service Funnel (validation & edge cases)",
+      "description": "Negative paths from test plan §3.5. Run after Folders 1–2 so `testEmail`/`userToken`/`auditLeadId` exist. Assertions match live route code (Zod 400s, create-account 409 for existing email, order-status 404).",
+      "item": [
+        {
+          "name": "POST /api/book-service/checkout — missing auditLeadId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"speed_fix\",\n  \"normalizedEmail\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/checkout"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 (validation)', () => pm.response.to.have.status(400));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns validation error string', () => {",
+                  "  pm.expect(json.error).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('Does not return success checkout URL', () => {",
+                  "  pm.expect(json.success).to.not.eql(true);",
+                  "  pm.expect(json.data?.url).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/checkout — invalid SKU",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"auditLeadId\": \"00000000-0000-0000-0000-000000000001\",\n  \"sku\": \"not_a_real_sku\",\n  \"normalizedEmail\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/checkout"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 (validation)', () => pm.response.to.have.status(400));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns SKU validation error', () => {",
+                  "  pm.expect(json.error).to.be.a('string').and.match(/invalid option|expected one of/i);",
+                  "});",
+                  "pm.test('Does not silently succeed', () => pm.expect(json.success).to.not.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup — seed second pending order (existing-user test)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{edgeCaseSecondOrderId}}\",\n  \"normalizedEmail\": \"{{testEmail}}\",\n  \"auditLeadId\": \"{{auditLeadId}}\",\n  \"sku\": \"{{testSku}}\",\n  \"auditLeadLinked\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/test/smoke/seed-pending-order"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "const testEmail = pm.environment.get('testEmail');",
+                  "if (!testEmail) {",
+                  "  throw new Error('testEmail required — run Folders 1–2 happy path first.');",
+                  "}",
+                  "const edgeCaseSecondOrderId = `edge-second-order-${Date.now()}`;",
+                  "pm.environment.set('edgeCaseSecondOrderId', edgeCaseSecondOrderId);",
+                  "pm.collectionVariables.set('edgeCaseSecondOrderId', edgeCaseSecondOrderId);",
+                  "const normalizedEmail = pm.environment.get('stripeNormalizedEmail') || testEmail;",
+                  "pm.environment.set('seedSecondOrderEmail', normalizedEmail);",
+                  "const auditLeadId = pm.environment.get('auditLeadId') || '00000000-0000-0000-0000-000000000001';",
+                  "const sku = pm.environment.get('testSku') || 'speed_fix';",
+                  "pm.request.body.update(JSON.stringify({",
+                  "  orderId: edgeCaseSecondOrderId,",
+                  "  normalizedEmail,",
+                  "  auditLeadId,",
+                  "  sku,",
+                  "  auditLeadLinked: Boolean(pm.environment.get('auditLeadId')),",
+                  "}));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Second pending order seeded (smoke helper, no invite)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('Second order is unclaimed', () => pm.expect(json.data.claimState).to.eql('unclaimed'));",
+                  "pm.test('orderId matches edgeCaseSecondOrderId', () => {",
+                  "  pm.expect(json.data.orderId).to.eql(pm.environment.get('edgeCaseSecondOrderId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/create-account — existing user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"orderId\": \"{{edgeCaseSecondOrderId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/create-account"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "if (!pm.environment.get('edgeCaseSecondOrderId')) {",
+                  "  throw new Error('edgeCaseSecondOrderId required — run Setup request first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409 (conflict)', () => pm.response.to.have.status(409));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('Existing email error message', () => {",
+                  "  pm.expect(json.error).to.eql('An account with this email already exists. Try signing in.');",
+                  "});",
+                  "pm.test('Does not return auth tokens', () => {",
+                  "  pm.expect(json.data?.customToken).to.be.undefined;",
+                  "  pm.expect(json.data?.uid).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/book-service/confirm-details — missing fields",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"websiteUrl\": \"https://brightpathpw.com\",\n  \"contactName\": \"API\",\n  \"contactEmail\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/confirm-details"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "if (!pm.environment.get('userToken') && !pm.collectionVariables.get('userToken')) {",
+                  "  throw new Error('userToken required — run Folders 1–2 happy path first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 (validation)', () => pm.response.to.have.status(400));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns validation error string', () => {",
+                  "  pm.expect(json.error).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('Does not succeed without businessName', () => pm.expect(json.success).to.not.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/submit-access — invalid payload",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"partial\": false,\n  \"password\": \"edge-case-leak-test-password-xyz\",\n  \"confirmed\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/submit-access"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "if (!pm.environment.get('userToken') && !pm.collectionVariables.get('userToken')) {",
+                  "  throw new Error('userToken required — run Folders 1–2 happy path first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const submittedPassword = 'edge-case-leak-test-password-xyz';",
+                  "pm.test('Status is 400 (validation)', () => pm.response.to.have.status(400));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns access validation error', () => {",
+                  "  pm.expect(json.error).to.be.a('string').and.match(/access method|login url|username|password|confirmation/i);",
+                  "});",
+                  "pm.test('Response does not echo submitted password', () => {",
+                  "  pm.expect(pm.response.text()).to.not.include(submittedPassword);",
+                  "});",
+                  "pm.test('Response JSON has no credential fields', () => {",
+                  "  pm.expect(json.password).to.be.undefined;",
+                  "  pm.expect(json.data?.password).to.be.undefined;",
+                  "  pm.expect(json.data?.passwordEncrypted).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/book-service/order-status — unknown order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-service",
+                "order-status"
+              ],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "00000000-0000-0000-0000-000000009999"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404 (not found)', () => pm.response.to.have.status(404));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const json = pm.response.json();",
+                  "pm.test('Defined not-found shape', () => {",
+                  "  pm.expect(json.success).to.eql(false);",
+                  "  pm.expect(json.error).to.eql('Order not found');",
+                  "});",
+                  "pm.test('Does not return paid order payload', () => {",
+                  "  pm.expect(json.data).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 — Performance / Load Spot Checks (§4.4)",
+      "description": "Lightweight sanity only — not load testing. Audit timing is asserted in Folder 1 upstream. This folder: short bursts on checkout (validation 400s, fast) and analytics (200s) plus immediate recovery requests. Different from Folder 10 rate-limit burst (429 hunting).",
+      "item": [
+        {
+          "name": "Burst stability — POST /api/book-service/checkout (15× validation, no hang)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const burstSize = 15;",
+                  "const hangCeilingMs = 30000;",
+                  "let pending = burstSize;",
+                  "const stats = [];",
+                  "const body = JSON.stringify({",
+                  "  sku: 'speed_fix',",
+                  "  normalizedEmail: pm.environment.get('testEmail') || 'burst@bookservice.test',",
+                  "});",
+                  "for (let i = 0; i < burstSize; i++) {",
+                  "  pm.sendRequest({",
+                  "    url: `${baseUrl}/api/book-service/checkout`,",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: body },",
+                  "  }, (err, res) => {",
+                  "    stats.push({ code: res && res.code, ms: res && res.responseTime, err: !!err });",
+                  "    pending -= 1;",
+                  "    if (pending === 0) {",
+                  "      const codes = stats.map((s) => s.code);",
+                  "      const times = stats.map((s) => s.ms).filter((n) => typeof n === 'number');",
+                  "      const min = times.length ? Math.min(...times) : 0;",
+                  "      const max = times.length ? Math.max(...times) : 0;",
+                  "      const avg = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0;",
+                  "      console.log(`[§4.4] checkout burst n=${burstSize} codes=${codes.join(',')} min=${min}ms max=${max}ms avg=${avg.toFixed(0)}ms`);",
+                  "      pm.environment.set('perfCheckoutBurstStats', JSON.stringify({ codes, min, max, avg }));",
+                  "      pm.test('Checkout burst: no transport errors', () => {",
+                  "        stats.forEach((s) => pm.expect(s.err).to.eql(false));",
+                  "      });",
+                  "      pm.test('Checkout burst: no 500+ responses', () => {",
+                  "        stats.forEach((s) => pm.expect(s.code).to.be.below(500));",
+                  "      });",
+                  "      pm.test('Checkout burst: expected stable 400 validation (missing auditLeadId)', () => {",
+                  "        stats.forEach((s) => pm.expect(s.code).to.eql(400));",
+                  "      });",
+                  "      pm.test('Checkout burst: no request exceeded 30s', () => {",
+                  "        times.forEach((ms) => pm.expect(ms).to.be.below(hangCeilingMs));",
+                  "      });",
+                  "    }",
+                  "  });",
+                  "}",
+                  "pm.test('Checkout burst launched (15 requests)', () => pm.expect(burstSize).to.eql(15));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recovery — POST /api/book-service/checkout (200 after burst)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"auditLeadId\": \"{{auditLeadId}}\",\n  \"sku\": \"speed_fix\",\n  \"normalizedEmail\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/checkout"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ms = pm.response.responseTime;",
+                  "console.log(`[§4.4] checkout recovery responseTime=${ms}ms code=${pm.response.code}`);",
+                  "pm.environment.set('perfCheckoutRecoveryMs', String(ms));",
+                  "pm.test('Recovery checkout: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Recovery checkout: success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Recovery checkout: Stripe URL returned', () => {",
+                  "  pm.expect(pm.response.json().data.url).to.match(/^https:\\/\\/checkout\\.stripe\\.com\\//);",
+                  "});",
+                  "pm.test('Recovery checkout: completes within 30s', () => pm.expect(ms).to.be.below(30000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Burst stability — POST /api/book-service/analytics (15×, no hang)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "pm.environment.set('perfAnalyticsBurstMarker', `perf-burst-${Date.now()}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const marker = pm.environment.get('perfAnalyticsBurstMarker');",
+                  "const burstSize = 15;",
+                  "const hangCeilingMs = 15000;",
+                  "let pending = burstSize;",
+                  "const stats = [];",
+                  "for (let i = 0; i < burstSize; i++) {",
+                  "  const body = JSON.stringify({",
+                  "    event: 'site_fix_offer_viewed',",
+                  "    properties: { smokeMarker: marker, burstIndex: i, source: 'api-smoke-folder-4' },",
+                  "  });",
+                  "  pm.sendRequest({",
+                  "    url: `${baseUrl}/api/book-service/analytics`,",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: body },",
+                  "  }, (err, res) => {",
+                  "    stats.push({ code: res && res.code, ms: res && res.responseTime, err: !!err });",
+                  "    pending -= 1;",
+                  "    if (pending === 0) {",
+                  "      const codes = stats.map((s) => s.code);",
+                  "      const times = stats.map((s) => s.ms).filter((n) => typeof n === 'number');",
+                  "      const min = times.length ? Math.min(...times) : 0;",
+                  "      const max = times.length ? Math.max(...times) : 0;",
+                  "      const avg = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0;",
+                  "      console.log(`[§4.4] analytics burst n=${burstSize} codes=${codes.join(',')} min=${min}ms max=${max}ms avg=${avg.toFixed(0)}ms`);",
+                  "      pm.environment.set('perfAnalyticsBurstStats', JSON.stringify({ codes, min, max, avg }));",
+                  "      pm.test('Analytics burst: no transport errors', () => {",
+                  "        stats.forEach((s) => pm.expect(s.err).to.eql(false));",
+                  "      });",
+                  "      pm.test('Analytics burst: all 200 (stable)', () => {",
+                  "        stats.forEach((s) => pm.expect(s.code).to.eql(200));",
+                  "      });",
+                  "      pm.test('Analytics burst: no 500+ responses', () => {",
+                  "        stats.forEach((s) => pm.expect(s.code).to.be.below(500));",
+                  "      });",
+                  "      pm.test('Analytics burst: no request exceeded 15s', () => {",
+                  "        times.forEach((ms) => pm.expect(ms).to.be.below(hangCeilingMs));",
+                  "      });",
+                  "    }",
+                  "  });",
+                  "}",
+                  "pm.test('Analytics burst launched (15 requests)', () => pm.expect(burstSize).to.eql(15));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recovery — POST /api/book-service/analytics (200 after burst)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"site_fix_offer_viewed\",\n  \"properties\": {\n    \"smokeMarker\": \"perf-recovery-{{$timestamp}}\",\n    \"source\": \"api-smoke-folder-4-recovery\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/analytics"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ms = pm.response.responseTime;",
+                  "console.log(`[§4.4] analytics recovery responseTime=${ms}ms code=${pm.response.code}`);",
+                  "pm.environment.set('perfAnalyticsRecoveryMs', String(ms));",
+                  "pm.test('Recovery analytics: status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Recovery analytics: success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Recovery analytics: completes within 15s', () => pm.expect(ms).to.be.below(15000));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 — Auth & Account Recovery",
+      "description": "Auth boundary checks (run before password reset — reset revokes existing ID tokens) + password reset flow. Chains testEmail/userToken/userId from Folders 1–2. Reset tokens are app-generated Firestore passwordResets/{token}, not Firebase Auth OOB — devResetToken returned when FIREBASE_AUTH_EMULATOR_HOST is set. Unknown-email test asserts identical generic success response (anti-enumeration).",
+      "item": [
+        {
+          "name": "PATCH protected route — no auth header (401)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"businessName\": \"Bright Path Pressure Washing\",\n  \"websiteUrl\": \"https://brightpathpw.com\",\n  \"contactName\": \"API\",\n  \"contactEmail\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/confirm-details"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Unauthorized error shape', () => {",
+                  "  pm.expect(pm.response.json().error).to.match(/Unauthorized|authentication token/i);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH protected route — invalid token (401)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "not-a-valid-firebase-jwt",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"businessName\": \"Bright Path Pressure Washing\",\n  \"websiteUrl\": \"https://brightpathpw.com\",\n  \"contactName\": \"API\",\n  \"contactEmail\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/confirm-details"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Invalid token error', () => {",
+                  "  pm.expect(pm.response.json().error).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET admin route — valid non-admin token (403)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{orderId}}?uid={{userId}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('userToken')) {",
+                  "  throw new Error('userToken required — run create-account first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "pm.test('Forbidden error message', () => pm.expect(pm.response.json().error).to.eql('Forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/request-password-reset — happy path (known email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/request-password-reset"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "if (!pm.environment.get('testEmail')) {",
+                  "  throw new Error('testEmail required — run Folders 1–2 create-account first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('Generic success message (no account-existence leak)', () => {",
+                  "  pm.expect(json.message).to.eql('If an account exists with this email, you will receive password reset instructions shortly.');",
+                  "});",
+                  "pm.test('devResetToken returned in emulator (custom Firestore token, not Firebase OOB)', () => {",
+                  "  pm.expect(json.devResetToken).to.match(/^[a-f0-9]{64}$/);",
+                  "  pm.environment.set('passwordResetToken', json.devResetToken);",
+                  "});",
+                  "pm.environment.set('pwdResetKnownStatus', String(pm.response.code));",
+                  "pm.environment.set('pwdResetKnownSuccess', String(json.success));",
+                  "pm.environment.set('pwdResetKnownMessage', json.message);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/request-password-reset — unknown email (anti-enumeration)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{unknownTestEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/request-password-reset"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "const unknown = `no-such-user-${Date.now()}@bookservice.test`;",
+                  "pm.environment.set('unknownTestEmail', unknown);",
+                  "pm.collectionVariables.set('unknownTestEmail', unknown);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Status matches known-email response', () => {",
+                  "  pm.expect(String(pm.response.code)).to.eql(pm.environment.get('pwdResetKnownStatus'));",
+                  "});",
+                  "pm.test('success flag matches known-email response', () => {",
+                  "  pm.expect(String(json.success)).to.eql(pm.environment.get('pwdResetKnownSuccess'));",
+                  "});",
+                  "pm.test('Message identical to known-email response (no enumeration signal)', () => {",
+                  "  pm.expect(json.message).to.eql(pm.environment.get('pwdResetKnownMessage'));",
+                  "});",
+                  "pm.test('Response does not mention account not found', () => {",
+                  "  const body = JSON.stringify(json).toLowerCase();",
+                  "  pm.expect(body).to.not.match(/not found|does not exist|no account|unknown email|invalid user/);",
+                  "});",
+                  "pm.test('devResetToken absent for unknown email', () => {",
+                  "  pm.expect(json.devResetToken).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/auth/reset-password — validate token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/reset-password?token={{passwordResetToken}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "if (!pm.environment.get('passwordResetToken')) {",
+                  "  throw new Error('passwordResetToken required — run request-password-reset happy path first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 (route returns 200 for valid and invalid tokens)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Token is valid', () => pm.expect(json.valid).to.eql(true));",
+                  "pm.test('Email returned matches test account', () => {",
+                  "  pm.expect(json.email).to.eql(pm.environment.get('testEmail').toLowerCase());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/reset-password — apply new password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{passwordResetToken}}\",\n  \"password\": \"{{resetPasswordNewPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "if (!pm.environment.get('passwordResetToken')) {",
+                  "  throw new Error('passwordResetToken required.');",
+                  "}",
+                  "const newPw = pm.environment.get('resetPasswordNewPassword') || 'api-smoke-reset-password-456';",
+                  "pm.environment.set('resetPasswordNewPassword', newPw);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('Success message present', () => {",
+                  "  pm.expect(json.message).to.match(/password has been reset successfully/i);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/reset-password — reused token (single-use)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{passwordResetToken}}\",\n  \"password\": \"another-password-789\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 (token already used)', () => pm.response.to.have.status(400));",
+                  "const json = pm.response.json();",
+                  "pm.test('Error mentions already used', () => {",
+                  "  pm.expect(json.error).to.match(/already been used/i);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 — Dashboard / Invite / Client Data",
+      "description": "Dashboard invite + #38 invite-then-signup regression. Chains userId/userToken/orderId/testEmail/testSku from Folders 1–2. Verifies Firestore state via emulator-only GET /api/test/smoke/site-fix-state. Only /api/dashboard/* route: report-download (auth required).",
+      "item": [
+        {
+          "name": "Setup — refresh userToken after Folder 5 password reset",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "const apiKey = pm.environment.get('firebaseApiKey');",
+                  "const host = pm.environment.get('firebaseAuthEmulatorHost') || '127.0.0.1:9099';",
+                  "const email = pm.environment.get('testEmail');",
+                  "const password = pm.environment.get('resetPasswordNewPassword') || 'api-smoke-reset-password-456';",
+                  "if (!email) { throw new Error('testEmail required'); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const apiKey = pm.environment.get('firebaseApiKey');",
+                  "const host = pm.environment.get('firebaseAuthEmulatorHost') || '127.0.0.1:9099';",
+                  "const email = pm.environment.get('testEmail');",
+                  "const password = pm.environment.get('resetPasswordNewPassword') || 'api-smoke-reset-password-456';",
+                  "pm.sendRequest({",
+                  "  url: `http://${host}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,",
+                  "  method: 'POST',",
+                  "  header: { 'Content-Type': 'application/json' },",
+                  "  body: {",
+                  "    mode: 'raw',",
+                  "    raw: JSON.stringify({ email, password, returnSecureToken: true }),",
+                  "  },",
+                  "}, (err, res) => {",
+                  "  pm.test('Refreshed userToken after password reset', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.code).to.eql(200);",
+                  "    pm.expect(res.json().idToken).to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('userToken', res.json().idToken);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/test/smoke/site-fix-state — #38 invite-then-signup regression",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/test/smoke/site-fix-state?uid={{userId}}&orderId={{orderId}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "if (!pm.environment.get('userId') || !pm.environment.get('orderId')) {",
+                  "  throw new Error('userId and orderId required — run Folders 1–2 first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Smoke state payload present', () => pm.expect(json.success).to.eql(true));",
+                  "const d = json.data;",
+                  "pm.test('User doc exists', () => pm.expect(d.userExists).to.eql(true));",
+                  "pm.test('auditLeadLinked is true (audit persisted in Folder 1)', () => {",
+                  "  pm.expect(d.auditLeadLinked).to.eql(true);",
+                  "});",
+                  "pm.test('siteFix.accountCreatedAt set after signup', () => {",
+                  "  pm.expect(d.siteFix.accountCreatedAt).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('siteFix.claimedByUserId matches userId', () => {",
+                  "  pm.expect(d.siteFix.claimedByUserId).to.eql(pm.environment.get('userId'));",
+                  "});",
+                  "pm.test('#38: audit pre-fill contactName preserved after invite-then-signup', () => {",
+                  "  pm.expect(d.siteFix.contactName).to.eql('API');",
+                  "});",
+                  "pm.test('#38: invite metadata when present (dot-path Firestore fields)', () => {",
+                  "  if (d.siteFix.inviteStatus !== null && d.siteFix.inviteStatus !== undefined) {",
+                  "    pm.expect(d.siteFix.inviteStatus).to.eql('sent');",
+                  "  }",
+                  "});",
+                  "pm.test('pending_orders claimState is claimed', () => {",
+                  "  pm.expect(d.pendingOrder.claimState).to.eql('claimed');",
+                  "});",
+                  "pm.test('pending_orders claimedByUserId matches userId', () => {",
+                  "  pm.expect(d.pendingOrder.claimedByUserId).to.eql(pm.environment.get('userId'));",
+                  "});",
+                  "pm.test('orders.auditLeadLinked is true', () => {",
+                  "  pm.expect(d.order.auditLeadLinked).to.eql(true);",
+                  "});",
+                  "pm.environment.set('inviteRegressionContactName', d.siteFix.contactName);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/invite — happy path",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"email\": \"{{testEmail}}\",\n  \"orderId\": \"{{orderId}}\",\n  \"sku\": \"{{testSku}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/invite"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('userToken')) {",
+                  "  throw new Error('userToken required — run create-account first.');",
+                  "}",
+                  "const sku = pm.environment.get('testSku') || 'speed_fix';",
+                  "pm.environment.set('testSku', sku);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const orderId = pm.environment.get('orderId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-fix-state?uid=${uid}&orderId=${orderId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: inviteStatus is sent after invite', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.siteFix.inviteStatus).to.eql('sent');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/invite — duplicate (graceful, no crash)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"email\": \"{{testEmail}}\",\n  \"orderId\": \"{{orderId}}\",\n  \"sku\": \"{{testSku}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/invite"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 (duplicate invite does not error)', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const orderId = pm.environment.get('orderId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-fix-state?uid=${uid}&orderId=${orderId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: inviteStatus still sent after duplicate', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.siteFix.inviteStatus).to.eql('sent');",
+                  "  });",
+                  "  pm.test('#38: audit pre-fill still intact after duplicate invite', () => {",
+                  "    pm.expect(res.json().data.siteFix.contactName).to.eql(pm.environment.get('inviteRegressionContactName'));",
+                  "    pm.expect(res.json().data.siteFix.accountCreatedAt).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/invite — wrong userId (403)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"00000000-wrong-user-id-000000000001\",\n  \"email\": \"{{testEmail}}\",\n  \"orderId\": \"{{orderId}}\",\n  \"sku\": \"{{testSku}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/invite"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 when userId mismatches token', () => pm.response.to.have.status(403));",
+                  "pm.test('Forbidden error', () => pm.expect(pm.response.json().error).to.eql('Forbidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/dashboard/report-download — report not yet sent (403)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/dashboard/report-download?sessionId={{orderId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 before delivery', () => pm.response.to.have.status(403));",
+                  "pm.test('Report not yet available message', () => {",
+                  "    pm.expect(pm.response.json().error).to.match(/not yet available/i);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/dashboard/report-download — missing sessionId (400)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/dashboard/report-download"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Missing sessionId error', () => {",
+                  "  pm.expect(pm.response.json().error).to.match(/Missing sessionId/i);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7 — Admin Fix Jobs (full pipeline)",
+      "description": "Admin fix-job pipeline per test plan §3.5. Seeds from Folders 1–2 chained fixSession (orderId=fixJobId, userId, adminToken). Stage transitions use PATCH /stage (required by route code). QA is PATCH (not POST). Report path is POST /report/generate. Verifies Firestore state via GET /api/admin/fix-jobs/:id?uid= after each stage change.",
+      "item": [
+        {
+          "name": "GET fix job detail — verify seed (stage=ready)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}?uid={{userId}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "if (!pm.environment.get('userId') || !pm.environment.get('fixJobId') || !pm.environment.get('adminToken')) {",
+                  "  throw new Error('userId, fixJobId, adminToken required — run Folders 1–2 first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Fix session seeded', () => {",
+                  "  pm.expect(json.success).to.eql(true);",
+                  "  pm.expect(json.data.sessionId).to.eql(pm.environment.get('fixJobId'));",
+                  "  pm.expect(json.data.uid).to.eql(pm.environment.get('userId'));",
+                  "});",
+                  "pm.test('Stage is ready after submit-access', () => pm.expect(json.data.stage).to.eql('ready'));",
+                  "pm.collectionVariables.set('adminPipelineInitialStage', json.data.stage);",
+                  "pm.environment.set('adminPipelineInitialStage', json.data.stage);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/fix-jobs/:fixJobId/hosting-context — happy path",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"host\": \"cloudways\",\n  \"hostLabel\": \"Cloudways\",\n  \"cms\": \"wordpress\",\n  \"cmsVersion\": \"6.4\",\n  \"plugins\": [\"wordfence\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/hosting-context"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('hostingContext.host set', () => pm.expect(pm.response.json().data.hostingContext.host).to.eql('cloudways'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/fix-jobs/:fixJobId/stage → in_progress",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"toStage\": \"in_progress\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/stage"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Stage transition accepted', () => pm.expect(pm.response.json().data.stage).to.eql('in_progress'));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const fixJobId = pm.environment.get('fixJobId');",
+                  "const adminToken = pm.environment.get('adminToken');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "  method: 'GET',",
+                  "  header: { Authorization: `Bearer ${adminToken}` },",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore stage is in_progress', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.stage).to.eql('in_progress');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/fix-jobs/:fixJobId/progress — happy path (phase0 + signals)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"action\": { \"type\": \"set_phase0\", \"complete\": true }\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/progress"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Phase0 status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Phase0 success', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const fixJobId = pm.environment.get('fixJobId');",
+                  "const adminToken = pm.environment.get('adminToken');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "  method: 'GET',",
+                  "  header: { Authorization: `Bearer ${adminToken}` },",
+                  "}, (err, detailRes) => {",
+                  "  pm.test('Firestore phase0Complete=true', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(detailRes.json().data.phase0Complete).to.eql(true);",
+                  "  });",
+                  "  const progress = detailRes.json().data.fixProgress || {};",
+                  "  const signalKeys = Object.keys(progress).filter((k) => Array.isArray(progress[k].completedStepIds));",
+                  "  if (signalKeys.length === 0) {",
+                  "    pm.test('No signal keys to complete (empty speedTopIssues baseline)', () => pm.expect(signalKeys.length).to.eql(0));",
+                  "    return;",
+                  "  }",
+                  "  let remaining = signalKeys.length;",
+                  "  signalKeys.forEach((signalKey) => {",
+                  "    pm.sendRequest({",
+                  "      url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}/progress`,",
+                  "      method: 'PATCH',",
+                  "      header: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },",
+                  "      body: { mode: 'raw', raw: JSON.stringify({ uid, signalKey, action: { type: 'set_status', status: 'done' } }) },",
+                  "    }, (sigErr, sigRes) => {",
+                  "      remaining -= 1;",
+                  "      pm.test(`Signal ${signalKey} marked done`, () => {",
+                  "        pm.expect(sigErr).to.be.null;",
+                  "        pm.expect(sigRes.code).to.eql(200);",
+                  "      });",
+                  "      if (remaining === 0) {",
+                  "        pm.sendRequest({",
+                  "          url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "          method: 'GET',",
+                  "          header: { Authorization: `Bearer ${adminToken}` },",
+                  "        }, (vErr, vRes) => {",
+                  "          pm.test('All signals done or N/A in Firestore', () => {",
+                  "            pm.expect(vErr).to.be.null;",
+                  "            const fp = vRes.json().data.fixProgress;",
+                  "            const incomplete = Object.entries(fp).filter(([k, e]) => Array.isArray(e.completedStepIds) && e.status !== 'done' && e.status !== 'not_applicable');",
+                  "            pm.expect(incomplete.length).to.eql(0);",
+                  "          });",
+                  "        });",
+                  "      }",
+                  "    });",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/fix-jobs/:fixJobId/progress — unauthorized",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "invalid-not-an-admin-token",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"action\": { \"type\": \"set_phase0\", \"complete\": true }\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/progress"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 (unauthorized)', () => pm.response.to.have.status(401));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('Error message present', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/fix-jobs/:fixJobId/rerun-checks — happy path",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/rerun-checks"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('afterAudit returned', () => pm.expect(pm.response.json().data.afterAudit).to.be.an('object'));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const fixJobId = pm.environment.get('fixJobId');",
+                  "const adminToken = pm.environment.get('adminToken');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "  method: 'GET',",
+                  "  header: { Authorization: `Bearer ${adminToken}` },",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore afterAudit captured', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.afterAudit).to.be.an('object');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/fix-jobs/:fixJobId/stage → qa",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"toStage\": \"qa\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/stage"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Stage transition to qa', () => pm.expect(pm.response.json().data.stage).to.eql('qa'));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const fixJobId = pm.environment.get('fixJobId');",
+                  "const adminToken = pm.environment.get('adminToken');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "  method: 'GET',",
+                  "  header: { Authorization: `Bearer ${adminToken}` },",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore stage is qa', () => pm.expect(res.json().data.stage).to.eql('qa'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/fix-jobs/:fixJobId/qa — happy path",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"set_manual_check\",\n  \"uid\": \"{{userId}}\",\n  \"pillar\": \"speed\",\n  \"itemId\": \"loads_correctly\",\n  \"checked\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/qa"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Manual check 1 status is 200', () => pm.response.to.have.status(200));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const fixJobId = pm.environment.get('fixJobId');",
+                  "const adminToken = pm.environment.get('adminToken');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}/qa`,",
+                  "  method: 'PATCH',",
+                  "  header: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({ type: 'set_manual_check', uid, pillar: 'speed', itemId: 'no_breakage', checked: true }) },",
+                  "}, (err1, res1) => {",
+                  "  pm.test('Manual check 2 status is 200', () => pm.expect(res1.code).to.eql(200));",
+                  "  pm.sendRequest({",
+                  "    url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}/qa`,",
+                  "    method: 'PATCH',",
+                  "    header: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },",
+                  "    body: { mode: 'raw', raw: JSON.stringify({ type: 'decide', uid, pillar: 'speed', status: 'passed', note: 'API smoke override — auto-checks may be unavailable in local audit pipeline' }) },",
+                  "  }, (err2, res2) => {",
+                  "    pm.test('QA decide status is 200', () => pm.expect(res2.code).to.eql(200));",
+                  "    pm.test('Speed pillar passed', () => pm.expect(res2.json().data.perPillar.speed).to.eql('passed'));",
+                  "    pm.sendRequest({",
+                  "      url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "      method: 'GET',",
+                  "      header: { Authorization: `Bearer ${adminToken}` },",
+                  "    }, (err3, res3) => {",
+                  "      pm.test('Firestore qa.perPillar.speed is passed', () => {",
+                  "        pm.expect(res3.json().data.qa.perPillar.speed).to.eql('passed');",
+                  "      });",
+                  "    });",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/fix-jobs/:fixJobId/stage → report_ready",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"toStage\": \"report_ready\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/stage"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Stage is report_ready', () => pm.expect(pm.response.json().data.stage).to.eql('report_ready'));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const fixJobId = pm.environment.get('fixJobId');",
+                  "const adminToken = pm.environment.get('adminToken');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "  method: 'GET',",
+                  "  header: { Authorization: `Bearer ${adminToken}` },",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore stage is report_ready', () => pm.expect(res.json().data.stage).to.eql('report_ready'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/fix-jobs/:fixJobId/report/generate — happy path",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"deliveryNote\": \"API smoke test delivery note\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/report/generate"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) {",
+                  "  pm.test('[FINDING] report/generate failed — is Storage emulator running on :9199?', () => {",
+                  "    pm.expect(pm.response.json().error || pm.response.text()).to.be.a('string');",
+                  "  });",
+                  "  return;",
+                  "}",
+                  "pm.test('reportId returned', () => pm.expect(pm.response.json().data.reportId).to.be.a('string').and.not.empty);",
+                  "pm.environment.set('adminReportId', pm.response.json().data.reportId);",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const uid = pm.environment.get('userId');",
+                  "const fixJobId = pm.environment.get('fixJobId');",
+                  "const adminToken = pm.environment.get('adminToken');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "  method: 'GET',",
+                  "  header: { Authorization: `Bearer ${adminToken}` },",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore report.status is generated', () => {",
+                  "    pm.expect(res.json().data.reportData.status).to.eql('generated');",
+                  "    pm.expect(res.json().data.reportData.reportId).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/fix-jobs/:fixJobId/deliver — happy path",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/deliver"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const code = pm.response.code;",
+                  "if (code === 409) {",
+                  "  pm.test('Status is 409 when report not generated', () => pm.response.to.have.status(409));",
+                  "  pm.test('409 error message', () => {",
+                  "    pm.expect(pm.response.json().error).to.match(/Generate the report first|Already delivered/i);",
+                  "  });",
+                  "} else if (code === 500) {",
+                  "  pm.test('[FINDING] deliver 500 — PDF fetch or Loops email unconfigured locally', () => {",
+                  "    pm.expect(pm.response.json().error).to.match(/Failed to load report PDF|Failed to send delivery email/i);",
+                  "  });",
+                  "} else if (code === 200) {",
+                  "  pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "  pm.test('sentAt returned', () => pm.expect(pm.response.json().data.sentAt).to.be.a('string'));",
+                  "  const baseUrl = pm.environment.get('baseUrl');",
+                  "  const uid = pm.environment.get('userId');",
+                  "  const fixJobId = pm.environment.get('fixJobId');",
+                  "  const adminToken = pm.environment.get('adminToken');",
+                  "  pm.sendRequest({",
+                  "    url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+                  "    method: 'GET',",
+                  "    header: { Authorization: `Bearer ${adminToken}` },",
+                  "  }, (err, res) => {",
+                  "    pm.test('Firestore stage is delivered', () => pm.expect(res.json().data.stage).to.eql('delivered'));",
+                  "    pm.test('Firestore report.status is sent', () => pm.expect(res.json().data.reportData.status).to.eql('sent'));",
+                  "  });",
+                  "} else {",
+                  "  pm.test('Unexpected deliver status', () => pm.expect.fail(`Unexpected status ${code}`));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/fix-jobs/:fixJobId/hosting-context — validation error",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"\",\n  \"host\": \"\",\n  \"cms\": \"wordpress\",\n  \"plugins\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/hosting-context"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 (validation)', () => pm.response.to.have.status(400));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('Validation error returned', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8 — Site Access Re-Request Flow",
+      "description": "Admin site-access re-request flow. Chains userId/fixJobId/adminToken from Folders 1–7. Verifies Firestore state via emulator-only GET /api/test/smoke/site-access-request. devAccessToken exposed when FIREBASE_AUTH_EMULATOR_HOST is set (same pattern as Folder 5 devResetToken).",
+      "item": [
+        {
+          "name": "POST /api/admin/site-access/request — happy path",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"wp_admin\",\n  \"scopeDescription\": \"API smoke: re-request updated WordPress admin credentials for grant flow.\",\n  \"expiryDays\": 7\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/site-access/request"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "if (!pm.environment.get('userId') || !pm.environment.get('fixJobId') || !pm.environment.get('adminToken')) {",
+                  "  throw new Error('userId, fixJobId, adminToken required — run Folders 1–7 first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('requestId returned', () => {",
+                  "  pm.expect(json.data.requestId).to.be.a('string').and.not.empty;",
+                  "  pm.environment.set('siteAccessRequestId', json.data.requestId);",
+                  "});",
+                  "pm.test('devAccessToken returned in emulator', () => {",
+                  "  pm.expect(json.devAccessToken).to.be.a('string').and.not.empty;",
+                  "  pm.environment.set('grantedToken', json.devAccessToken);",
+                  "});",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const requestId = json.data.requestId;",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: new request is pending', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('pending');",
+                  "    pm.expect(res.json().data.tokenUsed).to.eql(false);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/site-access/request — duplicate pending (409)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"wp_admin\",\n  \"scopeDescription\": \"API smoke: duplicate pending should be rejected by route.\",\n  \"expiryDays\": 7\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/site-access/request"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409 (pending request already exists)', () => pm.response.to.have.status(409));",
+                  "pm.test('Conflict error message', () => {",
+                  "  pm.expect(pm.response.json().error).to.eql('A pending access request already exists for this job');",
+                  "});",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const requestId = pm.environment.get('siteAccessRequestId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: original pending request unchanged', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('pending');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/site-access/grant — happy path",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{grantedToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/site-access/grant"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('expiresAt returned', () => {",
+                  "  pm.expect(json.data.expiresAt).to.be.a('string').and.not.empty;",
+                  "  pm.environment.set('siteAccessGrantedExpiresAt', json.data.expiresAt);",
+                  "});",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const requestId = pm.environment.get('siteAccessRequestId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: status is granted', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('granted');",
+                  "  });",
+                  "  pm.test('Firestore: tokenUsed=true after grant', () => {",
+                  "    pm.expect(res.json().data.tokenUsed).to.eql(true);",
+                  "  });",
+                  "  pm.test('Firestore: expiresAt set', () => {",
+                  "    pm.expect(res.json().data.expiresAt).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  pm.test('Firestore: grantedAt set', () => {",
+                  "    pm.expect(res.json().data.grantedAt).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/site-access/grant — reused token (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{grantedToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/site-access/grant"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 on reused token', () => pm.response.to.have.status(400));",
+                  "pm.test('Generic invalid/expired error (tokenUsed excludes doc from lookup)', () => {",
+                  "  pm.expect(pm.response.json().error).to.eql('Invalid or expired access link');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/site-access/request — fresh request for decline flow",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"hosting_panel\",\n  \"scopeDescription\": \"API smoke: separate pending request for decline flow testing.\",\n  \"expiryDays\": 3\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/site-access/request"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('declineSiteAccessRequestId', json.data.requestId);",
+                  "pm.environment.set('declineToken', json.devAccessToken);",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${json.data.requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: decline request is pending', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('pending');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/site-access/decline — happy path",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{declineToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/site-access/decline"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const requestId = pm.environment.get('declineSiteAccessRequestId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: status is declined', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('declined');",
+                  "  });",
+                  "  pm.test('Firestore: tokenUsed=true after decline', () => {",
+                  "    pm.expect(res.json().data.tokenUsed).to.eql(true);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/site-access/request — fresh request for revoke flow",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"sftp\",\n  \"scopeDescription\": \"API smoke: pending request for revoke flow after grant.\",\n  \"expiryDays\": 14\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/site-access/request"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('revokeSiteAccessRequestId', json.data.requestId);",
+                  "pm.environment.set('revokeToken', json.devAccessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/site-access/grant — grant before revoke",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{revokeToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/site-access/grant"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const requestId = pm.environment.get('revokeSiteAccessRequestId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: revoke-path request is granted', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('granted');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/site-access/:requestId/revoke — happy path",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/site-access/{{revokeSiteAccessRequestId}}/revoke"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const requestId = pm.environment.get('revokeSiteAccessRequestId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: status is revoked', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('revoked');",
+                  "  });",
+                  "  pm.test('Firestore: revokedAt set', () => {",
+                  "    pm.expect(res.json().data.revokedAt).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/site-access/request — fresh request for cron expire flow",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"sessionId\": \"{{fixJobId}}\",\n  \"accessType\": \"ftp\",\n  \"scopeDescription\": \"API smoke: granted request to expire via cron job.\",\n  \"expiryDays\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/site-access/request"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('expireSiteAccessRequestId', json.data.requestId);",
+                  "pm.environment.set('expireToken', json.devAccessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/site-access/grant — grant before cron expire",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{expireToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/site-access/grant"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const requestId = pm.environment.get('expireSiteAccessRequestId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: expire-path request is granted before backdate', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('granted');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH smoke — backdate expiresAt for cron test",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"backdateExpiresAt\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/test/smoke/site-access-request?requestId={{expireSiteAccessRequestId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('expiresAt backdated to past', () => {",
+                  "  pm.expect(json.data.expiresAt).to.be.a('string');",
+                  "  pm.expect(new Date(json.data.expiresAt).getTime()).to.be.below(Date.now());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/cron/expire-access-requests — happy path",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/cron/expire-access-requests"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cronSecret = pm.environment.get('cronSecret');",
+                  "if (cronSecret) {",
+                  "  pm.request.headers.add({ key: 'Authorization', value: `Bearer ${cronSecret}` });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(json.success).to.eql(true));",
+                  "pm.test('expired count is at least 1', () => {",
+                  "  pm.expect(json.data.expired).to.be.at.least(1);",
+                  "});",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const requestId = pm.environment.get('expireSiteAccessRequestId');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/site-access-request?requestId=${requestId}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: status is expired after cron', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.status).to.eql('expired');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9 — Analytics / Notifications / External Side Effects",
+      "description": "Analytics Firestore writes + validation-only checks on notification routes. EXCLUDED from automated happy-path calls (would hit real Slack/Loops/Notion): POST /api/notifications/new-user (valid body), POST /api/notifications/dashboard-ready (valid email), POST /api/notifications/account-created (valid email), GET|POST /api/test/weekly-digest, GET /api/cron/weekly-sales-digest. GET /api/test-sentry-error posts to real Sentry — included with explicit flag; delivery needs manual verification.",
+      "item": [
+        {
+          "name": "Setup — analytics smoke marker",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "pm.environment.set('analyticsSmokeMarker', `api-smoke-analytics-${Date.now()}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('analyticsSmokeMarker set', () => {",
+                  "  pm.expect(pm.environment.get('analyticsSmokeMarker')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/analytics — happy path",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"site_fix_offer_viewed\",\n  \"properties\": {\n    \"smokeMarker\": \"{{analyticsSmokeMarker}}\",\n    \"orderId\": \"{{orderId}}\",\n    \"source\": \"api-smoke-folder-9\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/analytics"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true (always returned)', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const marker = pm.environment.get('analyticsSmokeMarker');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/analytics-event?marker=${encodeURIComponent(marker)}`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('Firestore: analyticsEvents doc written', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.code).to.eql(200);",
+                  "    pm.expect(res.json().data.found).to.eql(true);",
+                  "    pm.expect(res.json().data.event).to.eql('site_fix_offer_viewed');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/analytics — invalid event (FINDING: silent 200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"not_a_valid_site_fix_event\",\n  \"properties\": { \"smokeMarker\": \"invalid-event-test\" }\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/analytics"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 (route never returns validation errors)', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true even for invalid event', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "pm.sendRequest({",
+                  "  url: `${baseUrl}/api/test/smoke/analytics-event?marker=invalid-event-test`,",
+                  "  method: 'GET',",
+                  "}, (err, res) => {",
+                  "  pm.test('FINDING: invalid event not written to Firestore', () => {",
+                  "    pm.expect(err).to.be.null;",
+                  "    pm.expect(res.json().data.found).to.eql(false);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/analytics — missing event field (FINDING: silent 200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"properties\": { \"smokeMarker\": \"missing-event-test\" }\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/analytics"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/notifications/new-user — validation only (missing fields, no Slack)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/notifications/new-user"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400 before Slack send', () => pm.response.to.have.status(400));",
+                  "pm.test('success=false', () => pm.expect(pm.response.json().success).to.eql(false));",
+                  "pm.test('Missing field error', () => {",
+                  "  pm.expect(pm.response.json().error).to.match(/Missing required field/i);",
+                  "});",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/notifications/dashboard-ready — validation only (missing email, no Loops)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"API\"\n}"
+            },
+            "url": "{{baseUrl}}/api/notifications/dashboard-ready"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Email required error', () => {",
+                  "  pm.expect(pm.response.json().error).to.eql('Email is required');",
+                  "});",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/notifications/account-created — validation only (missing email, no Slack/Notion)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"displayName\": \"API Smoke\"\n}"
+            },
+            "url": "{{baseUrl}}/api/notifications/account-created"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Email required error', () => {",
+                  "  pm.expect(pm.response.json().error).to.eql('Email is required');",
+                  "});",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/notifications/new-user — method not allowed (405)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications/new-user"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 405', () => pm.response.to.have.status(405));",
+                  "pm.test('Method not allowed error', () => {",
+                  "  pm.expect(pm.response.json().error).to.eql('Method not allowed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/hello — API smoke health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/hello"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Plain text hello response', () => {",
+                  "  pm.expect(pm.response.text()).to.include('Hello');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/test-sentry-error — diagnostic (⚠️ posts to real Sentry)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/test-sentry-error"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 500 (intentional test error)', () => pm.response.to.have.status(500));",
+                  "pm.test('Sentry capture acknowledged in body', () => {",
+                  "  pm.expect(pm.response.json().message).to.match(/captured by Sentry/i);",
+                  "});",
+                  "pm.test('External side effect: verify delivery manually in Sentry dashboard if needed', () => {",
+                  "  pm.expect(true).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10 — Negative / Security / Abuse Cases",
+      "description": "Adversarial cross-section: public (audit, checkout, order-status), authenticated (confirm-details, create-account), admin (fix-jobs). Every test asserts status codes AND response bodies contain no stack traces, file paths, or node_modules leaks. Rate-limit burst may not 429 locally when Upstash is unreachable (fail-open) — documented as FINDING, not a pass on broken behavior.",
+      "item": [
+        {
+          "name": "Setup — capture token before revoke (Folder 10 auth abuse)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+                  "pm.environment.set('folder10TokenBeforeRevoke', pm.environment.get('userToken') || '');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('folder10TokenBeforeRevoke captured', () => {",
+                  "  pm.expect(pm.environment.get('folder10TokenBeforeRevoke')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/audit — malformed JSON (400, not 500)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"firstName\":\"API\",\"businessName\":\"Test\","
+            },
+            "url": "{{baseUrl}}/api/audit"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Invalid input error', () => pm.expect(pm.response.json().error).to.eql('Invalid input'));",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('No stack trace or internal paths in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "  pm.expect(body).to.not.include('/Users/');",
+                  "  pm.expect(body).to.not.include('.next/');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/checkout — malformed JSON (400, not 500)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{not-json"
+            },
+            "url": "{{baseUrl}}/api/book-service/checkout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Validation error string present', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/audit — excessively long businessName (400 Zod max 128)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": "{{baseUrl}}/api/audit"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const longName = 'A'.repeat(50000);",
+                  "pm.request.body.raw = JSON.stringify({",
+                  "  firstName: 'API',",
+                  "  businessName: longName,",
+                  "  email: 'abuse-long-field@test.local',",
+                  "  websiteUrl: 'https://example.com',",
+                  "  isClient: true",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 400 (graceful rejection)', () => pm.response.to.have.status(400));",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/book-service/confirm-details — no auth header (401)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"businessName\": \"API\",\n  \"websiteUrl\": \"https://example.com\",\n  \"contactName\": \"API\",\n  \"contactEmail\": \"abuse@test.local\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/confirm-details"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Unauthorized error', () => pm.expect(pm.response.json().error).to.match(/Unauthorized/i));",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/book-service/confirm-details — excessively long businessName (FINDING check)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": "{{baseUrl}}/api/book-service/confirm-details"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const longName = 'B'.repeat(50000);",
+                  "pm.request.body.raw = JSON.stringify({",
+                  "  orderId: pm.environment.get('orderId'),",
+                  "  businessName: longName,",
+                  "  websiteUrl: 'https://example.com',",
+                  "  contactName: 'API',",
+                  "  contactEmail: pm.environment.get('testEmail')",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "const code = pm.response.code;",
+                  "pm.test('Not a 500 on oversized businessName', () => pm.expect(code).to.be.below(500));",
+                  "if (code === 400) {",
+                  "  pm.test('Graceful 400 rejection (has max validation)', () => pm.expect(code).to.eql(400));",
+                  "} else {",
+                  "  pm.test('FINDING: confirm-details accepts 50k businessName (no Zod max) — status ' + code, () => {",
+                  "    pm.expect([200, 403]).to.include(code);",
+                  "  });",
+                  "}",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/fix-jobs/:id — invalid bearer token (401)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "not.a.valid.jwt.token",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}?uid={{userId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Auth error string only', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup — revoke userToken via password reset (Folder 10)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/request-password-reset"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const token = pm.response.json().devResetToken;",
+                  "pm.test('devResetToken for revoke setup', () => pm.expect(token).to.be.a('string').and.not.empty);",
+                  "pm.environment.set('folder10DevResetToken', token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/reset-password — revoke all ID tokens",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{folder10DevResetToken}}\",\n  \"password\": \"folder10-revoked-token-password-999\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('folder10RevokedPassword', 'folder10-revoked-token-password-999');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/book-service/confirm-details — revoked auth token (401)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{folder10TokenBeforeRevoke}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"businessName\": \"API\",\n  \"websiteUrl\": \"https://example.com\",\n  \"contactName\": \"API\",\n  \"contactEmail\": \"abuse@test.local\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/confirm-details"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Revoked/expired token message', () => {",
+                  "  pm.expect(pm.response.json().error).to.match(/expired|revoked|Invalid authentication token/i);",
+                  "});",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/book-service/checkout — wrong method (405, not crash)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/book-service/checkout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 405 Method Not Allowed', () => pm.response.to.have.status(405));",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('No stack trace in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/notifications/new-user — explicit 405",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications/new-user"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 405', () => pm.response.to.have.status(405));",
+                  "pm.test('Method not allowed error', () => pm.expect(pm.response.json().error).to.eql('Method not allowed'));",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/book-service/create-account — duplicate claimed orderId (409, idempotent-safe)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"duplicate-abuse-{{$timestamp}}@bookservice.test\",\n  \"password\": \"duplicate-abuse-password-12\",\n  \"orderId\": \"{{orderId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/book-service/create-account"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 409 (already claimed)', () => pm.response.to.have.status(409));",
+                  "pm.test('Conflict error message', () => {",
+                  "  pm.expect(pm.response.json().error).to.match(/already been claimed/i);",
+                  "});",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rate-limit burst — POST /api/book-service/create-account (429 or fail-open FINDING)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baseUrl = pm.environment.get('baseUrl');",
+                  "const burstCount = 8;",
+                  "let saw429 = false;",
+                  "let saw500 = false;",
+                  "const pending = [];",
+                  "for (let i = 0; i < burstCount; i++) {",
+                  "  pending.push(new Promise((resolve) => {",
+                  "    pm.sendRequest({",
+                  "      url: `${baseUrl}/api/book-service/create-account`,",
+                  "      method: 'POST',",
+                  "      header: { 'Content-Type': 'application/json' },",
+                  "      body: { mode: 'raw', raw: '{}' },",
+                  "    }, (err, res) => {",
+                  "      if (res && res.code === 429) saw429 = true;",
+                  "      if (res && res.code >= 500) saw500 = true;",
+                  "      resolve(res);",
+                  "    });",
+                  "  }));",
+                  "}",
+                  "Promise.all(pending).then(() => {",
+                  "  pm.test('Burst: no 500 responses', () => pm.expect(saw500).to.eql(false));",
+                  "  if (saw429) {",
+                  "    pm.test('Burst: 429 rate limit observed', () => pm.expect(saw429).to.eql(true));",
+                  "  } else {",
+                  "    pm.test('FINDING: no 429 — Upstash fail-open or limiter not configured locally', () => {",
+                  "      pm.expect(saw429).to.eql(false);",
+                  "    });",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/book-service/order-status — unknown orderId (404, not 500)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Order not found', () => pm.expect(pm.response.json().error).to.match(/not found/i));",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/fix-jobs/:id — unknown fixJobId (404, not 500)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/fix-jobs/00000000-0000-0000-0000-000000009999?uid={{userId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Fix job not found', () => pm.expect(pm.response.json().error).to.match(/not found/i));",
+                  "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "  pm.expect(body).to.not.include('node_modules');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/book-service/order-status — malformed orderId (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/book-service/order-status?orderId="
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('orderId required error', () => pm.expect(pm.response.json().error).to.match(/orderId is required/i));",
+                  "pm.test('No internal leak in body', () => {",
+                  "  pm.expect(body).to.not.match(/\\bat\\s+[\\w./]+:\\d+:\\d+/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

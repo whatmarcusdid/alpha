@@ -137,7 +137,11 @@ describe('createSiteAccessRequest', () => {
       expiryDays: 14,
     });
 
-    expect(result).toEqual({ success: true, requestId: docRefId });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.requestId).toBe(docRefId);
+      expect(result.accessToken).toEqual(expect.any(String));
+    }
     expect(docSet).toHaveBeenCalledWith(
       expect.objectContaining({
         requestId: docRefId,

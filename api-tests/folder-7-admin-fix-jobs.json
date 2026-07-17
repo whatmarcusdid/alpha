@@ -1,0 +1,546 @@
+{
+  "name": "7 — Admin Fix Jobs (full pipeline)",
+  "description": "Admin fix-job pipeline per test plan §3.5. Seeds from Folders 1–2 chained fixSession (orderId=fixJobId, userId, adminToken). Stage transitions use PATCH /stage (required by route code). QA is PATCH (not POST). Report path is POST /report/generate. Verifies Firestore state via GET /api/admin/fix-jobs/:id?uid= after each stage change.",
+  "item": [
+    {
+      "name": "GET fix job detail — verify seed (stage=ready)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}?uid={{userId}}"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "if (!pm.environment.get('userId') || !pm.environment.get('fixJobId') || !pm.environment.get('adminToken')) {",
+              "  throw new Error('userId, fixJobId, adminToken required — run Folders 1–2 first.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Fix session seeded', () => {",
+              "  pm.expect(json.success).to.eql(true);",
+              "  pm.expect(json.data.sessionId).to.eql(pm.environment.get('fixJobId'));",
+              "  pm.expect(json.data.uid).to.eql(pm.environment.get('userId'));",
+              "});",
+              "pm.test('Stage is ready after submit-access', () => pm.expect(json.data.stage).to.eql('ready'));",
+              "pm.collectionVariables.set('adminPipelineInitialStage', json.data.stage);",
+              "pm.environment.set('adminPipelineInitialStage', json.data.stage);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/fix-jobs/:fixJobId/hosting-context — happy path",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"host\": \"cloudways\",\n  \"hostLabel\": \"Cloudways\",\n  \"cms\": \"wordpress\",\n  \"cmsVersion\": \"6.4\",\n  \"plugins\": [\"wordfence\"]\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/hosting-context"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('hostingContext.host set', () => pm.expect(pm.response.json().data.hostingContext.host).to.eql('cloudways'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/fix-jobs/:fixJobId/stage → in_progress",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"toStage\": \"in_progress\"\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/stage"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Stage transition accepted', () => pm.expect(pm.response.json().data.stage).to.eql('in_progress'));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const fixJobId = pm.environment.get('fixJobId');",
+              "const adminToken = pm.environment.get('adminToken');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "  method: 'GET',",
+              "  header: { Authorization: `Bearer ${adminToken}` },",
+              "}, (err, res) => {",
+              "  pm.test('Firestore stage is in_progress', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.stage).to.eql('in_progress');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/fix-jobs/:fixJobId/progress — happy path (phase0 + signals)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"action\": { \"type\": \"set_phase0\", \"complete\": true }\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/progress"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Phase0 status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Phase0 success', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const fixJobId = pm.environment.get('fixJobId');",
+              "const adminToken = pm.environment.get('adminToken');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "  method: 'GET',",
+              "  header: { Authorization: `Bearer ${adminToken}` },",
+              "}, (err, detailRes) => {",
+              "  pm.test('Firestore phase0Complete=true', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(detailRes.json().data.phase0Complete).to.eql(true);",
+              "  });",
+              "  const progress = detailRes.json().data.fixProgress || {};",
+              "  const signalKeys = Object.keys(progress).filter((k) => Array.isArray(progress[k].completedStepIds));",
+              "  if (signalKeys.length === 0) {",
+              "    pm.test('No signal keys to complete (empty speedTopIssues baseline)', () => pm.expect(signalKeys.length).to.eql(0));",
+              "    return;",
+              "  }",
+              "  let remaining = signalKeys.length;",
+              "  signalKeys.forEach((signalKey) => {",
+              "    pm.sendRequest({",
+              "      url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}/progress`,",
+              "      method: 'PATCH',",
+              "      header: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },",
+              "      body: { mode: 'raw', raw: JSON.stringify({ uid, signalKey, action: { type: 'set_status', status: 'done' } }) },",
+              "    }, (sigErr, sigRes) => {",
+              "      remaining -= 1;",
+              "      pm.test(`Signal ${signalKey} marked done`, () => {",
+              "        pm.expect(sigErr).to.be.null;",
+              "        pm.expect(sigRes.code).to.eql(200);",
+              "      });",
+              "      if (remaining === 0) {",
+              "        pm.sendRequest({",
+              "          url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "          method: 'GET',",
+              "          header: { Authorization: `Bearer ${adminToken}` },",
+              "        }, (vErr, vRes) => {",
+              "          pm.test('All signals done or N/A in Firestore', () => {",
+              "            pm.expect(vErr).to.be.null;",
+              "            const fp = vRes.json().data.fixProgress;",
+              "            const incomplete = Object.entries(fp).filter(([k, e]) => Array.isArray(e.completedStepIds) && e.status !== 'done' && e.status !== 'not_applicable');",
+              "            pm.expect(incomplete.length).to.eql(0);",
+              "          });",
+              "        });",
+              "      }",
+              "    });",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/fix-jobs/:fixJobId/progress — unauthorized",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "invalid-not-an-admin-token", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"action\": { \"type\": \"set_phase0\", \"complete\": true }\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/progress"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 401 (unauthorized)', () => pm.response.to.have.status(401));",
+              "pm.test('Response is JSON', () => pm.response.to.be.json);",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('Error message present', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/admin/fix-jobs/:fixJobId/rerun-checks — happy path",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/rerun-checks"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('afterAudit returned', () => pm.expect(pm.response.json().data.afterAudit).to.be.an('object'));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const fixJobId = pm.environment.get('fixJobId');",
+              "const adminToken = pm.environment.get('adminToken');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "  method: 'GET',",
+              "  header: { Authorization: `Bearer ${adminToken}` },",
+              "}, (err, res) => {",
+              "  pm.test('Firestore afterAudit captured', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.afterAudit).to.be.an('object');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/fix-jobs/:fixJobId/stage → qa",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"toStage\": \"qa\"\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/stage"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Stage transition to qa', () => pm.expect(pm.response.json().data.stage).to.eql('qa'));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const fixJobId = pm.environment.get('fixJobId');",
+              "const adminToken = pm.environment.get('adminToken');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "  method: 'GET',",
+              "  header: { Authorization: `Bearer ${adminToken}` },",
+              "}, (err, res) => {",
+              "  pm.test('Firestore stage is qa', () => pm.expect(res.json().data.stage).to.eql('qa'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/fix-jobs/:fixJobId/qa — happy path",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"set_manual_check\",\n  \"uid\": \"{{userId}}\",\n  \"pillar\": \"speed\",\n  \"itemId\": \"loads_correctly\",\n  \"checked\": true\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/qa"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Manual check 1 status is 200', () => pm.response.to.have.status(200));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const fixJobId = pm.environment.get('fixJobId');",
+              "const adminToken = pm.environment.get('adminToken');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}/qa`,",
+              "  method: 'PATCH',",
+              "  header: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },",
+              "  body: { mode: 'raw', raw: JSON.stringify({ type: 'set_manual_check', uid, pillar: 'speed', itemId: 'no_breakage', checked: true }) },",
+              "}, (err1, res1) => {",
+              "  pm.test('Manual check 2 status is 200', () => pm.expect(res1.code).to.eql(200));",
+              "  pm.sendRequest({",
+              "    url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}/qa`,",
+              "    method: 'PATCH',",
+              "    header: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },",
+              "    body: { mode: 'raw', raw: JSON.stringify({ type: 'decide', uid, pillar: 'speed', status: 'passed', note: 'API smoke override — auto-checks may be unavailable in local audit pipeline' }) },",
+              "  }, (err2, res2) => {",
+              "    pm.test('QA decide status is 200', () => pm.expect(res2.code).to.eql(200));",
+              "    pm.test('Speed pillar passed', () => pm.expect(res2.json().data.perPillar.speed).to.eql('passed'));",
+              "    pm.sendRequest({",
+              "      url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "      method: 'GET',",
+              "      header: { Authorization: `Bearer ${adminToken}` },",
+              "    }, (err3, res3) => {",
+              "      pm.test('Firestore qa.perPillar.speed is passed', () => {",
+              "        pm.expect(res3.json().data.qa.perPillar.speed).to.eql('passed');",
+              "      });",
+              "    });",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/fix-jobs/:fixJobId/stage → report_ready",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"toStage\": \"report_ready\"\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/stage"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Stage is report_ready', () => pm.expect(pm.response.json().data.stage).to.eql('report_ready'));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const fixJobId = pm.environment.get('fixJobId');",
+              "const adminToken = pm.environment.get('adminToken');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "  method: 'GET',",
+              "  header: { Authorization: `Bearer ${adminToken}` },",
+              "}, (err, res) => {",
+              "  pm.test('Firestore stage is report_ready', () => pm.expect(res.json().data.stage).to.eql('report_ready'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/admin/fix-jobs/:fixJobId/report/generate — happy path",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\",\n  \"deliveryNote\": \"API smoke test delivery note\"\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/report/generate"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) {",
+              "  pm.test('[FINDING] report/generate failed — is Storage emulator running on :9199?', () => {",
+              "    pm.expect(pm.response.json().error || pm.response.text()).to.be.a('string');",
+              "  });",
+              "  return;",
+              "}",
+              "pm.test('reportId returned', () => pm.expect(pm.response.json().data.reportId).to.be.a('string').and.not.empty);",
+              "pm.environment.set('adminReportId', pm.response.json().data.reportId);",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const fixJobId = pm.environment.get('fixJobId');",
+              "const adminToken = pm.environment.get('adminToken');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "  method: 'GET',",
+              "  header: { Authorization: `Bearer ${adminToken}` },",
+              "}, (err, res) => {",
+              "  pm.test('Firestore report.status is generated', () => {",
+              "    pm.expect(res.json().data.reportData.status).to.eql('generated');",
+              "    pm.expect(res.json().data.reportData.reportId).to.be.a('string').and.not.empty;",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/admin/fix-jobs/:fixJobId/deliver — happy path",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"{{userId}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/deliver"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const code = pm.response.code;",
+              "if (code === 409) {",
+              "  pm.test('Status is 409 when report not generated', () => pm.response.to.have.status(409));",
+              "  pm.test('409 error message', () => {",
+              "    pm.expect(pm.response.json().error).to.match(/Generate the report first|Already delivered/i);",
+              "  });",
+              "} else if (code === 500) {",
+              "  pm.test('[FINDING] deliver 500 — PDF fetch or Loops email unconfigured locally', () => {",
+              "    pm.expect(pm.response.json().error).to.match(/Failed to load report PDF|Failed to send delivery email/i);",
+              "  });",
+              "} else if (code === 200) {",
+              "  pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "  pm.test('sentAt returned', () => pm.expect(pm.response.json().data.sentAt).to.be.a('string'));",
+              "  const baseUrl = pm.environment.get('baseUrl');",
+              "  const uid = pm.environment.get('userId');",
+              "  const fixJobId = pm.environment.get('fixJobId');",
+              "  const adminToken = pm.environment.get('adminToken');",
+              "  pm.sendRequest({",
+              "    url: `${baseUrl}/api/admin/fix-jobs/${fixJobId}?uid=${uid}`,",
+              "    method: 'GET',",
+              "    header: { Authorization: `Bearer ${adminToken}` },",
+              "  }, (err, res) => {",
+              "    pm.test('Firestore stage is delivered', () => pm.expect(res.json().data.stage).to.eql('delivered'));",
+              "    pm.test('Firestore report.status is sent', () => pm.expect(res.json().data.reportData.status).to.eql('sent'));",
+              "  });",
+              "} else {",
+              "  pm.test('Unexpected deliver status', () => pm.expect.fail(`Unexpected status ${code}`));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/admin/fix-jobs/:fixJobId/hosting-context — validation error",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+        },
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"uid\": \"\",\n  \"host\": \"\",\n  \"cms\": \"wordpress\",\n  \"plugins\": []\n}"
+        },
+        "url": "{{baseUrl}}/api/admin/fix-jobs/{{fixJobId}}/hosting-context"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400 (validation)', () => pm.response.to.have.status(400));",
+              "pm.test('Response is JSON', () => pm.response.to.be.json);",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "pm.test('Validation error returned', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

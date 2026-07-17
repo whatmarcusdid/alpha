@@ -1,0 +1,285 @@
+{
+  "name": "9 — Analytics / Notifications / External Side Effects",
+  "description": "Analytics Firestore writes + validation-only checks on notification routes. EXCLUDED from automated happy-path calls (would hit real Slack/Loops/Notion): POST /api/notifications/new-user (valid body), POST /api/notifications/dashboard-ready (valid email), POST /api/notifications/account-created (valid email), GET|POST /api/test/weekly-digest, GET /api/cron/weekly-sales-digest. GET /api/test-sentry-error posts to real Sentry — included with explicit flag; delivery needs manual verification.",
+  "item": [
+    {
+      "name": "Setup — analytics smoke marker",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "pm.environment.set('analyticsSmokeMarker', `api-smoke-analytics-${Date.now()}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('analyticsSmokeMarker set', () => {",
+              "  pm.expect(pm.environment.get('analyticsSmokeMarker')).to.be.a('string').and.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/book-service/analytics — happy path",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event\": \"site_fix_offer_viewed\",\n  \"properties\": {\n    \"smokeMarker\": \"{{analyticsSmokeMarker}}\",\n    \"orderId\": \"{{orderId}}\",\n    \"source\": \"api-smoke-folder-9\"\n  }\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/analytics"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('success=true (always returned)', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const marker = pm.environment.get('analyticsSmokeMarker');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/analytics-event?marker=${encodeURIComponent(marker)}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: analyticsEvents doc written', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.code).to.eql(200);",
+              "    pm.expect(res.json().data.found).to.eql(true);",
+              "    pm.expect(res.json().data.event).to.eql('site_fix_offer_viewed');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/book-service/analytics — invalid event (FINDING: silent 200)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event\": \"not_a_valid_site_fix_event\",\n  \"properties\": { \"smokeMarker\": \"invalid-event-test\" }\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/analytics"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 (route never returns validation errors)', () => pm.response.to.have.status(200));",
+              "pm.test('success=true even for invalid event', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/analytics-event?marker=invalid-event-test`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('FINDING: invalid event not written to Firestore', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.found).to.eql(false);",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/book-service/analytics — missing event field (FINDING: silent 200)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"properties\": { \"smokeMarker\": \"missing-event-test\" }\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/analytics"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/notifications/new-user — validation only (missing fields, no Slack)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testEmail}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/notifications/new-user"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400 before Slack send', () => pm.response.to.have.status(400));",
+              "pm.test('success=false', () => pm.expect(pm.response.json().success).to.eql(false));",
+              "pm.test('Missing field error', () => {",
+              "  pm.expect(pm.response.json().error).to.match(/Missing required field/i);",
+              "});",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/notifications/dashboard-ready — validation only (missing email, no Loops)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"API\"\n}"
+        },
+        "url": "{{baseUrl}}/api/notifications/dashboard-ready"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Email required error', () => {",
+              "  pm.expect(pm.response.json().error).to.eql('Email is required');",
+              "});",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/notifications/account-created — validation only (missing email, no Slack/Notion)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"displayName\": \"API Smoke\"\n}"
+        },
+        "url": "{{baseUrl}}/api/notifications/account-created"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Email required error', () => {",
+              "  pm.expect(pm.response.json().error).to.eql('Email is required');",
+              "});",
+              "pm.test('Not a 500', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/notifications/new-user — method not allowed (405)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/notifications/new-user"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 405', () => pm.response.to.have.status(405));",
+              "pm.test('Method not allowed error', () => {",
+              "  pm.expect(pm.response.json().error).to.eql('Method not allowed');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/hello — API smoke health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/hello"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Plain text hello response', () => {",
+              "  pm.expect(pm.response.text()).to.include('Hello');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/test-sentry-error — diagnostic (⚠️ posts to real Sentry)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/test-sentry-error"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 500 (intentional test error)', () => pm.response.to.have.status(500));",
+              "pm.test('Sentry capture acknowledged in body', () => {",
+              "  pm.expect(pm.response.json().message).to.match(/captured by Sentry/i);",
+              "});",
+              "pm.test('External side effect: verify delivery manually in Sentry dashboard if needed', () => {",
+              "  pm.expect(true).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

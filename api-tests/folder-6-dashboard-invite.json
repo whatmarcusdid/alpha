@@ -1,0 +1,297 @@
+{
+  "name": "6 — Dashboard / Invite / Client Data",
+  "description": "Dashboard invite + #38 invite-then-signup regression. Chains userId/userToken/orderId/testEmail/testSku from Folders 1–2. Verifies Firestore state via emulator-only GET /api/test/smoke/site-fix-state. Only /api/dashboard/* route: report-download (auth required).",
+  "item": [
+    {
+      "name": "Setup — refresh userToken after Folder 5 password reset",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "const apiKey = pm.environment.get('firebaseApiKey');",
+              "const host = pm.environment.get('firebaseAuthEmulatorHost') || '127.0.0.1:9099';",
+              "const email = pm.environment.get('testEmail');",
+              "const password = pm.environment.get('resetPasswordNewPassword') || 'api-smoke-reset-password-456';",
+              "if (!email) { throw new Error('testEmail required'); }"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const apiKey = pm.environment.get('firebaseApiKey');",
+              "const host = pm.environment.get('firebaseAuthEmulatorHost') || '127.0.0.1:9099';",
+              "const email = pm.environment.get('testEmail');",
+              "const password = pm.environment.get('resetPasswordNewPassword') || 'api-smoke-reset-password-456';",
+              "pm.sendRequest({",
+              "  url: `http://${host}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,",
+              "  method: 'POST',",
+              "  header: { 'Content-Type': 'application/json' },",
+              "  body: {",
+              "    mode: 'raw',",
+              "    raw: JSON.stringify({ email, password, returnSecureToken: true }),",
+              "  },",
+              "}, (err, res) => {",
+              "  pm.test('Refreshed userToken after password reset', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.code).to.eql(200);",
+              "    pm.expect(res.json().idToken).to.be.a('string').and.not.empty;",
+              "    pm.environment.set('userToken', res.json().idToken);",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/test/smoke/site-fix-state — #38 invite-then-signup regression",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/test/smoke/site-fix-state?uid={{userId}}&orderId={{orderId}}"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.collectionVariables.get('runMutatingSmoke') !== 'true') { pm.execution.skipRequest(); }",
+              "if (!pm.environment.get('userId') || !pm.environment.get('orderId')) {",
+              "  throw new Error('userId and orderId required — run Folders 1–2 first.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Smoke state payload present', () => pm.expect(json.success).to.eql(true));",
+              "const d = json.data;",
+              "pm.test('User doc exists', () => pm.expect(d.userExists).to.eql(true));",
+              "pm.test('auditLeadLinked is true (audit persisted in Folder 1)', () => {",
+              "  pm.expect(d.auditLeadLinked).to.eql(true);",
+              "});",
+              "pm.test('siteFix.accountCreatedAt set after signup', () => {",
+              "  pm.expect(d.siteFix.accountCreatedAt).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('siteFix.claimedByUserId matches userId', () => {",
+              "  pm.expect(d.siteFix.claimedByUserId).to.eql(pm.environment.get('userId'));",
+              "});",
+              "pm.test('#38: audit pre-fill contactName preserved after invite-then-signup', () => {",
+              "  pm.expect(d.siteFix.contactName).to.eql('API');",
+              "});",
+              "pm.test('#38: invite metadata when present (dot-path Firestore fields)', () => {",
+              "  if (d.siteFix.inviteStatus !== null && d.siteFix.inviteStatus !== undefined) {",
+              "    pm.expect(d.siteFix.inviteStatus).to.eql('sent');",
+              "  }",
+              "});",
+              "pm.test('pending_orders claimState is claimed', () => {",
+              "  pm.expect(d.pendingOrder.claimState).to.eql('claimed');",
+              "});",
+              "pm.test('pending_orders claimedByUserId matches userId', () => {",
+              "  pm.expect(d.pendingOrder.claimedByUserId).to.eql(pm.environment.get('userId'));",
+              "});",
+              "pm.test('orders.auditLeadLinked is true', () => {",
+              "  pm.expect(d.order.auditLeadLinked).to.eql(true);",
+              "});",
+              "pm.environment.set('inviteRegressionContactName', d.siteFix.contactName);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/book-service/invite — happy path",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"email\": \"{{testEmail}}\",\n  \"orderId\": \"{{orderId}}\",\n  \"sku\": \"{{testSku}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/invite"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('userToken')) {",
+              "  throw new Error('userToken required — run create-account first.');",
+              "}",
+              "const sku = pm.environment.get('testSku') || 'speed_fix';",
+              "pm.environment.set('testSku', sku);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const orderId = pm.environment.get('orderId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-fix-state?uid=${uid}&orderId=${orderId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: inviteStatus is sent after invite', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.siteFix.inviteStatus).to.eql('sent');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/book-service/invite — duplicate (graceful, no crash)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"email\": \"{{testEmail}}\",\n  \"orderId\": \"{{orderId}}\",\n  \"sku\": \"{{testSku}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/invite"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 (duplicate invite does not error)', () => pm.response.to.have.status(200));",
+              "pm.test('success=true', () => pm.expect(pm.response.json().success).to.eql(true));",
+              "const baseUrl = pm.environment.get('baseUrl');",
+              "const uid = pm.environment.get('userId');",
+              "const orderId = pm.environment.get('orderId');",
+              "pm.sendRequest({",
+              "  url: `${baseUrl}/api/test/smoke/site-fix-state?uid=${uid}&orderId=${orderId}`,",
+              "  method: 'GET',",
+              "}, (err, res) => {",
+              "  pm.test('Firestore: inviteStatus still sent after duplicate', () => {",
+              "    pm.expect(err).to.be.null;",
+              "    pm.expect(res.json().data.siteFix.inviteStatus).to.eql('sent');",
+              "  });",
+              "  pm.test('#38: audit pre-fill still intact after duplicate invite', () => {",
+              "    pm.expect(res.json().data.siteFix.contactName).to.eql(pm.environment.get('inviteRegressionContactName'));",
+              "    pm.expect(res.json().data.siteFix.accountCreatedAt).to.be.a('string').and.not.empty;",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /api/book-service/invite — wrong userId (403)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+        },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"00000000-wrong-user-id-000000000001\",\n  \"email\": \"{{testEmail}}\",\n  \"orderId\": \"{{orderId}}\",\n  \"sku\": \"{{testSku}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/book-service/invite"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 403 when userId mismatches token', () => pm.response.to.have.status(403));",
+              "pm.test('Forbidden error', () => pm.expect(pm.response.json().error).to.eql('Forbidden'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/dashboard/report-download — report not yet sent (403)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+        },
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/dashboard/report-download?sessionId={{orderId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 403 before delivery', () => pm.response.to.have.status(403));",
+              "pm.test('Report not yet available message', () => {",
+              "    pm.expect(pm.response.json().error).to.match(/not yet available/i);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/dashboard/report-download — missing sessionId (400)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+        },
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/dashboard/report-download"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Missing sessionId error', () => {",
+              "  pm.expect(pm.response.json().error).to.match(/Missing sessionId/i);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
