@@ -9,6 +9,7 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   className?: string;
   type?: 'button' | 'submit' | 'reset';
+  title?: string;
 }
 
 export function PrimaryButton({
@@ -20,9 +21,10 @@ export function PrimaryButton({
   disabled = false,
   className = '',
   type = 'button',
+  title,
 }: PrimaryButtonProps) {
   const baseStyles =
-    'inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg bg-[#2920a5] px-6 py-2 text-base font-bold leading-[1.5] text-white shadow-[4px_8px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#211880] disabled:cursor-not-allowed disabled:opacity-50';
+    'inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg bg-[#2920A5] px-6 py-2 text-base font-bold leading-[1.5] text-white shadow-[4px_8px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#211880] disabled:cursor-not-allowed disabled:opacity-50';
 
   const combinedStyles = `${baseStyles} ${className}`;
 
@@ -41,6 +43,7 @@ export function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={combinedStyles}
     >
       {children}

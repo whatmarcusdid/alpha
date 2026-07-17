@@ -15,6 +15,8 @@ import type { SiteFixEntitlement, SiteFixSKU } from './skus';
 export interface SiteFixOrder {
   orderId: string;
   auditLeadId: string;
+  /** True when auditLeads/{auditLeadId} existed at webhook write time. */
+  auditLeadLinked: boolean;
   sku: SiteFixSKU;
   entitlements: SiteFixEntitlement[];
   normalizedEmail: string;
@@ -27,6 +29,8 @@ export interface SiteFixOrder {
 export interface SiteFixPendingOrder {
   orderId: string;
   auditLeadId: string;
+  /** True when auditLeads/{auditLeadId} existed at webhook write time. */
+  auditLeadLinked: boolean;
   sku: SiteFixSKU;
   entitlements: SiteFixEntitlement[];
   normalizedEmail: string;

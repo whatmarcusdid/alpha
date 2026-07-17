@@ -8,6 +8,7 @@ import {
   CreditCard,
   Eye,
   Home,
+  Link2,
   LogOut,
   Settings,
   ShieldCheck,
@@ -27,6 +28,11 @@ type AdminNavTab = {
 
 const adminNavTabs: AdminNavTab[] = [
   { name: 'Home', href: '/admin/fix-jobs', icon: Home },
+  {
+    name: 'Needs Link',
+    href: '/admin/needs-audit-lead-link',
+    icon: Link2,
+  },
   { name: 'Clients', href: '/admin/clients', icon: Store, disabled: true },
   { name: 'Audits', href: '/admin/audits', icon: CreditCard, disabled: true },
   { name: 'Settings', href: '/admin/settings', icon: Settings, disabled: true },

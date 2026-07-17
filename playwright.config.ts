@@ -37,7 +37,12 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    // Always spawn a fresh server so webServer.env overrides apply. Reusing a
+    // leftover `npm run dev` silently keeps .env.local's production
+    // NEXT_PUBLIC_BASE_URL — Stripe success_url then redirects to a dead prod
+    // page and Journey B times out on "Order Summary" (see journey-b spec).
+    // Opt in to reuse only when debugging: PLAYWRIGHT_REUSE_DEV_SERVER=true.
+    reuseExistingServer: process.env.PLAYWRIGHT_REUSE_DEV_SERVER === 'true',
     timeout: 60_000,
     // .env.local's NEXT_PUBLIC_APP_URL/NEXT_PUBLIC_BASE_URL point at the real
     // production domain (used elsewhere for Stripe CLI forwarding setups) —

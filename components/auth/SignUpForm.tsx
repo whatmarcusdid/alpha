@@ -7,6 +7,7 @@ import { createUserWithSubscription, linkStripeCustomer } from '@/lib/firestore'
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { GoogleIcon, AppleIcon } from '@/components/ui/icons';
 import { Loader2 } from 'lucide-react';
 
@@ -489,13 +490,9 @@ export function SignUpForm() {
           </Alert>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#241a94] disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <PrimaryButton type="submit" disabled={loading} className="w-full min-h-[44px]">
           {loading && !ssoLoading ? 'Creating account…' : 'Create New Account'}
-        </button>
+        </PrimaryButton>
       </form>
 
       <div className="flex items-center gap-4">

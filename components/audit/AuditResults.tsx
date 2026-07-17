@@ -12,6 +12,7 @@ import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import { storeAuditLeadId } from '@/lib/book-service/storage';
 import { ratch } from '@/lib/fonts/ratch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SPEED_ISSUE_DISPLAY_NAMES } from '@/lib/audit/speedTopIssues';
 import type { AuditResult, ClientGrade, SecurityFlag } from '@/lib/types/audit';
 import { getResultsHeadline } from '@/lib/types/audit';
@@ -470,14 +471,13 @@ export function AuditResults({
               )}
             </div>
             {showSiteFixBar && (
-              <button
-                type="button"
+              <PrimaryButton
                 onClick={handleViewSiteFixes}
                 disabled={!auditLeadId}
-                className="min-h-[48px] shrink-0 rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold leading-[1.5] text-white transition-colors hover:bg-[#211880] disabled:cursor-not-allowed disabled:bg-gray-400 disabled:opacity-70 md:w-auto"
+                className="min-h-[48px] shrink-0 px-6 py-2.5 font-semibold md:w-auto"
               >
                 View my site fixes
-              </button>
+              </PrimaryButton>
             )}
           </div>
         </div>

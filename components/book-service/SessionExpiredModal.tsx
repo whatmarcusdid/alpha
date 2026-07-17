@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+
 export function SessionExpiredModal() {
   const router = useRouter();
 
@@ -45,13 +47,12 @@ export function SessionExpiredModal() {
           Your audit session has expired. Return to your audit results to
           continue choosing a Site Fix package.
         </p>
-        <button
-          type="button"
+        <PrimaryButton
           onClick={() => router.push('/audit')}
-          className="mt-6 min-h-[48px] w-full rounded-lg bg-[#2920a5] px-6 py-3 text-base font-semibold leading-[1.5] text-white transition-colors hover:bg-[#211880]"
+          className="mt-6 w-full"
         >
           Back to audit results
-        </button>
+        </PrimaryButton>
       </div>
     </div>
   );

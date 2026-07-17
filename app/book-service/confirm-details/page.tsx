@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
 
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { getCurrentUser } from '@/lib/auth';
 import type { SiteFixUserNamespace } from '@/lib/book-service/createUser';
 import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
@@ -21,11 +22,8 @@ type DetailsForm = {
   contactEmail: string;
 };
 
-const BS_PRIMARY_BTN =
-  'flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[#1d4ed8] px-6 py-[10px] text-base font-bold leading-[1.5] text-white transition-colors hover:bg-[#1e40af] disabled:cursor-not-allowed disabled:opacity-50';
-
 const INPUT_CLASS =
-  'flex h-[40px] min-h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-[rgba(29,78,216,0.1)] px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-[40px] min-h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-[rgba(41,32,165,0.1)] px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2920A5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const FIELD_CONFIG = [
   { field: 'businessName', label: 'Business name', type: 'text' },
@@ -256,15 +254,15 @@ function ConfirmDetailsContent() {
             </div>
           ))}
 
-          <button
+          <PrimaryButton
             type="submit"
             disabled={!isComplete || submitting || isPreview}
             title={isPreview ? 'Disabled in preview mode' : undefined}
-            className={BS_PRIMARY_BTN}
+            className="w-full"
           >
             <CheckCircle2 className="size-6 shrink-0" aria-hidden="true" />
             {submitting ? 'Saving…' : 'Yes, this is correct'}
-          </button>
+          </PrimaryButton>
 
           <p className="text-center text-sm leading-[1.5] tracking-[-0.14px] text-[#52525b]">
             Your info is only used to deliver your Site Fix. We don&apos;t share

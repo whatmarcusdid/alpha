@@ -108,11 +108,22 @@ export async function handleSiteFixPayment(
     return;
   }
 
+  const auditLeadRef = adminDb.collection('auditLeads').doc(auditLeadId);
+  const auditLeadSnap = await auditLeadRef.get();
+  const auditLeadLinked = auditLeadSnap.exists;
+
+  if (!auditLeadLinked) {
+    console.warn(
+      `handleSiteFixPayment: audit lead not found for auditLeadId=${auditLeadId} — writing auditLeadLinked=false`
+    );
+  }
+
   const now = FieldValue.serverTimestamp();
 
   const order = {
     orderId,
     auditLeadId,
+    auditLeadLinked,
     sku: skuKey,
     entitlements,
     normalizedEmail,
@@ -128,6 +139,7 @@ export async function handleSiteFixPayment(
   const pendingOrder = {
     orderId,
     auditLeadId,
+    auditLeadLinked,
     sku: skuKey,
     entitlements,
     normalizedEmail,
@@ -142,13 +154,15 @@ export async function handleSiteFixPayment(
   batch.set(adminDb.collection('pending_orders').doc(orderId), pendingOrder);
   await batch.commit();
 
-  try {
-    await adminDb.collection('auditLeads').doc(auditLeadId).update({ orderId });
-  } catch (err) {
-    console.warn(
-      'handleSiteFixPayment: failed to update auditLeads (non-blocking)',
-      err
-    );
+  if (auditLeadLinked) {
+    try {
+      await auditLeadRef.update({ orderId });
+    } catch (err) {
+      console.warn(
+        'handleSiteFixPayment: failed to update auditLeads (non-blocking)',
+        err
+      );
+    }
   }
 
   void sendSiteFixPaymentConfirmedEmail({

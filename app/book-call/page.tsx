@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { z, type ZodIssue } from 'zod';
 
 import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ratch } from '@/lib/fonts/ratch';
 import { trackGamePlanCallLandingViewed } from '@/lib/analytics';
 import { saveBookingIntake } from '@/lib/booking';
@@ -261,13 +262,13 @@ function BookCallContent() {
             </div>
 
             <div className="flex flex-col items-center gap-6 pt-2">
-              <button
+              <PrimaryButton
                 type="submit"
                 disabled={!isFormValid || isLoading}
-                className="flex min-h-[40px] min-w-[80px] items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2 text-base font-bold leading-[1.5] text-white shadow-[4px_8px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#211880] disabled:cursor-not-allowed disabled:bg-[#d1d5db] disabled:text-[#52525b] disabled:shadow-none"
+                className="min-w-[80px] disabled:bg-[#d1d5db] disabled:text-[#52525b] disabled:shadow-none"
               >
                 {isLoading ? 'Saving...' : 'Continue To Scheduling'}
-              </button>
+              </PrimaryButton>
 
               <p className="text-center text-xs leading-[1.5] tracking-[-0.12px] text-[#52525b]">
                 We keep this simple and confidential. We&apos;ll never share your

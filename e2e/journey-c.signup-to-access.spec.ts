@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 
+import { requireBrowserAuthEmulator } from './support/require-auth-emulator';
 import {
   getClaimedUserId,
   getFixSessionStage,
@@ -17,6 +18,10 @@ import {
  * issued ID token — needed to reach the confirm-details/access API routes.
  */
 test.describe('signup to access', () => {
+  test.beforeEach(async ({ page }) => {
+    await requireBrowserAuthEmulator(page);
+  });
+
   test('signup -> confirm details -> access -> dashboard, with encrypted access credentials', async ({
     page,
   }) => {

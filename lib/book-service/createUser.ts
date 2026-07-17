@@ -121,11 +121,10 @@ export async function createUserWithSiteFixOrder(params: {
     .doc(pending.auditLeadId)
     .get();
 
-  if (!auditLeadSnap.exists) {
-    throw new Error(`Audit lead not found: ${pending.auditLeadId}`);
-  }
-
-  const auditLead = auditLeadSnap.data() as AuditLeadSnapshot;
+  const auditLeadLinked = auditLeadSnap.exists;
+  const auditLead = auditLeadLinked
+    ? (auditLeadSnap.data() as AuditLeadSnapshot)
+    : null;
 
   let uid: string;
 
@@ -181,10 +180,10 @@ export async function createUserWithSiteFixOrder(params: {
     claimedByUserId: uid,
     purchasedPackages: pending.entitlements,
     onboardingStatus: ONBOARDING_STATUS.AWAITING_ACCESS,
-    businessName: auditLead.businessName ?? '',
-    websiteUrl: auditLead.websiteUrl ?? '',
-    contactName: auditLead.firstName ?? '',
-    contactEmail: auditLead.email ?? normalizedEmail,
+    businessName: auditLead?.businessName ?? '',
+    websiteUrl: auditLead?.websiteUrl ?? '',
+    contactName: auditLead?.firstName ?? '',
+    contactEmail: auditLead?.email ?? normalizedEmail,
     access_request: {
       submittedAt: null,
       method: null,
@@ -195,7 +194,7 @@ export async function createUserWithSiteFixOrder(params: {
   };
 
   const batch = adminDb.batch();
-  batch.set(userRef, { siteFix }, { merge: true });
+  batch.set(userRef, { siteFix, auditLeadLinked }, { merge: true });
   batch.update(pendingRef, {
     claimState: 'claimed',
     claimedByUserId: uid,

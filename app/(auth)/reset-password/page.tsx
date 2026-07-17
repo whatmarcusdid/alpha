@@ -7,12 +7,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthPageLayout } from '@/components/auth/AuthPageLayout';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 const authInputClassName =
-  'min-h-[40px] h-10 rounded-md border-[#d1d5db] px-5 py-2 text-sm text-[#030712] placeholder:text-[#52525b] focus-visible:ring-[#2920a5]';
-
-const primaryButtonClassName =
-  'inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#241a94] disabled:cursor-not-allowed disabled:opacity-50';
+  'min-h-[40px] h-10 rounded-md border-[#d1d5db] px-5 py-2 text-sm text-[#030712] placeholder:text-[#52525b] focus-visible:ring-[#2920A5]';
 
 const secondaryButtonClassName =
   'inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border-[3px] border-[#2920a5] bg-white px-6 py-2.5 text-base font-semibold text-[#2920a5] transition-colors hover:bg-[#f5f3ff]';
@@ -177,9 +175,9 @@ function ResetPasswordContent() {
           Invalid Reset Link
         </h1>
         <p className="text-lg leading-[1.5] text-[#030712]">{validationError}</p>
-        <Link href="/forgot-password" className={primaryButtonClassName}>
+        <PrimaryButton href="/forgot-password" className="w-full min-h-[44px] font-semibold">
           Request New Reset
-        </Link>
+        </PrimaryButton>
       </div>
     );
   }
@@ -192,9 +190,9 @@ function ResetPasswordContent() {
           Password reset successfully
         </h1>
         <p className="text-lg leading-[1.5] text-[#030712]">Redirecting you to sign in…</p>
-        <Link href="/signin" className={primaryButtonClassName}>
+        <PrimaryButton href="/signin" className="w-full min-h-[44px] font-semibold">
           Go to sign in
-        </Link>
+        </PrimaryButton>
       </div>
     );
   }
@@ -272,9 +270,13 @@ function ResetPasswordContent() {
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
 
         <div className="flex flex-col gap-6">
-          <button type="submit" disabled={!canSubmit} className={primaryButtonClassName}>
+          <PrimaryButton
+            type="submit"
+            disabled={!canSubmit}
+            className="w-full min-h-[44px] font-semibold"
+          >
             {submitting ? 'Resetting…' : 'Reset password'}
-          </button>
+          </PrimaryButton>
 
           <Link href="/signin" className={secondaryButtonClassName}>
             Back to sign in

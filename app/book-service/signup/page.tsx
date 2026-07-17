@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { signInWithCustomToken } from '@/lib/auth';
 import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import { AppleIcon, GoogleIcon } from '@/components/ui/icons';
@@ -19,10 +20,7 @@ type FieldErrors = {
 };
 
 const INPUT_CLASS =
-  'flex h-[40px] min-h-[40px] w-full rounded-[6px] border border-[rgba(111,121,122,0.4)] bg-white px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4ed8] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-
-const BS_PRIMARY_BTN =
-  'flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#1d4ed8] px-6 py-[10px] text-base font-bold leading-[1.5] text-white transition-colors hover:bg-[#1e40af] disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-[40px] min-h-[40px] w-full rounded-[6px] border border-[rgba(111,121,122,0.4)] bg-white px-5 py-3 text-sm tracking-[-0.14px] text-[#030712] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2920A5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 function mapCreateAccountError(status: number, message: string): string {
   if (status === 403) {
@@ -83,7 +81,7 @@ function SignupContent() {
 
   if (!orderId) {
     return (
-      <div className="relative flex min-h-screen flex-col bg-white">
+      <div className="relative flex min-h-screen flex-col bg-slate-50">
         <div className="absolute left-6 top-10 z-10 md:left-10">
           <BookServiceHeader variant="inline" />
         </div>
@@ -94,9 +92,9 @@ function SignupContent() {
           <p className="text-lg leading-[1.5] text-[#030712]">
             Invalid signup link. Please return to your confirmation page.
           </p>
-          <Link href="/book-service/confirmation" className={BS_PRIMARY_BTN}>
+          <PrimaryButton href="/book-service/confirmation" className="w-full">
             Return to confirmation
-          </Link>
+          </PrimaryButton>
         </main>
       </div>
     );
@@ -163,7 +161,7 @@ function SignupContent() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-white">
+    <div className="relative flex min-h-screen flex-col bg-slate-50">
       <div className="absolute left-6 top-10 z-10 md:left-10">
         <BookServiceHeader variant="inline" />
       </div>
@@ -241,15 +239,15 @@ function SignupContent() {
             </div>
             <Link
               href="/forgot-password"
-              className="text-left text-base font-bold leading-[1.5] text-[#1d4ed8] hover:underline"
+              className="text-left text-base font-bold leading-[1.5] text-[#2920A5] hover:underline"
             >
               Forgot your password?
             </Link>
           </div>
 
-          <button type="submit" disabled={loading} className={BS_PRIMARY_BTN}>
+          <PrimaryButton type="submit" disabled={loading} className="w-full">
             {loading ? 'Creating your account…' : 'Create New Account'}
-          </button>
+          </PrimaryButton>
 
           {submitError ? (
             <p className="text-left text-sm font-semibold leading-[1.5] text-[#e7000b]">
@@ -294,7 +292,7 @@ export default function BookServiceSignupPage() {
   return (
     <Suspense
       fallback={
-        <div className="relative flex min-h-screen flex-col bg-white">
+        <div className="relative flex min-h-screen flex-col bg-slate-50">
           <div className="absolute left-6 top-10 z-10 md:left-10">
             <BookServiceHeader variant="inline" />
           </div>

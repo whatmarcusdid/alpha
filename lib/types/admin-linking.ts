@@ -24,3 +24,16 @@ export type AdminOrderListItem = {
   normalizedEmail: string;
   timestamp: string;
 };
+
+export type UnlinkedAuditLeadRecordType = 'order' | 'account';
+
+export type UnlinkedAuditLeadRecord = {
+  type: UnlinkedAuditLeadRecordType;
+  /** orderId for order rows; userId for account rows */
+  recordId: string;
+  customerEmail: string;
+  /** Human-readable SKU name for orders; null for account-only rows */
+  sku: string | null;
+  createdAt: string;
+  auditLeadId: string;
+};

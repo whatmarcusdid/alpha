@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ratch } from '@/lib/fonts/ratch';
 import { getBookingIntake } from '@/lib/booking';
 import { trackGamePlanCallScheduleSubmitted } from '@/lib/analytics';
@@ -27,10 +28,7 @@ type BookingIntakeData = {
 };
 
 const OUTLINE_BUTTON_CLASS =
-  'flex min-h-[40px] min-w-[225px] items-center justify-center rounded-lg border-2 border-[#2920a5] px-6 py-2 text-base font-bold leading-[1.5] text-[#2920a5] shadow-[4px_8px_24px_0px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#f4f3ff]';
-
-const PRIMARY_BUTTON_CLASS =
-  'flex min-h-[40px] min-w-[225px] items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2 text-base font-bold leading-[1.5] text-white shadow-[4px_8px_12px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#211880]';
+  'flex min-h-[40px] min-w-[225px] items-center justify-center rounded-lg border-2 border-[#2920A5] px-6 py-2 text-base font-bold leading-[1.5] text-[#2920A5] shadow-[4px_8px_24px_0px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#f4f3ff]';
 
 function SchedulePageShell({ children }: { children: React.ReactNode }) {
   return (
@@ -246,13 +244,13 @@ export default function SchedulePage() {
             Go Back
           </button>
 
-          <button
+          <PrimaryButton
             type="button"
             onClick={handleConfirm}
-            className={`${PRIMARY_BUTTON_CLASS} w-full sm:w-[225px]`}
+            className="w-full min-w-[225px] sm:w-[225px]"
           >
             Confirm &amp; Schedule
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </SchedulePageShell>

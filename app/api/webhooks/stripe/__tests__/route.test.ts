@@ -17,6 +17,7 @@ const {
   pendingOrderSet,
   batchCommit,
   auditLeadsUpdate,
+  auditLeadGet,
   analyticsAdd,
   resolveOrCreateUserIdForInvite,
   sendSiteFixPaymentConfirmedEmail,
@@ -72,6 +73,7 @@ const {
     pendingOrderSet: vi.fn(),
     batchCommit: vi.fn(async () => undefined),
     auditLeadsUpdate: vi.fn(async () => undefined),
+    auditLeadGet: vi.fn(async () => ({ exists: true })),
     analyticsAdd: vi.fn(async () => undefined),
     resolveOrCreateUserIdForInvite: vi.fn(async () => null),
     sendSiteFixPaymentConfirmedEmail: vi.fn(async () => undefined),
@@ -99,7 +101,7 @@ vi.mock('@/lib/firebase/admin', () => ({
         return { doc: () => ({ __collection: 'pending_orders' }) };
       }
       if (name === 'auditLeads') {
-        return { doc: () => ({ update: auditLeadsUpdate }) };
+        return { doc: () => ({ get: auditLeadGet, update: auditLeadsUpdate }) };
       }
       if (name === 'analyticsEvents') {
         return { add: analyticsAdd };
@@ -141,6 +143,8 @@ describe('POST /api/webhooks/stripe — site fix idempotency', () => {
     pendingOrderSet.mockClear();
     batchCommit.mockClear();
     auditLeadsUpdate.mockClear();
+    auditLeadGet.mockClear();
+    auditLeadGet.mockResolvedValue({ exists: true });
     analyticsAdd.mockClear();
     resolveOrCreateUserIdForInvite.mockClear();
     sendSiteFixPaymentConfirmedEmail.mockClear();

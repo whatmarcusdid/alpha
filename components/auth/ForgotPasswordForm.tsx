@@ -10,6 +10,7 @@ import {
 } from '@/lib/analytics';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 
 type ForgotPasswordFormData = {
@@ -154,14 +155,13 @@ export function ForgotPasswordForm() {
             </div>
 
             <div className="flex flex-col gap-6">
-              <button
+              <PrimaryButton
                 type="submit"
                 disabled={loading}
-                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#241a94] disabled:cursor-not-allowed disabled:opacity-50"
-                aria-busy={loading}
+                className="w-full min-h-[44px] font-semibold"
               >
                 {loading ? 'Sending…' : 'Send reset instructions'}
-              </button>
+              </PrimaryButton>
 
               <Link
                 href="/signin"
@@ -173,12 +173,9 @@ export function ForgotPasswordForm() {
           </form>
         ) : (
           <div className="flex flex-col gap-6" role="status" aria-live="polite">
-            <Link
-              href="/signin"
-              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#2920a5] px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#241a94]"
-            >
+            <PrimaryButton href="/signin" className="w-full min-h-[44px] font-semibold">
               Back to sign in
-            </Link>
+            </PrimaryButton>
 
             <button
               type="button"

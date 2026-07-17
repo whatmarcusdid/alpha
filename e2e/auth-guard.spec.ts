@@ -16,4 +16,9 @@ test.describe('auth guard redirects', () => {
     await page.goto('/book-service/access');
     await expect(page).toHaveURL(/\/signin\?redirect=%2Fbook-service%2Faccess/);
   });
+
+  test('redirects unauthenticated /admin to /signin', async ({ page }) => {
+    await page.goto('/admin/needs-audit-lead-link');
+    await expect(page).toHaveURL(/\/signin\?redirect=%2Fadmin%2Fneeds-audit-lead-link/);
+  });
 });
