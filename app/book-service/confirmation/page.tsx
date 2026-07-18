@@ -158,27 +158,40 @@ function ConfirmationPageContent() {
   const router = useRouter();
   const orderIdParam = searchParams.get('orderId');
   const emailParam = searchParams.get('email')?.toLowerCase().trim() ?? '';
+  const sessionIdParam = searchParams.get('session_id')?.trim() ?? '';
   const isPreview = isDevPreviewEnabled(searchParams);
   const previewOrder = isPreview ? getPreviewOrder(searchParams) : null;
 
+  const initialStoredEmail =
+    typeof window !== 'undefined' ? readCheckoutEmail() ?? '' : '';
+
   const [checkoutEmail, setCheckoutEmail] = useState<string>(() => {
     if (emailParam) return emailParam;
-    if (typeof window !== 'undefined') {
-      return readCheckoutEmail() ?? '';
-    }
-    return '';
+    return initialStoredEmail;
   });
-  const [emailInput, setEmailInput] = useState<string>(checkoutEmail);
+  const [emailInput, setEmailInput] = useState<string>(() => emailParam || initialStoredEmail);
+  const [isResolvingCheckoutEmail, setIsResolvingCheckoutEmail] = useState<boolean>(() => {
+    if (isPreview || !orderIdParam) return false;
+    if (emailParam || initialStoredEmail) return false;
+    return Boolean(sessionIdParam);
+  });
   const [view, setView] = useState<ConfirmationView>(() => {
     if (isPreview) return 'confirmed';
     if (!orderIdParam) return 'invalid';
-    return checkoutEmail ? 'loading' : 'invalid';
+    if (emailParam || initialStoredEmail) return 'loading';
+    if (sessionIdParam) return 'loading';
+    return 'invalid';
   });
   const [order, setOrder] = useState<SiteFixOrderStatusResponse | null>(
     previewOrder
   );
   const [needsEmail, setNeedsEmail] = useState<boolean>(
-    () => Boolean(orderIdParam) && !checkoutEmail && !isPreview
+    () =>
+      Boolean(orderIdParam) &&
+      !emailParam &&
+      !initialStoredEmail &&
+      !sessionIdParam &&
+      !isPreview
   );
 
   useEffect(() => {
@@ -188,7 +201,70 @@ function ConfirmationPageContent() {
   }, [emailParam]);
 
   useEffect(() => {
-    if (isPreview || !orderIdParam || needsEmail || !checkoutEmail) return;
+    if (isPreview || !orderIdParam || !sessionIdParam) return;
+    if (emailParam || checkoutEmail) return;
+
+    let cancelled = false;
+
+    async function resolveCheckoutEmailFromSession() {
+      setIsResolvingCheckoutEmail(true);
+      setView('loading');
+
+      try {
+        const params = new URLSearchParams({
+          orderId: orderIdParam!,
+          session_id: sessionIdParam,
+        });
+        const response = await fetch(
+          `/api/book-service/checkout-session-email?${params.toString()}`
+        );
+
+        if (cancelled) return;
+
+        if (response.ok) {
+          const payload = await response.json();
+          const resolvedEmail =
+            typeof payload?.data?.email === 'string'
+              ? payload.data.email.toLowerCase().trim()
+              : '';
+
+          if (resolvedEmail) {
+            storeCheckoutEmail(resolvedEmail);
+            setCheckoutEmail(resolvedEmail);
+            setEmailInput(resolvedEmail);
+            setNeedsEmail(false);
+            setIsResolvingCheckoutEmail(false);
+            setView('loading');
+            return;
+          }
+        }
+      } catch {
+        // fall through to manual email entry
+      }
+
+      if (!cancelled) {
+        setIsResolvingCheckoutEmail(false);
+        setNeedsEmail(true);
+      }
+    }
+
+    void resolveCheckoutEmailFromSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    checkoutEmail,
+    emailParam,
+    isPreview,
+    orderIdParam,
+    sessionIdParam,
+  ]);
+
+  useEffect(() => {
+    if (isPreview || !orderIdParam || needsEmail || !checkoutEmail || isResolvingCheckoutEmail) {
+      return;
+    }
 
     trackBookServiceEvent('site_fix_confirmation_loaded', {
       orderId: orderIdParam,
@@ -237,7 +313,7 @@ function ConfirmationPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [checkoutEmail, isPreview, needsEmail, orderIdParam]);
+  }, [checkoutEmail, isPreview, isResolvingCheckoutEmail, needsEmail, orderIdParam]);
 
   const handleEmailSubmit = useCallback(() => {
     const normalized = emailInput.toLowerCase().trim();
@@ -312,7 +388,9 @@ function ConfirmationPageContent() {
             aria-hidden="true"
           />
           <p className="text-lg font-semibold leading-[1.5] text-[#030712]">
-            Confirming your payment…
+            {isResolvingCheckoutEmail
+              ? 'Loading your order confirmation…'
+              : 'Confirming your payment…'}
           </p>
         </div>
       </ConfirmationPageShell>

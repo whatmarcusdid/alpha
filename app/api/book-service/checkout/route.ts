@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { withRateLimit } from '@/lib/middleware/apiHandler';
 import { checkoutLimiter as bookServiceCheckoutLimiter } from '@/lib/middleware/rateLimiting';
+import { buildBookServiceConfirmationSuccessUrl } from '@/lib/book-service/build-confirmation-success-url';
 import { buildSiteFixMetadata } from '@/lib/book-service/stripe-metadata';
 import { getSKUPriceMap } from '@/lib/book-service/skus';
 import { warnIfBaseUrlLooksWrong } from '@/lib/book-service/validate-base-url';
@@ -63,11 +64,11 @@ export const POST = withRateLimit(async (req: NextRequest) => {
         sku: metadata.sku,
         normalizedEmail: metadata.normalizedEmail,
       },
-      success_url: `${baseUrl}/book-service/confirmation?orderId=${orderId}${
+      success_url: buildBookServiceConfirmationSuccessUrl(
+        baseUrl,
+        orderId,
         normalizedEmail
-          ? `&email=${encodeURIComponent(normalizedEmail)}`
-          : ''
-      }`,
+      ),
       cancel_url: `${baseUrl}/book-service/select`,
       ...(normalizedEmail
         ? { customer_email: normalizedEmail.toLowerCase().trim() }

@@ -103,7 +103,22 @@ describe('POST /api/book-service/checkout', () => {
         metadata: expect.objectContaining({
           normalizedEmail: 'buyer@example.com',
         }),
+        success_url: expect.stringContaining('email=buyer%40example.com'),
       })
+    );
+    expect(checkoutSessionsCreate.mock.calls[0][0].success_url).toContain(
+      'session_id={CHECKOUT_SESSION_ID}'
+    );
+  });
+
+  it('always includes Stripe session_id placeholder in success_url', async () => {
+    const response = await POST(makeRequest({ ...baseBody }));
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json.success).toBe(true);
+    expect(checkoutSessionsCreate.mock.calls[0][0].success_url).toMatch(
+      /^http:\/\/localhost:3000\/book-service\/confirmation\?orderId=[^&]+&session_id=\{CHECKOUT_SESSION_ID\}$/
     );
   });
 });

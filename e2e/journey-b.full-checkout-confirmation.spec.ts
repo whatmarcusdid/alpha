@@ -108,6 +108,10 @@ test('real checkout payment + synthetic webhook -> confirmation page resolves', 
   );
   await expect(page).toHaveURL(localConfirmationUrl, { timeout: 30_000 });
 
+  await expect(
+    page.getByRole('heading', { name: 'Confirm your email to view your order' })
+  ).toHaveCount(0);
+
   const orderId = new URL(page.url()).searchParams.get('orderId');
   expect(orderId).toBeTruthy();
 
