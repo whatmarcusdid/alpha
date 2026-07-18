@@ -15,6 +15,7 @@ import {
   generalLimiter,
   type RateLimitHeaders,
 } from './rateLimiting';
+import { devOnlyErrorDetails } from './dev-error-details';
 import type { Ratelimit } from '@upstash/ratelimit';
 
 /**
@@ -106,9 +107,7 @@ export function withAuthAndRateLimit(
       return NextResponse.json(
         {
           error: 'An unexpected error occurred. Please try again later.',
-          ...(process.env.NODE_ENV === 'development' && {
-            details: error.message,
-          }),
+          ...devOnlyErrorDetails(error),
         },
         { status: 500 }
       );
@@ -168,9 +167,7 @@ export function withRateLimit(
       return NextResponse.json(
         {
           error: 'An unexpected error occurred. Please try again later.',
-          ...(process.env.NODE_ENV === 'development' && {
-            details: error.message,
-          }),
+          ...devOnlyErrorDetails(error),
         },
         { status: 500 }
       );
@@ -221,9 +218,7 @@ export function withAuth(handler: ApiHandler) {
       return NextResponse.json(
         {
           error: 'An unexpected error occurred. Please try again later.',
-          ...(process.env.NODE_ENV === 'development' && {
-            details: error.message,
-          }),
+          ...devOnlyErrorDetails(error),
         },
         { status: 500 }
       );
@@ -254,9 +249,7 @@ export function withAdmin(handler: ApiHandler) {
       return NextResponse.json(
         {
           error: 'An unexpected error occurred. Please try again later.',
-          ...(process.env.NODE_ENV === 'development' && {
-            details: error instanceof Error ? error.message : 'Unknown error',
-          }),
+          ...devOnlyErrorDetails(error instanceof Error ? error : { message: 'Unknown error' }),
         },
         { status: 500 }
       );

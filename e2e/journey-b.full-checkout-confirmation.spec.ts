@@ -70,6 +70,10 @@ test('real checkout payment + synthetic webhook -> confirmation page resolves', 
 
   await expect(page.getByRole('heading', { name: 'Payment method' })).toBeVisible();
   const checkoutEmail = `bs-e2e-pay-${Date.now()}@example.com`;
+  await page.evaluate(
+    ({ email, key }) => sessionStorage.setItem(key, email),
+    { email: checkoutEmail, key: 'book-service:checkoutEmail' }
+  );
   await page.getByPlaceholder('email@example.com').fill(checkoutEmail);
   // "Card" is collapsed by default when multiple payment methods are
   // offered. The radio's visual overlay (an accordion toggle button) fails

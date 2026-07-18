@@ -13,9 +13,13 @@ import {
 } from '@/lib/loops';
 import { updateLeadWithPayment } from '@/lib/notion-sales';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/formatters';
+import { devOnlyErrorDetails } from '@/lib/middleware/dev-error-details';
+import { withRateLimit } from '@/lib/middleware/apiHandler';
+import { webhookLimiter } from '@/lib/middleware/rateLimiting';
 import { getStripe, getStripeCustomerPortalUrl } from '@/lib/stripe-server';
 import { handleSiteFixPayment } from '@/lib/book-service/handleSiteFixPayment';
 import { isSiteFixSession } from '@/lib/book-service/stripe-metadata';
+import { isSlackNotificationsEnabled } from '@/lib/slack-enabled';
 
 // --- Growth Engine Helpers ---
 
@@ -34,6 +38,10 @@ async function sendPaymentSlackNotification(data: {
   notionUrl?: string;
   stripeCustomerId: string;
 }): Promise<void> {
+  if (!isSlackNotificationsEnabled()) {
+    return;
+  }
+
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) {
     console.warn('⚠️ [Slack] SLACK_WEBHOOK_URL not configured, skipping');
@@ -408,7 +416,7 @@ async function handleChargeRefunded(event: Stripe.Event): Promise<void> {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function processStripeWebhook(req: NextRequest) {
   return Sentry.startSpan(
     {
       op: 'webhook.stripe',
@@ -427,7 +435,13 @@ export async function POST(req: NextRequest) {
         span.setAttribute('eventType', event.type);
       } catch (err: any) {
         console.error(`Webhook signature verification failed: ${err.message}`);
-        return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: 'Webhook signature verification failed',
+            ...devOnlyErrorDetails(err),
+          },
+          { status: 400 }
+        );
       }
 
       try {
@@ -474,6 +488,8 @@ export async function POST(req: NextRequest) {
     }
   );
 }
+
+export const POST = withRateLimit(processStripeWebhook, webhookLimiter);
 
 async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
   if (!adminDb) {

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import * as admin from 'firebase-admin';
+import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
+import { devOnlyErrorDetails } from '@/lib/middleware/dev-error-details';
+import { checkoutLimiter } from '@/lib/middleware/rateLimiting';
 import { PRICING } from '@/lib/stripe';
 import { validateRequestBody, createSubscriptionSchema } from '@/lib/validation';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndRateLimit(async (request, { userId }) => {
   try {
-    // Check if Firebase Admin is initialized
     if (!adminAuth || !adminDb) {
       return NextResponse.json(
         { success: false, error: 'Server configuration error' },
@@ -17,22 +18,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const idToken = authHeader.split('Bearer ')[1];
-
-    // Verify Firebase ID token
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const userId = decodedToken.uid;
-
-    // Validate request body
     const validation = await validateRequestBody(request, createSubscriptionSchema);
     if (!validation.success) {
       return validation.error;
@@ -40,21 +25,17 @@ export async function POST(request: NextRequest) {
 
     const { email, tier, billingCycle, couponCode, paymentMethodId } = validation.data;
 
-    // Get the Stripe price ID for the tier
     const pricingData = PRICING[tier as keyof typeof PRICING];
     const priceId = pricingData.stripePriceId;
 
-    // Check if customer already exists
     let customer: Stripe.Customer;
     const userDoc = await adminDb.collection('users').doc(userId).get();
     const userData = userDoc.data();
     const existingCustomerId = userData?.subscription?.stripeCustomerId;
 
     if (existingCustomerId) {
-      // Retrieve existing customer
-      customer = await stripe.customers.retrieve(existingCustomerId) as Stripe.Customer;
+      customer = (await stripe.customers.retrieve(existingCustomerId)) as Stripe.Customer;
     } else {
-      // Create new Stripe customer
       customer = await stripe.customers.create({
         email: email,
         metadata: {
@@ -62,20 +43,17 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Update Firestore with customer ID
       await adminDb.collection('users').doc(userId).update({
         'subscription.stripeCustomerId': customer.id,
         'subscription.updatedAt': new Date().toISOString(),
       });
     }
 
-    // Attach payment method if provided
     if (paymentMethodId) {
       await stripe.paymentMethods.attach(paymentMethodId, {
         customer: customer.id,
       });
 
-      // Set as default payment method
       await stripe.customers.update(customer.id, {
         invoice_settings: {
           default_payment_method: paymentMethodId,
@@ -83,7 +61,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Build subscription parameters
     const subscriptionParams: Stripe.SubscriptionCreateParams = {
       customer: customer.id,
       items: [{ price: priceId }],
@@ -97,15 +74,13 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // Apply coupon if provided
     if (couponCode) {
       try {
         const coupon = await stripe.coupons.retrieve(couponCode);
         if (coupon && coupon.valid !== false) {
-          // Add coupon to subscription params using type assertion
-          (subscriptionParams as any).coupon = couponCode;
-          
-          // Store coupon info in metadata
+          (subscriptionParams as Stripe.SubscriptionCreateParams & { coupon?: string }).coupon =
+            couponCode;
+
           if (subscriptionParams.metadata) {
             subscriptionParams.metadata.couponApplied = couponCode;
             if (coupon.percent_off) {
@@ -118,14 +93,11 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         console.error('Error validating coupon for subscription:', error);
-        // Continue without coupon if validation fails
       }
     }
 
-    // Create subscription
     const subscription = await stripe.subscriptions.create(subscriptionParams);
 
-    // Calculate discount amount if coupon was applied
     let discountInfo = null;
     if (couponCode && (subscription as any).discount) {
       const coupon = (subscription as any).discount.coupon;
@@ -136,7 +108,6 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Update Firestore with subscription details
     await adminDb.collection('users').doc(userId).update({
       'subscription.tier': tier,
       'subscription.status': subscription.status,
@@ -159,12 +130,15 @@ export async function POST(request: NextRequest) {
       },
       discount: discountInfo,
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating subscription:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to create subscription' },
+      {
+        success: false,
+        error: 'Failed to create subscription',
+        ...devOnlyErrorDetails(error),
+      },
       { status: 500 }
     );
   }
-}
+}, checkoutLimiter);

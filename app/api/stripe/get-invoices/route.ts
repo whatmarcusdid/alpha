@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
+import { devOnlyErrorDetails } from '@/lib/middleware/dev-error-details';
 import { generalLimiter } from '@/lib/middleware/rateLimiting';
 import { adminDb } from '@/lib/firebase/admin';
 
@@ -178,7 +179,10 @@ export const GET = withAuthAndRateLimit(
           });
 
           return NextResponse.json(
-            { error: 'Failed to fetch invoices', details: error.message },
+            {
+              error: 'Failed to fetch invoices',
+              ...devOnlyErrorDetails(error),
+            },
             { status: 500 }
           );
         }

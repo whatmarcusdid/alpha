@@ -2,6 +2,8 @@
  * Safe Browsing lookup; combine `flagged` with Sucuri output in the audit route.
  */
 
+import { assertSafeUrl, isSafeFetchError } from '@/lib/security/safe-fetch';
+
 export type SafeBrowsingResult =
   | { success: true; flagged: boolean }
   | { success: false; error: string };
@@ -33,6 +35,15 @@ function parseFindResponse(body: unknown): { flagged: boolean } | null {
 }
 
 export async function checkSafeBrowsing(url: string): Promise<SafeBrowsingResult> {
+  try {
+    await assertSafeUrl(url);
+  } catch (err) {
+    if (isSafeFetchError(err)) {
+      return { success: false, error: SAFE_ERROR };
+    }
+    return { success: false, error: SAFE_ERROR };
+  }
+
   const apiKey = process.env.GOOGLE_SAFE_BROWSING_API_KEY;
   if (!apiKey || apiKey.length === 0) {
     return { success: false, error: SAFE_ERROR };

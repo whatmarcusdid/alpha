@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { revokeUserSessions } from '@/lib/firebase/revoke-user-sessions';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
 
     try {
       await adminAuth.updateUser(userId, { password });
+      await revokeUserSessions(userId);
       return NextResponse.json({
         success: true,
         message: 'Your password has been reset successfully. You can now sign in with your new password.',

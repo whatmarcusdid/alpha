@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminDb } from '@/lib/firebase/admin';
 import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
+import { devOnlyErrorDetails } from '@/lib/middleware/dev-error-details';
 import { generalLimiter } from '@/lib/middleware/rateLimiting';
 import { validateRequestBody, upgradeSubscriptionSchema } from '@/lib/validation';
 import * as Sentry from '@sentry/nextjs';
@@ -215,14 +216,21 @@ export const POST = withAuthAndRateLimit(
 
           if (error instanceof Stripe.errors.StripeError) {
             return NextResponse.json(
-              { success: false, error: `Stripe error: ${error.message}` },
+              {
+                success: false,
+                error: 'Failed to preview proration',
+                ...devOnlyErrorDetails(error),
+              },
               { status: 500 }
             );
           }
 
-          const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
           return NextResponse.json(
-            { success: false, error: errorMessage },
+            {
+              success: false,
+              error: 'An unexpected error occurred. Please try again later.',
+              ...devOnlyErrorDetails(error),
+            },
             { status: 500 }
           );
         }

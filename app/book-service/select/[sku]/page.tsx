@@ -15,7 +15,7 @@ import {
   isValidSiteFixSku,
   parseSkusParam,
 } from '@/lib/book-service/parse-skus-param';
-import { readAuditLeadId } from '@/lib/book-service/storage';
+import { readAuditLeadId, storeCheckoutEmail } from '@/lib/book-service/storage';
 import type { SiteFixSKU } from '@/lib/book-service/skus';
 import { SUPPORT_EMAIL } from '@/lib/config';
 
@@ -65,6 +65,7 @@ function ReviewPageContent() {
 
       if (normalizedEmail) {
         body.normalizedEmail = normalizedEmail;
+        storeCheckoutEmail(normalizedEmail);
       }
 
       const res = await fetch('/api/book-service/checkout', {

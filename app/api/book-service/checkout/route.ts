@@ -63,7 +63,11 @@ export const POST = withRateLimit(async (req: NextRequest) => {
         sku: metadata.sku,
         normalizedEmail: metadata.normalizedEmail,
       },
-      success_url: `${baseUrl}/book-service/confirmation?orderId=${orderId}`,
+      success_url: `${baseUrl}/book-service/confirmation?orderId=${orderId}${
+        normalizedEmail
+          ? `&email=${encodeURIComponent(normalizedEmail)}`
+          : ''
+      }`,
       cancel_url: `${baseUrl}/book-service/select`,
       ...(normalizedEmail
         ? { customer_email: normalizedEmail.toLowerCase().trim() }

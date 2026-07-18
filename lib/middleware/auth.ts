@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/admin';
+import { verifyAuthIdToken } from '@/lib/firebase/verify-id-token';
 
 /**
  * Authentication result type
@@ -68,7 +69,7 @@ export async function verifyAuthToken(req: NextRequest): Promise<AuthResult> {
     }
 
     // Verify token with Firebase Admin
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    const decodedToken = await verifyAuthIdToken(token);
     
     // Extract user ID from decoded token
     const userId = decodedToken.uid;
@@ -224,7 +225,7 @@ export async function requireAdmin(
   }
 
   try {
-    const decoded = await adminAuth.verifyIdToken(token);
+    const decoded = await verifyAuthIdToken(token);
 
     if (decoded.admin !== true) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

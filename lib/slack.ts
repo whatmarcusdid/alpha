@@ -5,6 +5,8 @@
  * Each channel has its own webhook URL (SLACK_WEBHOOK_URL, SLACK_SUPPORT_WEBHOOK_URL, SLACK_SALES_WEBHOOK_URL).
  */
 
+import { isSlackNotificationsEnabled } from '@/lib/slack-enabled';
+
 // --- Types ---
 
 export interface SlackBlock {
@@ -32,6 +34,10 @@ export interface SlackWebhookPayload {
 export async function sendSlackSalesNotification(
   payload: SlackWebhookPayload
 ): Promise<boolean> {
+  if (!isSlackNotificationsEnabled()) {
+    return false;
+  }
+
   const webhookUrl = process.env.SLACK_SALES_WEBHOOK_URL;
   if (!webhookUrl) {
     console.warn('[Slack] SLACK_SALES_WEBHOOK_URL not configured, skipping');
@@ -171,6 +177,10 @@ export async function sendAuditLeadNotification(params: {
   seoGrade: string;
   seoScore: number;
 }): Promise<void> {
+  if (!isSlackNotificationsEnabled()) {
+    return;
+  }
+
   const webhookUrl = process.env.SLACK_SALES_WEBHOOK_URL;
   if (!webhookUrl) {
     console.warn('[Slack] SLACK_SALES_WEBHOOK_URL not configured, skipping');

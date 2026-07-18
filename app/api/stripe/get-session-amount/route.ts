@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+
 import { withRateLimit } from '@/lib/middleware/apiHandler';
 import { generalLimiter } from '@/lib/middleware/rateLimiting';
+import { emailsMatch } from '@/lib/stripe/authenticated-email';
+import { extractCheckoutSessionEmail } from '@/lib/stripe/stripe-object-email';
+import { validateRequestBody, getSessionAmountSchema } from '@/lib/validation';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export const POST = withRateLimit(
   async (req: NextRequest) => {
     try {
-      const body = await req.json().catch(() => ({}));
-      const sessionId = typeof body?.sessionId === 'string' ? body.sessionId.trim() : null;
-
-      if (!sessionId) {
-        return NextResponse.json(
-          { success: false, error: 'Session ID is required' },
-          { status: 400 }
-        );
+      const validation = await validateRequestBody(req, getSessionAmountSchema);
+      if (!validation.success) {
+        return validation.error;
       }
+
+      const { sessionId, email } = validation.data;
 
       const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-      // Only allow retrieving sessions created in the last hour (security measure)
+      // Only allow retrieving sessions created in the last hour (defense in depth)
       const createdAt = session.created * 1000;
       const oneHourAgo = Date.now() - 60 * 60 * 1000;
 
@@ -31,18 +32,28 @@ export const POST = withRateLimit(
         );
       }
 
+      const sessionOwnerEmail = extractCheckoutSessionEmail(session);
+
+      if (!sessionOwnerEmail || !emailsMatch(email, sessionOwnerEmail)) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden' },
+          { status: 403 }
+        );
+      }
+
       return NextResponse.json({
         success: true,
         amountTotal: session.amount_total || 0,
         currency: session.currency || 'usd',
         paymentStatus: session.payment_status || 'unpaid',
         tier: session.metadata?.tier || 'essential',
-        customerEmail: session.customer_details?.email || null,
+        customerEmail: session.customer_details?.email || sessionOwnerEmail,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error retrieving session amount:', error);
 
-      if (error.type === 'StripeInvalidRequestError') {
+      const stripeError = error as { type?: string };
+      if (stripeError.type === 'StripeInvalidRequestError') {
         return NextResponse.json(
           { success: false, error: 'Invalid session' },
           { status: 404 }

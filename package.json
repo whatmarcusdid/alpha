@@ -15,7 +15,6 @@
     "create-test-tickets": "tsx scripts/create-test-tickets.ts",
     "seed:fix-job": "tsx scripts/seed-fix-job.ts",
     "backfill:sitefix-literal-keys": "tsx scripts/backfill-sitefix-literal-keys.ts",
-    "test:scout": "tsx scripts/test-delivery-scout.ts",
     "test:api": "newman run api-tests/book-service-api.postman_collection.json -e api-tests/production.postman_environment.json --folder \"1 — Health / Smoke API (upstream)\"",
     "test:api:full": "newman run api-tests/book-service-api.postman_collection.json -e api-tests/local.postman_environment.json --env-var \"runMutatingSmoke=true\"",
     "test:api:local": "node api-tests/scripts/run-local-mutating-smoke.mjs"

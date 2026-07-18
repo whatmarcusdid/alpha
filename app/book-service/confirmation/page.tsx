@@ -8,6 +8,10 @@ import { trackBookServiceEvent } from '@/lib/book-service/analytics-client';
 import { BookServiceHeader } from '@/lib/book-service/BookServiceHeader';
 import { isDevPreviewEnabled } from '@/lib/book-service/dev-preview';
 import {
+  readCheckoutEmail,
+  storeCheckoutEmail,
+} from '@/lib/book-service/storage';
+import {
   WHAT_HAPPENS_NEXT_ITEMS,
   buildConfirmationHeading,
   buildConfirmationSubtext,
@@ -29,11 +33,14 @@ const LIST_CLASS =
   'list-disc space-y-0 text-lg leading-[1.5] text-[#030712] [&_ul]:mt-0 [&_ul]:list-disc [&>li]:ms-[27px] [&_ul>li]:ms-[54px]';
 
 async function fetchOrderStatus(
-  orderId: string
+  orderId: string,
+  email: string
 ): Promise<{ ok: true; data: SiteFixOrderStatusResponse } | { ok: false; status: number }> {
-  const response = await fetch(
-    `/api/book-service/order-status?orderId=${encodeURIComponent(orderId)}`
-  );
+  const params = new URLSearchParams({
+    orderId,
+    email: email.toLowerCase().trim(),
+  });
+  const response = await fetch(`/api/book-service/order-status?${params.toString()}`);
 
   if (response.ok) {
     const payload = await response.json();
@@ -150,19 +157,38 @@ function ConfirmationPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderIdParam = searchParams.get('orderId');
+  const emailParam = searchParams.get('email')?.toLowerCase().trim() ?? '';
   const isPreview = isDevPreviewEnabled(searchParams);
   const previewOrder = isPreview ? getPreviewOrder(searchParams) : null;
 
+  const [checkoutEmail, setCheckoutEmail] = useState<string>(() => {
+    if (emailParam) return emailParam;
+    if (typeof window !== 'undefined') {
+      return readCheckoutEmail() ?? '';
+    }
+    return '';
+  });
+  const [emailInput, setEmailInput] = useState<string>(checkoutEmail);
   const [view, setView] = useState<ConfirmationView>(() => {
     if (isPreview) return 'confirmed';
-    return orderIdParam ? 'loading' : 'invalid';
+    if (!orderIdParam) return 'invalid';
+    return checkoutEmail ? 'loading' : 'invalid';
   });
   const [order, setOrder] = useState<SiteFixOrderStatusResponse | null>(
     previewOrder
   );
+  const [needsEmail, setNeedsEmail] = useState<boolean>(
+    () => Boolean(orderIdParam) && !checkoutEmail && !isPreview
+  );
 
   useEffect(() => {
-    if (isPreview || !orderIdParam) return;
+    if (emailParam) {
+      storeCheckoutEmail(emailParam);
+    }
+  }, [emailParam]);
+
+  useEffect(() => {
+    if (isPreview || !orderIdParam || needsEmail || !checkoutEmail) return;
 
     trackBookServiceEvent('site_fix_confirmation_loaded', {
       orderId: orderIdParam,
@@ -188,7 +214,7 @@ function ConfirmationPageContent() {
         if (cancelled) return;
 
         try {
-          const result = await fetchOrderStatus(resolvedOrderId);
+          const result = await fetchOrderStatus(resolvedOrderId, checkoutEmail);
           if (result.ok) {
             if (!cancelled) {
               setOrder(result.data);
@@ -211,13 +237,52 @@ function ConfirmationPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [isPreview, orderIdParam]);
+  }, [checkoutEmail, isPreview, needsEmail, orderIdParam]);
+
+  const handleEmailSubmit = useCallback(() => {
+    const normalized = emailInput.toLowerCase().trim();
+    if (!normalized) return;
+    storeCheckoutEmail(normalized);
+    setCheckoutEmail(normalized);
+    setNeedsEmail(false);
+    setView('loading');
+  }, [emailInput]);
 
   const handleContinueToSignup = useCallback(() => {
     const id = order?.orderId ?? orderIdParam;
     if (!id) return;
     router.push(`/book-service/signup?orderId=${encodeURIComponent(id)}`);
   }, [order?.orderId, orderIdParam, router]);
+
+  if (needsEmail) {
+    return (
+      <ConfirmationPageShell>
+        <div className="flex flex-col gap-4">
+          <h1 className="text-[40px] font-extrabold leading-[1.2] tracking-[-0.4px] text-[#030712]">
+            Confirm your email to view your order
+          </h1>
+          <p className="text-lg leading-[1.5] text-[#52525b]">
+            Enter the email address you used at checkout so we can load your
+            order confirmation.
+          </p>
+          <label className="flex flex-col gap-2 text-base font-medium text-[#030712]">
+            Checkout email
+            <input
+              type="email"
+              value={emailInput}
+              onChange={(event) => setEmailInput(event.target.value)}
+              className="min-h-[40px] rounded-lg border border-[#d4d4d8] px-3 text-base text-[#030712]"
+              placeholder="you@company.com"
+              autoComplete="email"
+            />
+          </label>
+          <PrimaryButton onClick={handleEmailSubmit} className="w-full">
+            View confirmation
+          </PrimaryButton>
+        </div>
+      </ConfirmationPageShell>
+    );
+  }
 
   if (view === 'invalid') {
     return (

@@ -1,11 +1,12 @@
 import type { DecodedIdToken } from 'firebase-admin/auth';
 
 import { adminAuth } from '@/lib/firebase/admin';
+import {
+  SESSION_COOKIE_MAX_AGE_MS,
+  SESSION_COOKIE_NAME,
+} from '@/lib/firebase/session-constants';
 
-export const SESSION_COOKIE_NAME = '__session';
-
-/** Firebase session cookie lifetime — 5 days. */
-export const SESSION_COOKIE_MAX_AGE_MS = 60 * 60 * 24 * 5 * 1000;
+export { SESSION_COOKIE_MAX_AGE_MS, SESSION_COOKIE_NAME } from '@/lib/firebase/session-constants';
 
 export type VerifiedSession = {
   uid: string;

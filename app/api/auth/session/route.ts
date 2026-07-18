@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { revokeUserSessions } from '@/lib/firebase/revoke-user-sessions';
 import {
   createSessionCookie,
   SESSION_COOKIE_MAX_AGE_MS,
   SESSION_COOKIE_NAME,
+  verifySessionCookie,
 } from '@/lib/firebase/session';
 
 const createSessionSchema = z.object({
@@ -44,7 +46,20 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  const sessionCookie = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+  if (sessionCookie) {
+    try {
+      const session = await verifySessionCookie(sessionCookie);
+      if (session) {
+        await revokeUserSessions(session.uid);
+      }
+    } catch (error) {
+      console.error('[auth/session] revoke on logout failed:', error);
+    }
+  }
+
   const response = NextResponse.json({ success: true });
   response.cookies.set(SESSION_COOKIE_NAME, '', {
     ...sessionCookieOptions(),

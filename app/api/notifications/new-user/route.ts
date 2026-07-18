@@ -17,6 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { isSlackNotificationsEnabled } from '@/lib/slack-enabled';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -243,6 +244,11 @@ export async function POST(request: NextRequest) {
     }
 
     const data = body as NotificationRequest;
+
+    if (!isSlackNotificationsEnabled()) {
+      console.log('[New User] Slack notifications disabled, skipping');
+      return NextResponse.json({ success: true, skipped: true });
+    }
 
     // ========================================================================
     // STEP 3: Check Slack Webhook URL

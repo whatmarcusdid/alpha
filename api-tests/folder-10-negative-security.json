@@ -472,7 +472,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999"
+        "url": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999&email=unknown@test.local"
       },
       "event": [
         {

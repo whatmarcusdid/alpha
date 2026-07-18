@@ -11,6 +11,24 @@ export type StoredAuditSession = {
   firstName: string;
 };
 
+/** sessionStorage key for checkout email handoff (confirmation page polling) */
+export const CHECKOUT_EMAIL_STORAGE_KEY = 'book-service:checkoutEmail';
+
+export function storeCheckoutEmail(email: string): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(CHECKOUT_EMAIL_STORAGE_KEY, email.toLowerCase().trim());
+}
+
+export function readCheckoutEmail(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem(CHECKOUT_EMAIL_STORAGE_KEY);
+}
+
+export function clearCheckoutEmail(): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(CHECKOUT_EMAIL_STORAGE_KEY);
+}
+
 export function storeAuditLeadId(auditLeadId: string): void {
   if (typeof window === 'undefined') return;
   sessionStorage.setItem(AUDIT_LEAD_ID_STORAGE_KEY, auditLeadId);

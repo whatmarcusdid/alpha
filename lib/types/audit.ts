@@ -61,7 +61,21 @@ export const AuditInputSchema = z.object({
   firstName: z.string().min(1).max(64),
   businessName: z.string().min(1).max(128),
   email: z.string().email(),
-  websiteUrl: z.string().url().max(512),
+  websiteUrl: z
+    .string()
+    .url()
+    .max(512)
+    .refine(
+      (value) => {
+        try {
+          const parsed = new URL(value);
+          return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Website URL must use http or https' }
+    ),
   isClient: z.boolean().optional().default(false),
 });
 

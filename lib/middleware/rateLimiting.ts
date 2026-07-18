@@ -109,23 +109,28 @@ export const generalLimiter = redis
     })
   : null;
 
-// Delivery Scout (Lindy AI): 100 requests per hour per IP
-// Lindy AI automation endpoint - prevents abuse while allowing reasonable automation
-export const deliveryScoutLimiter = redis
-  ? new Ratelimit({
-      redis: redis,
-      limiter: Ratelimit.slidingWindow(100, '1 h'),
-      analytics: true,
-      prefix: 'ratelimit:delivery-scout',
-    })
-  : null;
-
 // Genie Site Audit (public): 20 requests per hour per IP
 export const auditRateLimiter = redis
   ? new Ratelimit({
       redis,
       limiter: Ratelimit.slidingWindow(20, '1 h'),
       prefix: 'audit_ip',
+    })
+  : null;
+
+/**
+ * Session cookie verification (middleware + direct calls): 180 requests per minute per IP.
+ *
+ * Middleware invokes GET /api/auth/verify-session once per document navigation (static
+ * assets and /api/* are excluded from the middleware matcher). Even rapid multi-tab
+ * browsing rarely exceeds ~60/min; 180/min leaves headroom for parallel e2e workers on
+ * localhost sharing one IP while still capping direct hammering of Firebase Admin verify.
+ */
+export const sessionVerifyLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(180, '1 m'),
+      prefix: 'ratelimit:session-verify',
     })
   : null;
 

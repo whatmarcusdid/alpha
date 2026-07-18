@@ -4,6 +4,7 @@ import { generalLimiter } from '@/lib/middleware/rateLimiting';
 import { adminDb } from '@/lib/firebase/admin';
 import { SUPPORT_EMAIL } from '@/lib/config';
 import { FieldValue } from 'firebase-admin/firestore';
+import { isSlackNotificationsEnabled } from '@/lib/slack-enabled';
 
 export const POST = withAuthAndRateLimit(
   async (req, { userId }) => {
@@ -94,7 +95,7 @@ export const POST = withAuthAndRateLimit(
 
       // Send Slack notification (fire-and-forget)
       const slackWebhookUrl = process.env.SLACK_SUPPORT_WEBHOOK_URL;
-      if (slackWebhookUrl) {
+      if (isSlackNotificationsEnabled() && slackWebhookUrl) {
         try {
           const slackRes = await fetch(slackWebhookUrl, {
             method: 'POST',
@@ -110,7 +111,7 @@ export const POST = withAuthAndRateLimit(
         } catch (error) {
           console.error('Slack notification error:', error);
         }
-      } else {
+      } else if (isSlackNotificationsEnabled()) {
         console.warn('⚠️ SLACK_SUPPORT_WEBHOOK_URL not configured, skipping Slack notification');
       }
 

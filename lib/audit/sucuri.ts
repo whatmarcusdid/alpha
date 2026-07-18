@@ -2,6 +2,8 @@
  * Sucuri SiteCheck scan; combine with Safe Browsing in the audit route.
  */
 
+import { assertSafeUrl, isSafeFetchError } from '@/lib/security/safe-fetch';
+
 export type SucuriResult =
   | {
       success: true;
@@ -65,6 +67,15 @@ function parseScanResponse(body: unknown): {
 }
 
 export async function checkSucuri(url: string): Promise<SucuriResult> {
+  try {
+    await assertSafeUrl(url);
+  } catch (err) {
+    if (isSafeFetchError(err)) {
+      return { success: false, error: SAFE_ERROR };
+    }
+    return { success: false, error: SAFE_ERROR };
+  }
+
   const endpoint = new URL('https://sitecheck.sucuri.net/api/v3/');
   endpoint.searchParams.set('scan', url);
 

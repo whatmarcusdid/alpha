@@ -5,6 +5,8 @@
  * Includes week-over-week comparison with trend indicators.
  */
 
+import { isSlackNotificationsEnabled } from '@/lib/slack-enabled';
+
 // --- Types ---
 
 export interface WeeklyMetrics {
@@ -220,6 +222,13 @@ export async function sendWeeklyDigest(
   weekStart: Date,
   weekEnd: Date
 ): Promise<SlackDigestResult> {
+  if (!isSlackNotificationsEnabled()) {
+    console.log(
+      '[Weekly Digest] Slack notifications disabled (set SLACK_NOTIFICATIONS_ENABLED=true to enable)'
+    );
+    return { success: true };
+  }
+
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
   if (!webhookUrl) {

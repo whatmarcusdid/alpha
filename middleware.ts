@@ -1,33 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  clearSessionCookieHeader,
+  hasVerifiedSession,
+} from '@/lib/middleware/session-guard';
+
 /**
  * Next.js Edge Middleware — Route Protection
  *
- * Protects authenticated routes by checking for the `bs-auth` presence cookie.
- * This is a lightweight signal only — actual Firebase token verification
- * happens server-side in API routes via Authorization: Bearer header.
+ * Protects authenticated routes by verifying the HttpOnly `__session` cookie
+ * server-side via `/api/auth/verify-session` (Node.js + Firebase Admin).
+ *
+ * Edge constraint: Firebase Admin SDK cannot run in middleware, so verification
+ * is delegated to an internal API route that calls verifySessionCookie(..., true).
  *
  * Protected routes:
  * - /dashboard/* — existing subscription dashboard
- * - /admin/* — Book Service admin dashboard
+ * - /admin/* — Book Service admin dashboard (layout also runs requireAdminSession)
  * - /book-service/access — access submission (requires account)
  * - /book-service/confirm-details — details confirmation (requires account)
- *
- * Public Book Service routes (not protected):
- * - /book-service/signup — account creation (intentionally public; the pending-order
- *   context comes from the orderId query param, not from auth)
- * - /book-service/confirmation — post-payment confirmation (public, no account yet)
- * - /book-service/confirm-details?preview=1 — dev-only design preview (development only)
- * - /book-service/access?preview=1 — dev-only design preview (development only)
- * - /book-service/select — package selection (public)
- * - /book-service/access-request/grant — public token-gated re-request grant (no account)
- * - /book-service/access-request/decline — public token-gated re-request decline (no account)
  */
 
 const SIGN_IN_PATH = '/signin';
-const AUTH_COOKIE = 'bs-auth';
 
-// Routes that require authentication
 const PROTECTED_PATHS = [
   '/dashboard',
   '/admin',
@@ -35,11 +30,7 @@ const PROTECTED_PATHS = [
   '/book-service/confirm-details',
 ];
 
-// Routes that should redirect authenticated users away (auth pages)
-const AUTH_ONLY_PATHS = [
-  '/signin',
-  '/signup',
-];
+const AUTH_ONLY_PATHS = ['/signin', '/signup'];
 
 const PUBLIC_ACCESS_REQUEST_PATHS = new Set([
   '/book-service/access-request/grant',
@@ -55,7 +46,7 @@ function isProtectedPath(pathname: string): boolean {
 }
 
 function isAuthOnlyPath(pathname: string): boolean {
-  return AUTH_ONLY_PATHS.some(path => pathname.startsWith(path));
+  return AUTH_ONLY_PATHS.some((path) => pathname.startsWith(path));
 }
 
 function isDevPreviewRequest(request: NextRequest): boolean {
@@ -74,21 +65,31 @@ function isDevPreviewBypass(request: NextRequest): boolean {
   );
 }
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const authCookie = request.cookies.get(AUTH_COOKIE);
-  const isAuthenticated = !!authCookie?.value;
+function redirectToSignIn(request: NextRequest, pathname: string): NextResponse {
+  const signInUrl = new URL(SIGN_IN_PATH, request.url);
+  signInUrl.searchParams.set('redirect', pathname);
+  const response = NextResponse.redirect(signInUrl);
+  response.cookies.set(clearSessionCookieHeader());
+  return response;
+}
 
-  // Redirect unauthenticated users away from protected routes
-  if (isProtectedPath(pathname) && !isAuthenticated && !isDevPreviewBypass(request)) {
-    const signInUrl = new URL(SIGN_IN_PATH, request.url);
-    signInUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(signInUrl);
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (isProtectedPath(pathname) && !isDevPreviewBypass(request)) {
+    const isAuthenticated = await hasVerifiedSession(request);
+
+    if (!isAuthenticated) {
+      return redirectToSignIn(request, pathname);
+    }
   }
 
-  // Redirect authenticated users away from sign-in/sign-up pages
-  if (isAuthOnlyPath(pathname) && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (isAuthOnlyPath(pathname)) {
+    const isAuthenticated = await hasVerifiedSession(request);
+
+    if (isAuthenticated) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
 
   return NextResponse.next();
@@ -96,14 +97,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all paths except:
-     * - _next/static (Next.js static files)
-     * - _next/image (Next.js image optimization)
-     * - favicon.ico
-     * - Public API routes (/api/*)
-     * - Public asset files (.png, .jpg, .svg, etc.)
-     */
     '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot)).*)',
   ],
 };

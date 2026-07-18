@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { verifyAuthIdToken } from '@/lib/firebase/verify-id-token';
+import { devOnlyErrorDetails } from '@/lib/middleware/dev-error-details';
 import { validateRequestBody, cancelSubscriptionSchema } from '@/lib/validation';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    const decodedToken = await verifyAuthIdToken(token);
     const userId = decodedToken.uid;
 
     // Validate request body
@@ -102,7 +104,10 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      {
+        error: 'Internal server error',
+        ...devOnlyErrorDetails(error),
+      },
       { status: 500 }
     );
   }

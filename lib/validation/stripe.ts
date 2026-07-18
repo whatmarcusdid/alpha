@@ -12,13 +12,6 @@ import {
   cancellationReasonSchema,
 } from './common';
 
-// POST /api/checkout
-export const checkoutSchema = z.object({
-  tier: tierSchema,
-  billingCycle: billingCycleSchema,
-  couponCode: couponCodeSchema.optional(),
-});
-
 // POST /api/checkout/create-subscription
 export const createSubscriptionSchema = z.object({
   email: emailSchema,
@@ -67,6 +60,12 @@ export const getSubscriptionDetailsSchema = z.object({
 // POST /api/stripe/get-session-details
 export const getSessionDetailsSchema = z.object({
   sessionId: stripeSessionIdSchema,
+});
+
+// POST /api/stripe/get-session-amount
+export const getSessionAmountSchema = z.object({
+  sessionId: stripeSessionIdSchema,
+  email: emailSchema,
 });
 
 // POST /api/stripe/create-setup-intent

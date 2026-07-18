@@ -3,6 +3,11 @@ import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
 import { generalLimiter } from '@/lib/middleware/rateLimiting';
+import {
+  emailsMatch,
+  getAuthenticatedEmailFromRequest,
+} from '@/lib/stripe/authenticated-email';
+import { extractCheckoutSessionEmail } from '@/lib/stripe/stripe-object-email';
 import { validateRequestBody, getSessionDetailsSchema } from '@/lib/validation';
 
 // Type definitions for response
@@ -105,6 +110,19 @@ export const POST = withAuthAndRateLimit(
                 success: false,
                 error: 'No subscription associated with this session'
               }, { status: 404 });
+            }
+
+            const authenticatedEmail = await getAuthenticatedEmailFromRequest(req);
+            const sessionOwnerEmail = extractCheckoutSessionEmail(session);
+
+            if (
+              !authenticatedEmail ||
+              !emailsMatch(authenticatedEmail, sessionOwnerEmail)
+            ) {
+              return NextResponse.json<ErrorResponse>(
+                { success: false, error: 'Forbidden' },
+                { status: 403 }
+              );
             }
 
             // Extract remaining session details

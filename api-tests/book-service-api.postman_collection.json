@@ -491,7 +491,7 @@
                   "pm.test('Webhook acknowledged', () => pm.expect(pm.response.json().received).to.eql(true));",
                   "const orderId = pm.environment.get('orderId') || pm.collectionVariables.get('orderId');",
                   "const baseUrl = pm.environment.get('baseUrl');",
-                  "pm.sendRequest(`${baseUrl}/api/book-service/order-status?orderId=${encodeURIComponent(orderId)}`, (err, res) => {",
+                  "pm.sendRequest(`${baseUrl}/api/book-service/order-status?orderId=${encodeURIComponent(orderId)}&email=${encodeURIComponent(pm.environment.get('testEmail') || '')}`, (err, res) => {",
                   "  pm.test('Firestore seeded — order-status returns paid', () => {",
                   "    pm.expect(err).to.be.null;",
                   "    pm.expect(res.code).to.eql(200);",
@@ -781,7 +781,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/book-service/order-status?orderId={{orderId}}",
+              "raw": "{{baseUrl}}/api/book-service/order-status?orderId={{orderId}}&email={{testEmail}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1180,7 +1180,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999",
+              "raw": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999&email=unknown@test.local",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -3434,7 +3434,7 @@
     },
     {
       "name": "9 — Analytics / Notifications / External Side Effects",
-      "description": "Analytics Firestore writes + validation-only checks on notification routes. EXCLUDED from automated happy-path calls (would hit real Slack/Loops/Notion): POST /api/notifications/new-user (valid body), POST /api/notifications/dashboard-ready (valid email), POST /api/notifications/account-created (valid email), GET|POST /api/test/weekly-digest, GET /api/cron/weekly-sales-digest. GET /api/test-sentry-error posts to real Sentry — included with explicit flag; delivery needs manual verification.",
+      "description": "Analytics Firestore writes + validation-only checks on notification routes. EXCLUDED from automated happy-path calls (would hit real Loops/Notion): POST /api/notifications/new-user (valid body), POST /api/notifications/dashboard-ready (valid email), POST /api/notifications/account-created (valid email), GET /api/cron/weekly-sales-digest. GET /api/test-sentry-error posts to real Sentry — included with explicit flag; delivery needs manual verification.",
       "item": [
         {
           "name": "Setup — analytics smoke marker",
@@ -4284,7 +4284,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999"
+            "url": "{{baseUrl}}/api/book-service/order-status?orderId=00000000-0000-0000-0000-000000009999&email=unknown@test.local"
           },
           "event": [
             {

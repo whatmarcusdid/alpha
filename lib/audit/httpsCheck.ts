@@ -1,9 +1,24 @@
 import type { SecurityFlag } from '@/lib/types/audit';
+import {
+  assertSafeUrl,
+  isSafeFetchError,
+  readSafeResponseText,
+  safeFetch,
+} from '@/lib/security/safe-fetch';
 
 export async function checkHttpsSecurity(
   websiteUrl: string
 ): Promise<SecurityFlag[]> {
   const flags: SecurityFlag[] = [];
+
+  try {
+    await assertSafeUrl(websiteUrl);
+  } catch (err) {
+    if (isSafeFetchError(err)) {
+      return [];
+    }
+    throw err;
+  }
 
   try {
     const parsedUrl = new URL(websiteUrl);
@@ -13,10 +28,10 @@ export async function checkHttpsSecurity(
 
     if (!isHttps) {
       try {
-        const res = await fetch(httpUrl, {
+        const res = await safeFetch(httpUrl, {
           method: 'HEAD',
-          redirect: 'follow',
-          signal: AbortSignal.timeout(8000),
+          followRedirects: true,
+          timeoutMs: 8_000,
         });
         const finalUrl = res.url;
         if (!finalUrl.startsWith('https://')) {
@@ -29,11 +44,17 @@ export async function checkHttpsSecurity(
 
     if (!flags.includes('no_https')) {
       try {
-        await fetch(httpsUrl, {
+        await safeFetch(httpsUrl, {
           method: 'HEAD',
-          signal: AbortSignal.timeout(8000),
+          followRedirects: false,
+          timeoutMs: 8_000,
         });
       } catch (err: unknown) {
+        if (isSafeFetchError(err)) {
+          // Blocked or invalid URLs should not produce SSL flags.
+          return flags;
+        }
+
         const msg = err instanceof Error ? err.message : '';
         const sslErrors = [
           'CERT_HAS_EXPIRED',
@@ -50,10 +71,10 @@ export async function checkHttpsSecurity(
 
     if (!flags.includes('no_https')) {
       try {
-        const res = await fetch(httpUrl, {
+        const res = await safeFetch(httpUrl, {
           method: 'HEAD',
-          redirect: 'follow',
-          signal: AbortSignal.timeout(8000),
+          followRedirects: true,
+          timeoutMs: 8_000,
         });
         if (!res.url.startsWith('https://')) {
           flags.push('http_redirect_missing');
@@ -65,10 +86,11 @@ export async function checkHttpsSecurity(
 
     if (isHttps || !flags.includes('no_https')) {
       try {
-        const res = await fetch(httpsUrl, {
-          signal: AbortSignal.timeout(10000),
+        const res = await safeFetch(httpsUrl, {
+          timeoutMs: 10_000,
+          maxResponseBytes: 2_000_000,
         });
-        const html = await res.text();
+        const html = await readSafeResponseText(res, 2_000_000);
         const mixedContentPattern = /(?:src|href)=["']http:\/\/[^"']+["']/gi;
         if (mixedContentPattern.test(html)) {
           flags.push('mixed_content');
@@ -78,6 +100,10 @@ export async function checkHttpsSecurity(
       }
     }
   } catch (err) {
+    if (isSafeFetchError(err)) {
+      return flags;
+    }
+
     console.error('[audit] checkHttpsSecurity failed:', err);
     return [];
   }

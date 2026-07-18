@@ -5,6 +5,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
 import { isDevTokenExposureEnabled } from '@/lib/firebase/emulator-env';
+import { revokeUserSessions } from '@/lib/firebase/revoke-user-sessions';
 
 // In-memory rate limit: max 5 requests per hour per email
 const RATE_LIMIT_MAX = 5;
@@ -108,6 +109,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    try {
+      await revokeUserSessions(userId);
+    } catch (revokeError) {
+      console.error('[Password Reset] Failed to revoke existing sessions:', revokeError);
+    }
+
     // Generate secure token and tokenId
     const token = crypto.randomBytes(32).toString('hex');
     const tokenId = crypto.randomBytes(16).toString('hex');
@@ -132,8 +139,12 @@ export async function POST(request: NextRequest) {
     // Mode: loops or console (for testing before Loops template is ready)
     const mode = process.env.PASSWORD_RESET_EMAIL_MODE ?? 'loops';
 
-    if (mode === 'console' || !process.env.LOOPS_API_KEY) {
+    if (isDevTokenExposureEnabled() && (mode === 'console' || !process.env.LOOPS_API_KEY)) {
       console.log('[Password Reset] Dev mode - reset URL:', resetUrl);
+    } else if (mode === 'console' || !process.env.LOOPS_API_KEY) {
+      console.warn(
+        '[Password Reset] Loops not configured — reset URL not logged (production-safe)'
+      );
     } else {
       const loopsResult = await sendPasswordResetEmail(email, {
         resetUrl,

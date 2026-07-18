@@ -1,35 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { adminDb } from '@/lib/firebase/admin';
+import { resolveOrderOwnerEmail } from '@/lib/book-service/order-access';
 import type { SiteFixSKU } from '@/lib/book-service/skus';
 import type { SiteFixOrderStatusResponse } from '@/lib/book-service/types';
+import { adminDb } from '@/lib/firebase/admin';
 import { withRateLimit } from '@/lib/middleware/apiHandler';
 import { generalLimiter } from '@/lib/middleware/rateLimiting';
+import { emailsMatch, normalizeEmail } from '@/lib/stripe/authenticated-email';
 
 /**
- * GET /api/book-service/order-status?orderId={id}
+ * GET /api/book-service/order-status?orderId={id}&email={checkoutEmail}
  *
  * Source of truth: Firestore orders/{orderId}
- * This route is polled by the confirmation page.
+ * Polled by the book-service confirmation page after Stripe redirect.
  *
- * WHY FIRESTORE NOT STRIPE:
- * Stripe session retrieval requires a secret key on every poll and is subject to rate limits.
- * Firestore is the authoritative post-webhook state — if the order exists here, payment succeeded.
- * The confirmation page should trust Firestore, not the Stripe session URL params.
+ * Requires the checkout email and verifies it matches the order before returning
+ * any order-linked PII (same binding pattern as get-session-amount / create-account).
  */
 
 const orderStatusQuerySchema = z.object({
   orderId: z.string().min(1),
+  email: z.string().trim().email('Valid email is required'),
 });
 
 export const GET = withRateLimit(async (req: NextRequest) => {
   const orderId = req.nextUrl.searchParams.get('orderId');
-  const parsed = orderStatusQuerySchema.safeParse({ orderId });
+  const email = req.nextUrl.searchParams.get('email');
+  const parsed = orderStatusQuerySchema.safeParse({ orderId, email });
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'orderId is required' },
+      { error: parsed.error.issues[0]?.message ?? 'orderId and email are required' },
       { status: 400 }
     );
   }
@@ -51,30 +53,30 @@ export const GET = withRateLimit(async (req: NextRequest) => {
   }
 
   const data = doc.data()!;
-  const createdAt = data.createdAt?.toDate?.();
-
-  let firstName: string | undefined;
-  let websiteUrl: string | undefined;
-  let auditLeadEmail: string | undefined;
   const auditLeadId = data.auditLeadId as string | undefined;
+
+  let auditLead: { email?: string; firstName?: string; websiteUrl?: string } | null =
+    null;
 
   if (auditLeadId) {
     const auditLeadSnap = await adminDb.collection('auditLeads').doc(auditLeadId).get();
     if (auditLeadSnap.exists) {
-      const auditLead = auditLeadSnap.data()!;
-      firstName =
-        typeof auditLead.firstName === 'string' ? auditLead.firstName : undefined;
-      websiteUrl =
-        typeof auditLead.websiteUrl === 'string' ? auditLead.websiteUrl : undefined;
-      auditLeadEmail =
-        typeof auditLead.email === 'string' ? auditLead.email.trim().toLowerCase() : undefined;
+      auditLead = auditLeadSnap.data() as {
+        email?: string;
+        firstName?: string;
+        websiteUrl?: string;
+      };
     }
   }
 
-  const orderEmail =
-    typeof data.normalizedEmail === 'string' && data.normalizedEmail.trim()
-      ? data.normalizedEmail.trim().toLowerCase()
-      : undefined;
+  const orderOwnerEmail = resolveOrderOwnerEmail(data, auditLead);
+  const requestEmail = normalizeEmail(parsed.data.email);
+
+  if (!orderOwnerEmail || !emailsMatch(requestEmail, orderOwnerEmail)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const createdAt = data.createdAt?.toDate?.();
 
   const response: SiteFixOrderStatusResponse = {
     orderId: data.orderId as string,
@@ -82,9 +84,11 @@ export const GET = withRateLimit(async (req: NextRequest) => {
     entitlements: data.entitlements as SiteFixOrderStatusResponse['entitlements'],
     status: 'paid',
     createdAt: createdAt ? createdAt.toISOString() : new Date().toISOString(),
-    normalizedEmail: orderEmail ?? auditLeadEmail,
-    firstName,
-    websiteUrl,
+    normalizedEmail: orderOwnerEmail,
+    firstName:
+      typeof auditLead?.firstName === 'string' ? auditLead.firstName : undefined,
+    websiteUrl:
+      typeof auditLead?.websiteUrl === 'string' ? auditLead.websiteUrl : undefined,
     auditLeadId,
   };
 

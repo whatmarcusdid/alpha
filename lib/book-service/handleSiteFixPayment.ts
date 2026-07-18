@@ -238,35 +238,12 @@ async function triggerDashboardInvite(params: {
     entitlements: params.entitlements,
   });
 
-  const cronSecret = process.env.CRON_SECRET;
-  const invitePayload = {
+  await processDashboardInvite({
     userId,
     email: params.normalizedEmail,
     orderId: params.orderId,
     sku: params.sku,
-  };
-
-  if (cronSecret) {
-    const response = await fetch(`${getAppBaseUrl()}/api/book-service/invite`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${cronSecret}`,
-      },
-      body: JSON.stringify(invitePayload),
-    });
-
-    if (!response.ok) {
-      console.error(
-        '[handleSiteFixPayment] invite route failed:',
-        await response.text()
-      );
-    }
-
-    return;
-  }
-
-  await processDashboardInvite(invitePayload);
+  });
 }
 
 async function trackServerAnalyticsEvent(

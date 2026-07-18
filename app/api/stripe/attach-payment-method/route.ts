@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
+import { devOnlyErrorDetails } from '@/lib/middleware/dev-error-details';
 import { withAuthAndRateLimit } from '@/lib/middleware/apiHandler';
 import { checkoutLimiter } from '@/lib/middleware/rateLimiting';
 import { validateRequestBody, attachPaymentMethodSchema } from '@/lib/validation';
@@ -87,7 +88,10 @@ export const POST = withAuthAndRateLimit(
             // Handle Stripe card errors specifically
             if (error.type === 'StripeCardError' || error.code?.includes('card')) {
               return NextResponse.json(
-                { error: error.message || 'Card error occurred' },
+                {
+                  error: 'Card error occurred',
+                  ...devOnlyErrorDetails(error),
+                },
                 { status: 400 }
               );
             }
@@ -159,7 +163,10 @@ export const POST = withAuthAndRateLimit(
           });
 
           return NextResponse.json(
-            { error: 'Failed to attach payment method', details: error.message },
+            {
+              error: 'Failed to attach payment method',
+              ...devOnlyErrorDetails(error),
+            },
             { status: 500 }
           );
         }

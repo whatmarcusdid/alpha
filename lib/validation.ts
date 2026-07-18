@@ -54,11 +54,10 @@ export const getSubscriptionDetailsSchema = z.object({
   paymentIntentId: z.string().min(1, 'Payment intent ID is required'),
 });
 
-// Checkout schema
-export const checkoutSchema = z.object({
-  tier: z.enum(['essential', 'advanced', 'premium']),
-  billingCycle: z.enum(['monthly', 'yearly']),
-  couponCode: z.string().optional(),
+// Get session amount schema (pre-signup; email must match checkout session)
+export const getSessionAmountSchema = z.object({
+  sessionId: z.string().min(1, 'Session ID is required'),
+  email: z.string().trim().email('Valid email is required').toLowerCase(),
 });
 
 // Create subscription schema

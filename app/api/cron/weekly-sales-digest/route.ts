@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { devOnlyErrorDetails } from '@/lib/middleware/dev-error-details';
 import { getWeeklyRevenue } from '@/lib/weekly-digest/stripe';
 import { getWeeklyPipelineMetrics } from '@/lib/weekly-digest/notion';
 import { sendWeeklyDigest, type WeeklyMetrics } from '@/lib/weekly-digest/slack';
@@ -103,7 +104,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: result.error,
+          error: 'Failed to send weekly sales digest',
+          ...devOnlyErrorDetails(new Error(result.error)),
         },
         { status: 500 }
       );
@@ -113,7 +115,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Failed to send weekly sales digest',
+        ...devOnlyErrorDetails(error),
       },
       { status: 500 }
     );

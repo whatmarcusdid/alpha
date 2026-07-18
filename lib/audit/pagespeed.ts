@@ -1,4 +1,5 @@
 import type { SpeedGradeInput } from '@/lib/grading';
+import { assertSafeUrl, isSafeFetchError } from '@/lib/security/safe-fetch';
 
 export type PsiAudits = Record<
   string,
@@ -13,56 +14,6 @@ const PROVIDER = 'PageSpeed Insights';
 
 function logFailure(statusCode: number | string): void {
   console.warn(PROVIDER, statusCode);
-}
-
-/**
- * SSRF guard: inspect hostname string only (no DNS). Blocks localhost, common
- * private ranges, loopback, and IPv6 link-local as literals.
- */
-function isBlockedHostname(hostname: string): boolean {
-  const h = hostname.toLowerCase();
-
-  if (h === 'localhost') {
-    return true;
-  }
-
-  const ipv4Match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(h);
-  if (ipv4Match) {
-    const octets = [
-      Number(ipv4Match[1]),
-      Number(ipv4Match[2]),
-      Number(ipv4Match[3]),
-      Number(ipv4Match[4]),
-    ];
-    if (octets.some((n) => n > 255)) {
-      return true;
-    }
-    const [a, b] = octets;
-    if (a === 127) {
-      return true;
-    }
-    if (a === 10) {
-      return true;
-    }
-    if (a === 172 && b >= 16 && b <= 31) {
-      return true;
-    }
-    if (a === 192 && b === 168) {
-      return true;
-    }
-    return false;
-  }
-
-  if (h.includes(':')) {
-    if (h === '::1') {
-      return true;
-    }
-    if (h.startsWith('fe80:')) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -169,18 +120,12 @@ export async function fetchPageSpeed(url: string): Promise<PageSpeedResult> {
     return { success: false, error: SAFE_GENERIC };
   }
 
-  let parsedUrl: URL;
   try {
-    parsedUrl = new URL(url);
-  } catch {
-    return { success: false, error: 'Invalid URL' };
-  }
-
-  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-    return { success: false, error: 'Invalid URL' };
-  }
-
-  if (isBlockedHostname(parsedUrl.hostname)) {
+    await assertSafeUrl(url);
+  } catch (err) {
+    if (isSafeFetchError(err)) {
+      return { success: false, error: 'Invalid URL' };
+    }
     return { success: false, error: 'Invalid URL' };
   }
 

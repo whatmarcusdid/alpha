@@ -66,7 +66,6 @@ export async function signInWithGoogle(): Promise<User> {
   try {
     const provider = new authFunctions.GoogleAuthProvider();
     const result = await authFunctions.signInWithPopup(auth, provider);
-    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     await persistSessionCookie(result.user);
     return result.user;
   } catch (error: any) {
@@ -86,7 +85,6 @@ export async function signInWithApple(): Promise<User> {
   
   try {
     const result = await authFunctions.signInWithPopup(auth, provider);
-    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     await persistSessionCookie(result.user);
     return result.user;
   } catch (error: any) {
@@ -102,7 +100,6 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
   try {
     const userCredential = await authFunctions.signInWithEmailAndPassword(auth, email, password);
-    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     await persistSessionCookie(userCredential.user);
     return userCredential.user;
   } catch (error: any) {
@@ -137,7 +134,6 @@ export async function signUpWithEmail(
       await authFunctions.updateProfile(userCredential.user, { displayName });
     }
     
-    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     await persistSessionCookie(userCredential.user);
     return userCredential.user;
   } catch (error: any) {
@@ -238,9 +234,8 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
   }
 
   try {
-    await authFunctions.signOut(auth);
-    document.cookie = 'bs-auth=; path=/; max-age=0; SameSite=Lax';
     await clearSessionCookie();
+    await authFunctions.signOut(auth);
     return { success: true };
   } catch (error: any) {
     console.error('Sign-out error:', error);
@@ -255,7 +250,6 @@ export async function signInWithCustomToken(customToken: string): Promise<User> 
 
   try {
     const userCredential = await authFunctions.signInWithCustomToken(auth, customToken);
-    document.cookie = 'bs-auth=1; path=/; max-age=86400; SameSite=Lax';
     await persistSessionCookie(userCredential.user);
     return userCredential.user;
   } catch (error: unknown) {
