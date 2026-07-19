@@ -184,6 +184,32 @@ export const siteAccessGrantDeclineLimiter = redis
     })
   : null;
 
+const LIMITER_LABELS: ReadonlyArray<[Ratelimit | null, string]> = [
+  [checkoutLimiter, 'ratelimit:checkout'],
+  [couponLimiter, 'ratelimit:coupon'],
+  [webhookLimiter, 'ratelimit:webhook'],
+  [bookServiceCreateAccountLimiter, 'ratelimit:book-service-create-account'],
+  [generalLimiter, 'ratelimit:general'],
+  [auditRateLimiter, 'audit_ip'],
+  [sessionVerifyLimiter, 'ratelimit:session-verify'],
+  [adminCredentialsLimiter, 'ratelimit:admin-credentials'],
+  [adminFixUpdatesLimiter, 'ratelimit:admin-fix-updates'],
+  [adminRerunChecksLimiter, 'ratelimit:admin-rerun-checks'],
+  [adminSiteAccessRequestLimiter, 'ratelimit:admin-site-access-request'],
+  [siteAccessGrantDeclineLimiter, 'ratelimit:site-access-grant-decline'],
+];
+
+/** Resolve the Redis key prefix label for structured rate-limit logs. */
+export function getLimiterLabel(limiter: Ratelimit): string {
+  for (const [instance, label] of LIMITER_LABELS) {
+    if (instance === limiter) {
+      return label;
+    }
+  }
+
+  return 'ratelimit:unknown';
+}
+
 /**
  * Extract client identifier (IP address) from request
  * 
@@ -249,7 +275,13 @@ export async function applyRateLimit(
   try {
     // Check rate limit
     const result = await limiter.limit(identifier);
-    
+
+    if (!result.success) {
+      console.warn(
+        `[rate-limit] Limit exceeded — request blocked (limiter=${getLimiterLabel(limiter)}, identifier=${identifier}, limit=${result.limit}, remaining=${result.remaining})`
+      );
+    }
+
     return {
       success: result.success,
       limit: result.limit,

@@ -852,7 +852,7 @@ curl -X POST http://localhost:3000/api/delivery-scout \
 - `e2e/journey-c.signup-to-access.spec.ts` — Signup → Confirm Details → Access → Dashboard, including the `passwordEncrypted` security assertion
 - `e2e/auth-guard.spec.ts` — unauthenticated redirects on `/dashboard` and `/book-service/access`
 
-**Known environment gap surfaced while building these:** the Upstash rate limiter's REST endpoint (`actual-flamingo-51226.upstash.io`) doesn't resolve in this dev environment (DNS `ENOTFOUND`) — routes fail the check open, but only after the lookup times out, adding real latency. `playwright.config.ts` raises the default `expect` timeout to cover it; worth investigating separately since it affects real local dev, not just tests.
+**Upstash rate limiting (local + production):** When `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.local` point at a reachable instance (currently `easy-moray-145823.upstash.io`), rate limiting is enforced end-to-end locally — 429s fire at documented thresholds with `X-RateLimit-*` headers, typically in tens of milliseconds per check. Keep exactly **one** Upstash credential pair in `.env.local` (duplicate or stale hostnames cause confusing last-wins behavior). If credentials are missing, limiters are disabled and requests are allowed with a startup warning. If Upstash is unreachable at runtime, routes fail open after a network timeout (~4s per check) with `[rate-limit] Upstash unreachable — request allowed without rate limiting` in logs — that is a misconfiguration/outage state, not normal dev behavior. Automated burst checks: `k6/` scripts (see `k6/README.md`).
 
 ---
 
