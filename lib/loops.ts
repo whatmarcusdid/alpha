@@ -236,8 +236,14 @@ export async function sendAuditReportEmail(params: {
   const apiKey = process.env.LOOPS_API_KEY;
   const templateId = process.env.LOOPS_AUDIT_REPORT_TEMPLATE_ID;
   if (!apiKey || !templateId) {
+    const missingVars = [
+      !apiKey ? 'LOOPS_API_KEY' : null,
+      !templateId ? 'LOOPS_AUDIT_REPORT_TEMPLATE_ID' : null,
+    ]
+      .filter(Boolean)
+      .join(', ');
     console.warn(
-      '[Loops] LOOPS_API_KEY or LOOPS_AUDIT_REPORT_TEMPLATE_ID not set - skipping audit report email'
+      `[Loops] ${missingVars} not set - skipping audit report email for email=${params.email} businessName=${params.businessName}`
     );
     return;
   }
@@ -271,10 +277,22 @@ export async function sendAuditReportEmail(params: {
     });
 
     if (!response.ok) {
-      console.error('Loops', response.status);
+      const errorText = await response.text();
+      console.error(
+        `[Loops] Audit report email API error for email=${params.email} businessName=${params.businessName}:`,
+        response.status,
+        errorText
+      );
       return;
     }
+
+    console.log(
+      `[Loops] Audit report email sent successfully for email=${params.email} businessName=${params.businessName}`
+    );
   } catch (error) {
-    console.error('Loops audit report email failed:', error);
+    console.error(
+      `[Loops] Audit report email failed for email=${params.email} businessName=${params.businessName}:`,
+      error
+    );
   }
 }

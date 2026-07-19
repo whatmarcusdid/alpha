@@ -13,8 +13,9 @@ import { storeAuditLeadId } from '@/lib/book-service/storage';
 import { ratch } from '@/lib/fonts/ratch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SECURITY_FLAG_DISPLAY_NAMES } from '@/lib/audit/securityFlagDisplayNames';
 import { SPEED_ISSUE_DISPLAY_NAMES } from '@/lib/audit/speedTopIssues';
-import type { AuditResult, ClientGrade, SecurityFlag } from '@/lib/types/audit';
+import type { AuditResult, ClientGrade } from '@/lib/types/audit';
 import { getResultsHeadline } from '@/lib/types/audit';
 import {
   SEO_SIGNAL_DISPLAY_NAMES,
@@ -33,19 +34,6 @@ export interface AuditResultsProps {
   firstName: string;
   onRunAnother: () => void;
 }
-
-const SECURITY_FLAG_DISPLAY_NAMES: Record<SecurityFlag, string> = {
-  malware_detected: 'Malware detected on your site',
-  blacklisted: 'Site appears on a security blacklist',
-  phishing_detected: 'Phishing content detected',
-  unwanted_software_detected: 'Unwanted software detected',
-  no_https: 'Site is not using HTTPS',
-  invalid_ssl: 'SSL certificate is invalid or expired',
-  missing_security_headers: 'Missing security headers (X-Frame-Options, CSP)',
-  outdated_cms: 'Site running an outdated CMS version',
-  http_redirect_missing: 'HTTP to HTTPS redirect is missing',
-  mixed_content: 'Mixed HTTP and HTTPS content detected',
-};
 
 const PILLAR_INSIGHTS = {
   speed:

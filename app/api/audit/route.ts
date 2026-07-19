@@ -19,6 +19,7 @@ import { runAuditPipeline } from '@/lib/audit/runAuditPipeline';
 import { checkEmailRateLimit } from '@/lib/audit/rateLimit';
 import { adminDb } from '@/lib/firebase/admin';
 import { sendAuditReportEmail } from '@/lib/loops';
+import { uploadAuditReportPdf } from '@/lib/storage/uploadAuditReportPdf';
 import { createAuditLeadRecord } from '@/lib/notion';
 import { sendAuditLeadNotification } from '@/lib/slack';
 import {
@@ -185,7 +186,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       };
       pdfBuffer = await generateAuditPDF(pdfData);
     } catch (err) {
-      console.error('PDF generation failed:', err);
+      console.error(
+        `[POST /api/audit] PDF generation failed for email=${input.email} businessName=${input.businessName} websiteUrl=${input.websiteUrl}:`,
+        err
+      );
     }
 
     let auditLeadId = '';
@@ -224,7 +228,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           .collection('auditLeads')
           .add(firestorePayload);
         auditLeadId = docRef.id;
-        await docRef.update({ auditLeadId });
+
+        let pdfStoragePath: string | undefined;
+        if (pdfBuffer) {
+          try {
+            pdfStoragePath = await uploadAuditReportPdf(auditLeadId, pdfBuffer);
+          } catch (err) {
+            console.error(
+              `[POST /api/audit] Audit PDF upload failed for auditLeadId=${auditLeadId}:`,
+              err
+            );
+          }
+        }
+
+        await docRef.update({
+          auditLeadId,
+          ...(pdfStoragePath ? { pdfStoragePath } : {}),
+        });
 
         void (async () => {
           try {
