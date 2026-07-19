@@ -16,6 +16,6 @@ export default defineConfig({
     globals: false,
     // e2e/ holds Playwright specs (separate `test`/`expect` from
     // @playwright/test) — exclude them from Vitest's own discovery.
-    exclude: [...configDefaults.exclude, 'e2e/**'],
+    exclude: [...configDefaults.exclude, 'e2e/**', 'tmp/**'],
   },
 });

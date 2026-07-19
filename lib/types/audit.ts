@@ -117,6 +117,9 @@ export type AuditLeadDoc = {
   // Downstream linkage
   orderId?: string;
   claimedByUserId?: string;
+
+  /** Firebase Storage path for the audit PDF (private; use signed URLs on demand). */
+  pdfStoragePath?: string;
 };
 
 export type AuditResult = {
