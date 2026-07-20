@@ -5,6 +5,20 @@ import { adminDb } from '@/lib/firebase/admin';
 import { SUPPORT_EMAIL } from '@/lib/config';
 import { FieldValue } from 'firebase-admin/firestore';
 import { isSlackNotificationsEnabled } from '@/lib/slack-enabled';
+import { sendAccountDeletionConfirmationEmail } from '@/lib/loops';
+
+function extractFirstName(fullName: string): string {
+  const first = fullName.trim().split(/\s+/)[0];
+  return first || 'there';
+}
+
+function buildDeletionSuccessMessage(userEmail: string, confirmationEmailSent: boolean): string {
+  if (confirmationEmailSent && userEmail !== 'unknown') {
+    return `Your account deletion request has been submitted. We've sent a confirmation email to ${userEmail}. We'll process your request within 48 hours.`;
+  }
+
+  return "Your account deletion request has been submitted. We'll process your request within 48 hours.";
+}
 
 export const POST = withAuthAndRateLimit(
   async (req, { userId }) => {
@@ -93,6 +107,26 @@ export const POST = withAuthAndRateLimit(
         console.warn('⚠️ LOOPS_API_KEY not configured, skipping email notification');
       }
 
+      let confirmationEmailSent = false;
+      if (userEmail !== 'unknown') {
+        try {
+          const confirmationResult = await sendAccountDeletionConfirmationEmail(userEmail, {
+            firstName: extractFirstName(userName),
+            submittedAt,
+            ticketId,
+          });
+          confirmationEmailSent = confirmationResult.success;
+          if (!confirmationResult.success) {
+            console.error(
+              '⚠️ [Loops] Account deletion confirmation email failed:',
+              confirmationResult.error
+            );
+          }
+        } catch (error) {
+          console.error('⚠️ [Loops] Account deletion confirmation email error:', error);
+        }
+      }
+
       // Send Slack notification (fire-and-forget)
       const slackWebhookUrl = process.env.SLACK_SUPPORT_WEBHOOK_URL;
       if (isSlackNotificationsEnabled() && slackWebhookUrl) {
@@ -117,8 +151,7 @@ export const POST = withAuthAndRateLimit(
 
       return NextResponse.json({
         success: true,
-        message:
-          "Your account deletion request has been submitted. We'll process it within 48 hours and send you a confirmation email.",
+        message: buildDeletionSuccessMessage(userEmail, confirmationEmailSent),
       });
     } catch (error) {
       console.error('Error processing account deletion request:', error);

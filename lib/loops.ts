@@ -224,6 +224,37 @@ export async function sendRefundIssuedEmail(
 }
 
 /**
+ * Sends the customer-facing account deletion request confirmation email.
+ * Uses LOOPS_ACCOUNT_DELETION_CONFIRMATION_TEMPLATE_ID env var.
+ * Template data variables: firstName, submittedAt, ticketId
+ */
+export async function sendAccountDeletionConfirmationEmail(
+  email: string,
+  data: {
+    firstName: string;
+    submittedAt: string;
+    ticketId: string;
+  }
+): Promise<LoopsEmailResult> {
+  const templateId = process.env.LOOPS_ACCOUNT_DELETION_CONFIRMATION_TEMPLATE_ID;
+  if (!templateId || templateId === 'PLACEHOLDER') {
+    console.warn(
+      '[Loops] LOOPS_ACCOUNT_DELETION_CONFIRMATION_TEMPLATE_ID not set - skipping account deletion confirmation email'
+    );
+    return {
+      success: false,
+      error: 'LOOPS_ACCOUNT_DELETION_CONFIRMATION_TEMPLATE_ID not configured',
+    };
+  }
+
+  return sendLoopsEmail(templateId, email, {
+    firstName: data.firstName,
+    submittedAt: data.submittedAt,
+    ticketId: data.ticketId,
+  });
+}
+
+/**
  * Sends the Genie Site Audit PDF as a Loops transactional email with attachment.
  * Uses LOOPS_AUDIT_REPORT_TEMPLATE_ID. Never throws; logs and returns on failure.
  */

@@ -272,7 +272,7 @@ export default function SettingsPage() {
         setDeletionReason('');
         setNotification({
           type: 'success',
-          message: data.message || "Your account deletion request has been submitted. We'll process it within 48 hours and send you a confirmation email.",
+          message: data.message || "Your account deletion request has been submitted. We'll process your request within 48 hours.",
           show: true,
         });
       } else {

@@ -35,7 +35,7 @@ The `reason` field is optional. If omitted, the request is still processed and "
 ```json
 {
   "success": true,
-  "message": "Your account deletion request has been submitted. We'll process it within 48 hours and send you a confirmation email."
+  "message": "Your account deletion request has been submitted. We've sent a confirmation email to user@example.com. We'll process your request within 48 hours."
 }
 ```
 
@@ -45,11 +45,12 @@ The `reason` field is optional. If omitted, the request is still processed and "
 
 1. **Fetch user** - Get email and fullName from Firestore user document
 2. **Log to Firestore** - Add document to `deletionRequests` collection (always, even if notifications fail)
-3. **Send Loops email** - Transactional email to support@bookservice.tech with deletion request details
-4. **Send Slack notification** - Message to SLACK_SUPPORT_WEBHOOK_URL channel
-5. **Return success** - User receives confirmation regardless of Loops/Slack success
+3. **Send internal Loops email** - Transactional email to support@bookservice.tech with deletion request details
+4. **Send customer confirmation email** - Transactional email to the user's address via `LOOPS_ACCOUNT_DELETION_CONFIRMATION_TEMPLATE_ID`
+5. **Send Slack notification** - Message to SLACK_SUPPORT_WEBHOOK_URL channel
+6. **Return success** - User receives confirmation regardless of Loops/Slack success
 
-**Important:** If Loops or Slack fails, the request is still logged and the user receives a success response. The Firestore record ensures no request is lost.
+**Important:** If Loops or Slack fails, the request is still logged and the user receives a success response. The success message only mentions a confirmation email when the customer-facing Loops send succeeds. The Firestore record ensures no request is lost.
 
 ---
 
@@ -75,7 +76,8 @@ Each request is logged to `deletionRequests`:
 | Variable | Purpose |
 |----------|---------|
 | `LOOPS_API_KEY` | Loops transactional email API key |
-| `LOOPS_SUPPORT_TICKET_TEMPLATE_ID` | Template ID for support ticket emails (default: `support-ticket-to-helpscout`) |
+| `LOOPS_SUPPORT_TICKET_TEMPLATE_ID` | Template ID for internal support ticket emails (default: `support-ticket-to-helpscout`) |
+| `LOOPS_ACCOUNT_DELETION_CONFIRMATION_TEMPLATE_ID` | Template ID for customer-facing deletion request confirmation email |
 | `SLACK_SUPPORT_WEBHOOK_URL` | Slack webhook for support channel notifications |
 
 ---
