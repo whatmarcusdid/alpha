@@ -9,6 +9,10 @@
 
 import type { User } from 'firebase/auth';
 import { auth } from './firebase'; // Browser-safe auth instance
+import {
+  getEmailVerificationActionCodeSettings,
+  shouldSendSignupEmailVerification,
+} from './auth/email-verification';
 
 async function persistSessionCookie(user: User): Promise<void> {
   if (typeof window === 'undefined') {
@@ -45,6 +49,7 @@ if (typeof window !== 'undefined') {
     signInWithPopup: firebaseAuth.signInWithPopup,
     signOut: firebaseAuth.signOut,
     sendPasswordResetEmail: firebaseAuth.sendPasswordResetEmail,
+    sendEmailVerification: firebaseAuth.sendEmailVerification,
     signInWithCustomToken: firebaseAuth.signInWithCustomToken,
     getRedirectResult: firebaseAuth.getRedirectResult,
     onAuthStateChanged: firebaseAuth.onAuthStateChanged,
@@ -117,6 +122,27 @@ export async function signInWithEmail(email: string, password: string): Promise<
   }
 }
 
+/**
+ * Sends Firebase's default verification email for email/password signups.
+ * Skips OAuth users (already verified) and no-ops when verification is unavailable.
+ *
+ * Launch note: `emailVerified` is not enforced on API routes yet — this is send-only.
+ */
+async function sendSignupEmailVerification(user: User): Promise<void> {
+  if (!shouldSendSignupEmailVerification(user) || !authFunctions.sendEmailVerification) {
+    return;
+  }
+
+  try {
+    await authFunctions.sendEmailVerification(
+      user,
+      getEmailVerificationActionCodeSettings(window.location.origin)
+    );
+  } catch (error) {
+    console.error('[auth] Failed to send email verification:', error);
+  }
+}
+
 export async function signUpWithEmail(
   email: string, 
   password: string,
@@ -133,7 +159,9 @@ export async function signUpWithEmail(
     if (displayName && userCredential.user) {
       await authFunctions.updateProfile(userCredential.user, { displayName });
     }
-    
+
+    await sendSignupEmailVerification(userCredential.user);
+
     await persistSessionCookie(userCredential.user);
     return userCredential.user;
   } catch (error: any) {
