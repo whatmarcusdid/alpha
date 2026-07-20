@@ -74,6 +74,10 @@ export interface SiteFixUserNamespace {
   acceptedAt?: Timestamp | null;
   purchasedAt?: Timestamp;
   activeFixSessionId?: string | null;
+  /** Incremented by access-reminder cron (max 3). */
+  accessReminderCount?: number;
+  /** Set when an access-reminder email is sent. */
+  lastAccessReminderSentAt?: Timestamp;
 }
 
 /** Firestore siteFix during invite-first or partial signup — all namespace fields optional. */

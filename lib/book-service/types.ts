@@ -22,7 +22,7 @@ export interface SiteFixOrder {
   normalizedEmail: string;
   stripeSessionId: string;
   stripePaymentIntentId: string | null;
-  status: 'paid';
+  status: 'paid' | 'cancelled' | 'refunded';
   createdAt: Timestamp;
 }
 
@@ -45,7 +45,7 @@ export interface SiteFixOrderStatusResponse {
   orderId: string;
   sku: SiteFixSKU;
   entitlements: SiteFixEntitlement[];
-  status: 'paid';
+  status: 'paid' | 'cancelled' | 'refunded';
   createdAt: string;
   normalizedEmail?: string;
   firstName?: string;

@@ -99,10 +99,7 @@ export async function sendSiteFixAccountCreatedEmail(params: {
   }
 }
 
-/**
- * TODO: Wire to a scheduled cron job — send when onboardingStatus is still
- * awaiting_access after 24h and 48h from accountCreatedAt.
- */
+/** Called by hourly cron — see app/api/cron/send-access-reminders. */
 export async function sendSiteFixAccessReminderEmail(params: {
   email: string;
   firstName: string;
