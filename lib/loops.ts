@@ -8,8 +8,8 @@
 const LOOPS_API_URL = 'https://app.loops.so/api/v1/transactional';
 
 // Template IDs
-const PAYMENT_CONFIRMED_TEMPLATE_ID = 'cmljywb8500kh0i05bqou9jfz';
-const DASHBOARD_READY_TEMPLATE_ID = 'cmljz00aj00po0i1otsvlemng';
+const PAYMENT_CONFIRMED_TEMPLATE_ID = 'cmrthlomd01950jvv98gtoiat';
+const DASHBOARD_READY_TEMPLATE_ID = 'cmrthrbby007o0jysiixbx8vl';
 
 // --- Types ---
 
