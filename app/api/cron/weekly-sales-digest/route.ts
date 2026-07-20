@@ -3,6 +3,11 @@
  *
  * Called by Vercel Cron every Monday at 9 AM EST.
  * Fetches Stripe revenue + Notion pipeline metrics, formats and sends to Slack.
+ *
+ * NOTE: Prospect lifecycle writes (audit, purchase, account) now go to Growth Ops /
+ * Clients (`NOTION_GROWTH_OPS_DB_ID`), not TSG Sales Pipeline. This digest still
+ * queries Sales Pipeline — metrics for those events will go stale until the digest
+ * is redesigned or retargeted (separate decision).
  */
 
 import { NextRequest, NextResponse } from 'next/server';

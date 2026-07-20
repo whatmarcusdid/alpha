@@ -11,6 +11,11 @@ import { sendSiteFixAccountCreatedEmail } from '@/lib/book-service/emails';
 import { formatEntitlementLabels } from '@/lib/book-service/entitlement-labels';
 import type { SiteFixPendingOrder } from '@/lib/book-service/types';
 import { warnIfBaseUrlLooksWrong } from '@/lib/book-service/validate-base-url';
+import { sendInternalOpsNotification } from '@/lib/internal-ops-notification';
+import {
+  findGrowthOpsProspectByEmail,
+  upsertAccountCreation,
+} from '@/lib/notion-growth-ops';
 import { getAppBaseUrl as resolveAppBaseUrl } from '@/lib/base-url';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { withRateLimit } from '@/lib/middleware/apiHandler';
@@ -25,6 +30,55 @@ const createAccountSchema = z.object({
 function getAppBaseUrl(): string {
   warnIfBaseUrlLooksWrong();
   return resolveAppBaseUrl();
+}
+
+async function runSiteFixAccountGrowthOpsSideEffects(params: {
+  normalizedEmail: string;
+  orderId: string;
+  pending: SiteFixPendingOrder;
+  packageNames: string;
+}): Promise<void> {
+  const existing = await findGrowthOpsProspectByEmail(params.normalizedEmail);
+  let businessName = existing.businessName ?? 'Unknown Business';
+  let websiteUrl: string | undefined;
+
+  if (adminDb && params.pending.auditLeadId) {
+    const auditSnap = await adminDb
+      .collection('auditLeads')
+      .doc(params.pending.auditLeadId)
+      .get();
+    if (auditSnap.exists) {
+      const auditData = auditSnap.data() as { businessName?: string; websiteUrl?: string };
+      businessName = auditData.businessName ?? businessName;
+      websiteUrl = auditData.websiteUrl;
+    }
+  }
+
+  const notionResult = await upsertAccountCreation({
+    email: params.normalizedEmail,
+    businessName,
+    websiteUrl,
+    accountType: 'site_fix',
+    productLabel: params.packageNames,
+  });
+
+  if (notionResult.success) {
+    console.log(`[create-account] Growth Ops account upserted orderId=${params.orderId}`);
+  } else {
+    console.warn(
+      `[create-account] Growth Ops account upsert failed orderId=${params.orderId}:`,
+      notionResult.error
+    );
+  }
+
+  await sendInternalOpsNotification({
+    eventType: 'account_created',
+    prospectEmail: params.normalizedEmail,
+    businessName: notionResult.businessName ?? businessName,
+    websiteUrl,
+    details: `Site Fix — ${params.packageNames} | Order: ${params.orderId}`,
+    notionPageUrl: notionResult.pageUrl,
+  });
 }
 
 export const POST = withRateLimit(async (req: NextRequest) => {
@@ -104,6 +158,15 @@ export const POST = withRateLimit(async (req: NextRequest) => {
     );
 
     trackSiteFixServerEvent('site_fix_account_created', { userId: uid, orderId });
+
+    void runSiteFixAccountGrowthOpsSideEffects({
+      normalizedEmail,
+      orderId,
+      pending,
+      packageNames,
+    }).catch((err) =>
+      console.error('[create-account] Growth Ops sync failed (non-blocking):', err)
+    );
 
     return NextResponse.json({
       success: true,

@@ -19,7 +19,8 @@ import { runAuditPipeline } from '@/lib/audit/runAuditPipeline';
 import { checkEmailRateLimit } from '@/lib/audit/rateLimit';
 import { adminDb } from '@/lib/firebase/admin';
 import { sendAuditReportEmail } from '@/lib/loops';
-import { createAuditLeadRecord } from '@/lib/notion';
+import { sendInternalOpsNotification } from '@/lib/internal-ops-notification';
+import { upsertAuditCompletion } from '@/lib/notion-growth-ops';
 import { sendAuditLeadNotification } from '@/lib/slack';
 import {
   applyRateLimit,
@@ -249,18 +250,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               seoScore,
             });
 
-            await createAuditLeadRecord({
-              firstName: input.firstName,
-              businessName: input.businessName,
+            const notionResult = await upsertAuditCompletion({
               email: input.email,
+              businessName: input.businessName,
               websiteUrl: input.websiteUrl,
-              speedGrade: speedStatus === 'failed' ? 'N/A' : speedGrade,
-              securityGrade:
-                securityStatus === 'failed' ? 'N/A' : securityGrade,
-              seoGrade: seoStatus === 'failed' ? 'N/A' : seoGrade,
-              seoScore,
-              source: 'public_audit',
             });
+
+            if (notionResult.success) {
+              console.log('[Growth Ops Notion] Audit prospect upserted:', input.email);
+            } else {
+              console.error('[Growth Ops Notion] Audit upsert failed:', notionResult.error);
+            }
+
+            void sendInternalOpsNotification({
+              eventType: 'audit_completed',
+              prospectEmail: input.email,
+              businessName: input.businessName,
+              websiteUrl: input.websiteUrl,
+              details: `Speed: ${speedStatus === 'failed' ? 'N/A' : speedGrade} | Security: ${securityStatus === 'failed' ? 'N/A' : securityGrade} | SEO: ${seoStatus === 'failed' ? 'N/A' : seoGrade} (${seoScore}/9)`,
+              notionPageUrl: notionResult.pageUrl,
+            }).catch((err) =>
+              console.error('[Internal Ops] Audit notification failed (non-blocking):', err)
+            );
           } catch (err) {
             console.error(
               '[POST /api/audit] fire-and-forget automation error:',

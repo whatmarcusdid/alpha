@@ -10,7 +10,7 @@ const {
   generateAuditPDF,
   sendAuditReportEmail,
   sendAuditLeadNotification,
-  createAuditLeadRecord,
+  upsertAuditCompletion,
 } = vi.hoisted(() => ({
   applyRateLimit: vi.fn(),
   checkEmailRateLimit: vi.fn(),
@@ -20,7 +20,7 @@ const {
   generateAuditPDF: vi.fn(),
   sendAuditReportEmail: vi.fn(),
   sendAuditLeadNotification: vi.fn(),
-  createAuditLeadRecord: vi.fn(),
+  upsertAuditCompletion: vi.fn(),
 }));
 
 vi.mock('@/lib/middleware/rateLimiting', () => ({
@@ -59,8 +59,12 @@ vi.mock('@/lib/slack', () => ({
   sendAuditLeadNotification,
 }));
 
-vi.mock('@/lib/notion', () => ({
-  createAuditLeadRecord,
+vi.mock('@/lib/notion-growth-ops', () => ({
+  upsertAuditCompletion,
+}));
+
+vi.mock('@/lib/internal-ops-notification', () => ({
+  sendInternalOpsNotification: vi.fn(),
 }));
 
 vi.mock('crypto', () => ({

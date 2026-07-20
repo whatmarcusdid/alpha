@@ -92,6 +92,9 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abc...
 | `LOOPS_API_KEY` | Loops transactional emails (payment confirmed, dashboard ready, account deletion) | 🔒 Yes | Loops → Settings → API |
 | `LOOPS_SUPPORT_TICKET_TEMPLATE_ID` | Loops transactional template for support tickets | 🔒 Yes | Loops → Transactional Emails |
 | `NOTION_SALES_PIPELINE_DB_ID` | TSG Sales Pipeline **data source** ID (for payment tracking, weekly digest, book-call prospects) | 🔒 No | Notion → Database → ⋮ → Manage data sources → Copy data source ID |
+| `NOTION_GROWTH_OPS_DB_ID` | Growth Ops / Clients **data source** ID (audit, purchase, account lifecycle upserts) | 🔒 Yes | Notion → Database → ⋮ → Manage data sources → Copy data source ID |
+| `NOTION_API_KEY` | Notion integration secret (shared by Sales Pipeline + Growth Ops modules) | 🔒 Yes | Notion → Integrations → Internal integration |
+| `LOOPS_INTERNAL_OPS_NOTIFICATION_TEMPLATE_ID` | Internal lifecycle alerts to support@bookservice.tech | 🔒 Yes | Loops → Transactional Emails |
 | `PASSWORD_RESET_EMAIL_MODE` | Password reset email: `console` (log URL for testing) or `loops` (send via Loops) | 🔓 No | Default: `loops` |
 | `LOOPS_PASSWORD_RESET_TEMPLATE_ID` | Loops transactional template for password reset emails | 🔒 Yes | Loops → Transactional Emails |
 | `CRON_SECRET` | Optional auth for Vercel Cron (e.g. weekly-sales-digest) | 🔒 Yes | Generate secure random string |

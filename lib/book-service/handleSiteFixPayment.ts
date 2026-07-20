@@ -14,6 +14,7 @@
  */
 
 import { FieldValue } from 'firebase-admin/firestore';
+import type { DocumentSnapshot } from 'firebase-admin/firestore';
 import type Stripe from 'stripe';
 
 import { ensureFixSessionForOrder } from '@/lib/fix-jobs/seed-fix-session';
@@ -21,6 +22,8 @@ import { adminDb } from '@/lib/firebase/admin';
 import type { SiteFixEntitlement } from '@/lib/types/client-context';
 
 import { sendSiteFixPaymentConfirmedEmail } from './emails';
+import { sendInternalOpsNotification } from '@/lib/internal-ops-notification';
+import { upsertPurchaseCompletion } from '@/lib/notion-growth-ops';
 import {
   processDashboardInvite,
   resolveOrCreateUserIdForInvite,
@@ -189,6 +192,17 @@ export async function handleSiteFixPayment(
 
   console.log(`handleSiteFixPayment: order written orderId=${orderId}`);
 
+  void runSiteFixPurchaseGrowthOpsSideEffects({
+    normalizedEmail,
+    auditLeadSnap,
+    auditLeadLinked,
+    skuKey,
+    orderId,
+    session,
+  }).catch((err) =>
+    console.error('handleSiteFixPayment: Growth Ops sync failed (non-blocking)', err)
+  );
+
   void triggerDashboardInvite({
     normalizedEmail,
     orderId,
@@ -198,6 +212,64 @@ export async function handleSiteFixPayment(
   }).catch((err) =>
     console.error('handleSiteFixPayment: dashboard invite failed (non-blocking)', err)
   );
+}
+
+async function runSiteFixPurchaseGrowthOpsSideEffects(params: {
+  normalizedEmail: string;
+  auditLeadSnap: DocumentSnapshot;
+  auditLeadLinked: boolean;
+  skuKey: SiteFixSKU;
+  orderId: string;
+  session: Stripe.Checkout.Session;
+}): Promise<void> {
+  if (!params.normalizedEmail) {
+    return;
+  }
+
+  let businessName = 'Unknown Business';
+  let websiteUrl: string | undefined;
+
+  if (params.auditLeadLinked && params.auditLeadSnap.exists) {
+    const auditData = params.auditLeadSnap.data() as
+      | { businessName?: string; websiteUrl?: string }
+      | undefined;
+    businessName = auditData?.businessName ?? businessName;
+    websiteUrl = auditData?.websiteUrl;
+  }
+
+  const amount =
+    params.session.amount_total != null
+      ? params.session.amount_total / 100
+      : SITE_FIX_SKUS[params.skuKey].price ?? 0;
+
+  const notionResult = await upsertPurchaseCompletion({
+    email: params.normalizedEmail,
+    businessName,
+    websiteUrl,
+    purchaseType: 'site_fix',
+    productLabel: SITE_FIX_SKUS[params.skuKey].displayName,
+    amount,
+  });
+
+  if (notionResult.success) {
+    console.log(
+      `[handleSiteFixPayment] Growth Ops purchase upserted orderId=${params.orderId}`
+    );
+  } else {
+    console.warn(
+      `[handleSiteFixPayment] Growth Ops purchase upsert failed orderId=${params.orderId}:`,
+      notionResult.error
+    );
+  }
+
+  await sendInternalOpsNotification({
+    eventType: 'purchase_completed',
+    prospectEmail: params.normalizedEmail,
+    businessName: notionResult.businessName ?? businessName,
+    websiteUrl,
+    details: `${SITE_FIX_SKUS[params.skuKey].displayName} — $${amount} | Order: ${params.orderId}`,
+    notionPageUrl: notionResult.pageUrl,
+  });
 }
 
 async function ensureFixSessionOnDuplicateWebhook(params: {

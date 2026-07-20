@@ -2,25 +2,65 @@
  * Account Created Notification API
  *
  * Sends the "Account Created" Slack notification after signup.
- * Also updates Notion lead status to "Closed Won" to complete the pipeline.
+ * Also upserts Growth Ops / Clients prospect record on account creation.
  * Called from SignUpForm after successful account creation.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { findLeadByEmail, updateLeadStatus } from '@/lib/notion-sales';
+import { sendInternalOpsNotification } from '@/lib/internal-ops-notification';
+import {
+  findGrowthOpsProspectByEmail,
+  upsertAccountCreation,
+} from '@/lib/notion-growth-ops';
 import { isSlackNotificationsEnabled } from '@/lib/slack-enabled';
 
-async function updateNotionClosedWon(email: string): Promise<void> {
+async function updateGrowthOpsAccountCreated(params: {
+  email: string;
+  tier?: string;
+  billingCycle?: string;
+}): Promise<{ pageUrl?: string; businessName?: string }> {
+  const normalizedEmail = params.email.toLowerCase().trim();
+  const displayTier = params.tier
+    ? params.tier.charAt(0).toUpperCase() + params.tier.slice(1)
+    : 'Essential';
+  const displayBillingCycle = params.billingCycle
+    ? params.billingCycle.charAt(0).toUpperCase() + params.billingCycle.slice(1)
+    : 'Annual';
+
   try {
-    const notionResult = await updateLeadStatus(email.toLowerCase().trim(), 'Closed Won');
+    const existing = await findGrowthOpsProspectByEmail(normalizedEmail);
+    const businessName = existing.businessName ?? 'Unknown Business';
+
+    const notionResult = await upsertAccountCreation({
+      email: normalizedEmail,
+      businessName,
+      accountType: 'subscription',
+      productLabel: `${displayTier} (${displayBillingCycle})`,
+    });
 
     if (notionResult.success) {
-      console.log(`✅ [Account Created] Notion updated to Closed Won: ${email}`);
-    } else if (!notionResult.found) {
-      console.log(`ℹ️ [Account Created] Lead not in Notion: ${email}`);
+      console.log(`✅ [Account Created] Growth Ops upserted: ${normalizedEmail}`);
+    } else {
+      console.warn('[Account Created] Growth Ops upsert failed:', notionResult.error);
     }
+
+    void sendInternalOpsNotification({
+      eventType: 'account_created',
+      prospectEmail: normalizedEmail,
+      businessName: notionResult.businessName ?? businessName,
+      details: `${displayTier} (${displayBillingCycle})`,
+      notionPageUrl: notionResult.pageUrl,
+    }).catch((err) =>
+      console.warn('[Account Created] Internal ops email failed (non-blocking):', err)
+    );
+
+    return {
+      pageUrl: notionResult.pageUrl,
+      businessName: notionResult.businessName ?? businessName,
+    };
   } catch (notionError) {
-    console.warn('[Account Created] Notion update failed (non-blocking):', notionError);
+    console.warn('[Account Created] Growth Ops update failed (non-blocking):', notionError);
+    return {};
   }
 }
 
@@ -44,21 +84,15 @@ export async function POST(req: NextRequest) {
       console.warn('[Account Created] SLACK_WEBHOOK_URL not configured');
     }
 
+    const growthOpsResult = await updateGrowthOpsAccountCreated({ email, tier, billingCycle });
+
     if (slackEnabled) {
       const displayTier = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Essential';
       const displayBillingCycle = billingCycle
         ? billingCycle.charAt(0).toUpperCase() + billingCycle.slice(1)
         : 'Annual';
 
-      let notionUrl: string | undefined;
-      try {
-        const notionResult = await findLeadByEmail(email.toLowerCase().trim());
-        if (notionResult.found && notionResult.pageUrl) {
-          notionUrl = notionResult.pageUrl;
-        }
-      } catch (notionError) {
-        console.warn('[Account Created] Could not fetch Notion URL:', notionError);
-      }
+      const notionUrl = growthOpsResult.pageUrl;
 
       const slackMessage = {
         text: `✅ Account Created: ${email} - ${displayTier} (${displayBillingCycle})`,
@@ -86,7 +120,7 @@ export async function POST(req: NextRequest) {
                       type: 'section',
                       text: {
                         type: 'mrkdwn',
-                        text: `<${notionUrl}|View lead in Notion>`,
+                        text: `<${notionUrl}|View prospect in Growth Ops>`,
                       },
                     },
                   ]
@@ -121,8 +155,6 @@ export async function POST(req: NextRequest) {
 
       console.log(`✅ [Account Created] Slack notification sent for: ${email}`);
     }
-
-    await updateNotionClosedWon(email);
 
     return NextResponse.json({ success: true });
   } catch (error) {

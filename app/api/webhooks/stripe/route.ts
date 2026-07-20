@@ -11,7 +11,8 @@ import {
   sendSubscriptionCanceledEmail,
   sendRefundIssuedEmail,
 } from '@/lib/loops';
-import { updateLeadWithPayment } from '@/lib/notion-sales';
+import { sendInternalOpsNotification } from '@/lib/internal-ops-notification';
+import { upsertPurchaseCompletion } from '@/lib/notion-growth-ops';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/formatters';
 import { devOnlyErrorDetails } from '@/lib/middleware/dev-error-details';
 import { withRateLimit } from '@/lib/middleware/apiHandler';
@@ -69,6 +70,68 @@ async function sendPaymentSlackNotification(data: {
   if (!response.ok) {
     throw new Error(`Slack HTTP ${response.status}: ${await response.text()}`);
   }
+}
+
+async function runSubscriptionPurchaseGrowthOpsSideEffects(params: {
+  normalizedEmail: string;
+  businessName: string;
+  displayTier: string;
+  displayBillingCycle: string;
+  amount: number;
+  stripeCustomerId: string;
+}): Promise<{
+  success: boolean;
+  businessName: string;
+  pageUrl?: string;
+  error?: string;
+}> {
+  let notionResult: {
+    success: boolean;
+    businessName: string;
+    pageUrl?: string;
+    error?: string;
+  } = {
+    success: false,
+    businessName: params.businessName,
+    pageUrl: undefined,
+  };
+
+  try {
+    const result = await upsertPurchaseCompletion({
+      email: params.normalizedEmail,
+      businessName: params.businessName,
+      purchaseType: 'subscription',
+      productLabel: `${params.displayTier} (${params.displayBillingCycle})`,
+      amount: params.amount,
+    });
+
+    notionResult = {
+      success: result.success,
+      businessName: result.businessName ?? params.businessName,
+      pageUrl: result.pageUrl,
+      error: result.error,
+    };
+
+    if (result.success) {
+      console.log(`✅ [Growth Ops Notion] Purchase upserted: ${params.normalizedEmail}`);
+    } else {
+      console.error(`⚠️ [Growth Ops Notion] Purchase upsert failed: ${result.error}`);
+    }
+  } catch (notionError) {
+    console.error('⚠️ [Growth Ops Notion] Error (non-blocking):', notionError);
+  }
+
+  void sendInternalOpsNotification({
+    eventType: 'purchase_completed',
+    prospectEmail: params.normalizedEmail,
+    businessName: notionResult.businessName,
+    details: `${params.displayTier} (${params.displayBillingCycle}) — $${params.amount} | Stripe: ${params.stripeCustomerId}`,
+    notionPageUrl: notionResult.pageUrl,
+  }).catch((err) =>
+    console.error('⚠️ [Internal Ops] Purchase notification failed (non-blocking):', err)
+  );
+
+  return notionResult;
 }
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -607,34 +670,17 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
         console.error('⚠️ [Loops] Email error (non-blocking):', emailError);
       }
 
-      // 2. Update Notion lead status (non-blocking)
-      let notionResult: { success: boolean; found: boolean; businessName?: string; pageUrl?: string; error?: string } = {
-        success: false,
-        found: false,
-        businessName: 'Unknown Business',
-        pageUrl: undefined,
-      };
-      try {
-        notionResult = await updateLeadWithPayment({
-          email: normalizedEmail,
-          status: 'Won - Awaiting Signup',
-          paymentAmount: amount,
-          paymentDate: new Date().toISOString(),
-          subscriptionTier: displayTier,
-          billingCycle: displayBillingCycle,
-          stripeCustomerId: customerId,
-        });
-
-        if (notionResult.success) {
-          console.log(`✅ [Notion] Updated lead: ${notionResult.businessName}`);
-        } else if (!notionResult.found) {
-          console.log(`ℹ️ [Notion] Lead not found for: ${normalizedEmail} (direct purchase)`);
-        } else {
-          console.error(`⚠️ [Notion] Update failed: ${notionResult.error}`);
-        }
-      } catch (notionError) {
-        console.error('⚠️ [Notion] Error (non-blocking):', notionError);
-      }
+      // 2. Growth Ops Notion upsert + internal email (non-blocking)
+      const businessName =
+        (typeof customerName === 'string' && customerName.trim()) || 'Unknown Business';
+      const notionResult = await runSubscriptionPurchaseGrowthOpsSideEffects({
+        normalizedEmail,
+        businessName,
+        displayTier,
+        displayBillingCycle,
+        amount,
+        stripeCustomerId: customerId,
+      });
 
       // 3. Send Slack notification (non-blocking)
       try {
@@ -734,34 +780,17 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
       console.error('⚠️ [Loops] Email error (non-blocking):', emailError);
     }
 
-    // 2. Update Notion lead status (non-blocking)
-    let notionResult: { success: boolean; found: boolean; businessName?: string; pageUrl?: string; error?: string } = {
-      success: false,
-      found: false,
-      businessName: 'Unknown Business',
-      pageUrl: undefined,
-    };
-    try {
-      notionResult = await updateLeadWithPayment({
-        email: normalizedEmail,
-        status: 'Won - Awaiting Signup',
-        paymentAmount: amount,
-        paymentDate: new Date().toISOString(),
-        subscriptionTier: displayTier,
-        billingCycle: displayBillingCycle,
-        stripeCustomerId: customerId,
-      });
-
-      if (notionResult.success) {
-        console.log(`✅ [Notion] Updated lead: ${notionResult.businessName}`);
-      } else if (!notionResult.found) {
-        console.log(`ℹ️ [Notion] Lead not found for: ${normalizedEmail} (direct purchase)`);
-      } else {
-        console.error(`⚠️ [Notion] Update failed: ${notionResult.error}`);
-      }
-    } catch (notionError) {
-      console.error('⚠️ [Notion] Error (non-blocking):', notionError);
-    }
+    // 2. Growth Ops Notion upsert + internal email (non-blocking)
+    const businessName =
+      (typeof customerName === 'string' && customerName.trim()) || 'Unknown Business';
+    const notionResult = await runSubscriptionPurchaseGrowthOpsSideEffects({
+      normalizedEmail,
+      businessName,
+      displayTier,
+      displayBillingCycle,
+      amount,
+      stripeCustomerId: customerId,
+    });
 
     // 3. Send Slack notification (non-blocking)
     try {
