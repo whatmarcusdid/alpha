@@ -7,6 +7,9 @@
 
 const LOOPS_API_URL = 'https://app.loops.so/api/v1/transactional';
 
+/** PDF attachment uploads can exceed 10s; keep in sync with post-response `after()` budget. */
+const AUDIT_REPORT_EMAIL_TIMEOUT_MS = 30_000;
+
 // Template IDs
 const PAYMENT_CONFIRMED_TEMPLATE_ID = 'cmrthlomd01950jvv98gtoiat';
 const DASHBOARD_READY_TEMPLATE_ID = 'cmrthrbby007o0jysiixbx8vl';
@@ -298,14 +301,28 @@ export async function sendAuditReportEmail(params: {
           },
         ],
       }),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(AUDIT_REPORT_EMAIL_TIMEOUT_MS),
     });
 
     if (!response.ok) {
-      console.error('Loops', response.status);
+      console.error(
+        '[Loops] Audit report email failed:',
+        response.status,
+        params.email
+      );
       return;
     }
+
+    console.log(
+      '[Loops] Audit report email sent successfully:',
+      params.email,
+      templateId
+    );
   } catch (error) {
-    console.error('Loops audit report email failed:', error);
+    console.error(
+      '[Loops] Audit report email failed:',
+      params.email,
+      error
+    );
   }
 }

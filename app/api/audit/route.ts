@@ -11,7 +11,7 @@ export const maxDuration = 60;
 import { randomUUID } from 'crypto';
 
 import { FieldValue } from 'firebase-admin/firestore';
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 
 import { getAuditNarratives, getSEONarrative } from '@/lib/audit/gemini';
 import { applyPipelineToAuditState, deriveAuditStatus } from '@/lib/audit/applyPipelineResult';
@@ -227,7 +227,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         auditLeadId = docRef.id;
         await docRef.update({ auditLeadId });
 
-        void (async () => {
+        after(async () => {
           try {
             if (pdfBuffer) {
               await sendAuditReportEmail({
@@ -274,11 +274,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             );
           } catch (err) {
             console.error(
-              '[POST /api/audit] fire-and-forget automation error:',
+              '[POST /api/audit] post-response automation error:',
               err
             );
           }
-        })();
+        });
       } catch (err) {
         console.error('[POST /api/audit] Firestore write failed:', err);
         auditLeadId = randomUUID();
