@@ -305,10 +305,9 @@ export async function sendAuditReportEmail(params: {
     });
 
     if (!response.ok) {
+      const errorBody = await response.text();
       console.error(
-        '[Loops] Audit report email failed:',
-        response.status,
-        params.email
+        `[Loops] Audit report email failed: ${response.status} ${params.email} - ${errorBody}`
       );
       return;
     }
