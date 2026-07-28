@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
+import { after, NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 
@@ -144,14 +147,18 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
       const firstName =
         typeof siteFix.contactName === 'string' ? siteFix.contactName : '';
 
-      void sendSiteFixDeliveryReadyEmail({
-        email: contactEmail,
-        firstName,
-        orderId,
-        packageNames,
-      }).catch((err) =>
-        console.error('[submit-access] delivery ready email failed:', err)
-      );
+      after(async () => {
+        try {
+          await sendSiteFixDeliveryReadyEmail({
+            email: contactEmail,
+            firstName,
+            orderId,
+            packageNames,
+          });
+        } catch (err) {
+          console.error('[submit-access] delivery ready email failed:', err);
+        }
+      });
 
       trackSiteFixServerEvent('site_fix_delivery_ready', { userId, orderId });
     }

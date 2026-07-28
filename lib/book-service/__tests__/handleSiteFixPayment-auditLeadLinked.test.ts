@@ -51,6 +51,16 @@ vi.mock('@/lib/firebase/admin', () => ({
   },
 }));
 
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next/server')>();
+  return {
+    ...actual,
+    after: (callback: () => void | Promise<void>) => {
+      void callback();
+    },
+  };
+});
+
 vi.mock('@/lib/book-service/emails', () => ({
   sendSiteFixPaymentConfirmedEmail,
 }));

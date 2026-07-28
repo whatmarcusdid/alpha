@@ -13,6 +13,7 @@
  * Batch write is atomic — partial state is never written.
  */
 
+import { after } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { DocumentSnapshot } from 'firebase-admin/firestore';
 import type Stripe from 'stripe';
@@ -168,19 +169,23 @@ export async function handleSiteFixPayment(
     }
   }
 
-  void sendSiteFixPaymentConfirmedEmail({
-    normalizedEmail,
-    firstName: '',
-    packageName: SITE_FIX_SKUS[skuKey].displayName,
-    orderId,
-    amount: SITE_FIX_SKUS[skuKey].price ?? 0,
-    signupUrl: `${getAppBaseUrl()}/book-service/signup?orderId=${orderId}`,
-  }).catch((err) =>
-    console.error(
-      'handleSiteFixPayment: Loops email failed (non-blocking)',
-      err
-    )
-  );
+  after(async () => {
+    try {
+      await sendSiteFixPaymentConfirmedEmail({
+        normalizedEmail,
+        firstName: '',
+        packageName: SITE_FIX_SKUS[skuKey].displayName,
+        orderId,
+        amount: SITE_FIX_SKUS[skuKey].price ?? 0,
+        signupUrl: `${getAppBaseUrl()}/book-service/signup?orderId=${orderId}`,
+      });
+    } catch (err) {
+      console.error(
+        'handleSiteFixPayment: Loops email failed (non-blocking)',
+        err
+      );
+    }
+  });
 
   void trackServerAnalyticsEvent('site_fix_payment_succeeded', {
     orderId,
