@@ -21,6 +21,9 @@ function formatAccessType(accessType: string): string {
 
 export async function sendAccessReRequestEmail(params: {
   recipientEmail: string;
+  firstName: string;
+  siteUrl: string;
+  accessUrl: string;
   customerName: string;
   businessName: string;
   scopeDescription: string;
@@ -54,6 +57,9 @@ export async function sendAccessReRequestEmail(params: {
       transactionalId: templateId,
       email: params.recipientEmail,
       dataVariables: {
+        firstName: params.firstName || 'there',
+        siteUrl: params.siteUrl,
+        accessUrl: params.accessUrl,
         customerName: params.customerName || 'there',
         businessName: params.businessName,
         scopeDescription: params.scopeDescription,

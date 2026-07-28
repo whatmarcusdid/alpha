@@ -9,6 +9,8 @@ import {
   resolveBusinessName,
   resolveCustomerEmail,
   resolveCustomerName,
+  resolveFirstName,
+  resolveSiteUrl,
 } from '@/lib/site-access/user-fields';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import type { AccessType } from '@/lib/types/site-access-request';
@@ -114,6 +116,9 @@ export async function createSiteAccessRequest(
 
   void sendAccessReRequestEmail({
     recipientEmail: customerEmail,
+    firstName: resolveFirstName(userData),
+    siteUrl: resolveSiteUrl(userData),
+    accessUrl: grantUrl,
     customerName: resolveCustomerName(userData),
     businessName: resolveBusinessName(userData),
     scopeDescription: input.scopeDescription,
