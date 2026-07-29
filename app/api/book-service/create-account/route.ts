@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
+import { after, NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { trackSiteFixServerEvent } from '@/lib/book-service/analytics-server';
@@ -147,15 +150,19 @@ export const POST = withRateLimit(async (req: NextRequest) => {
     );
     const confirmDetailsUrl = `${getAppBaseUrl()}/book-service/confirm-details?orderId=${encodeURIComponent(orderId)}`;
 
-    void sendSiteFixAccountCreatedEmail({
-      email: normalizedEmail,
-      firstName,
-      orderId,
-      packageNames,
-      confirmDetailsUrl,
-    }).catch((err) =>
-      console.error('[create-account] account created email failed:', err)
-    );
+    after(async () => {
+      try {
+        await sendSiteFixAccountCreatedEmail({
+          email: normalizedEmail,
+          firstName,
+          orderId,
+          packageNames,
+          confirmDetailsUrl,
+        });
+      } catch (err) {
+        console.error('[create-account] account created email failed:', err);
+      }
+    });
 
     trackSiteFixServerEvent('site_fix_account_created', { userId: uid, orderId });
 
