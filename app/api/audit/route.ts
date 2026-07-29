@@ -165,6 +165,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     let pdfBuffer: Buffer | null = null;
     try {
       const pdfData: AuditReportData = {
+        firstName: input.firstName,
         businessName: input.businessName,
         websiteUrl: input.websiteUrl,
         auditDate,
