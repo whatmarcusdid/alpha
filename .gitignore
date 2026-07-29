@@ -52,3 +52,4 @@ serviceAccountKey.json
 .env.sentry-build-plugin
 firebase-debug.log
 firestore-debug.log
+.env*
