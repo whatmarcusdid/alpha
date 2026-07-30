@@ -7,6 +7,7 @@ import { SessionExpiredModal } from '@/components/book-service/SessionExpiredMod
 import { SiteFixPricingCard } from '@/components/book-service/SiteFixPricingCard';
 import { SiteFixSelectLayout } from '@/components/book-service/SiteFixSelectLayout';
 import { trackBookServiceEvent } from '@/lib/book-service/analytics-client';
+import { trackSiteFixOfferViewed } from '@/lib/analytics';
 import { buildSelectSkuHref } from '@/lib/book-service/build-select-url';
 import {
   getDisplaySkus,
@@ -29,8 +30,12 @@ function SelectPageContent() {
   useEffect(() => {
     setAuditLeadId(readAuditLeadId());
     setHasCheckedSession(true);
-    trackBookServiceEvent('site_fix_offer_viewed', {
-      skus: skusToShow.join(','),
+    const skus = skusToShow.join(',');
+    const leadId = readAuditLeadId();
+    trackBookServiceEvent('site_fix_offer_viewed', { skus });
+    trackSiteFixOfferViewed({
+      skus,
+      audit_lead_id: leadId ?? undefined,
     });
   }, [skusToShow]);
 

@@ -6,7 +6,8 @@
  * - Uses require() pattern instead of ES6 imports
  * - Mixpanel only runs in the browser, never on the server
  *
- * Tracks user journeys for: Onboarding, Feature Discovery, and Game Plan Call booking.
+ * Tracks user journeys for: Audit, Site Fix, Onboarding, Feature Discovery,
+ * and Game Plan Call booking.
  *
  * SECURITY: Never include emails, passwords, card numbers, or other PII in events.
  */
@@ -18,7 +19,13 @@ export interface AnalyticsBaseProperties {
 }
 
 // Mixpanel instance (null on server)
-let mixpanel: { init: (token: string, config?: Record<string, unknown>) => void; track: (event: string, props?: Record<string, unknown>) => void; identify: (id: string) => void; people: { set: (props: Record<string, unknown>) => void } } | null = null;
+let mixpanel: {
+  init: (token: string, config?: Record<string, unknown>) => void;
+  track: (event: string, props?: Record<string, unknown>) => void;
+  identify: (id: string) => void;
+  alias: (alias: string, original?: string) => void;
+  people: { set: (props: Record<string, unknown>) => void };
+} | null = null;
 
 // Initialize Mixpanel in browser only
 if (typeof window !== 'undefined') {
@@ -82,6 +89,22 @@ function withBaseProps(
 }
 
 /**
+ * Merge anonymous Mixpanel activity into the identified Firebase UID profile.
+ * Call once before identifyUser when the user first becomes authenticated.
+ */
+export function mergeAnonymousIdentity(firebaseUID: string): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  try {
+    const storageKey = `mp_alias_merged_${firebaseUID}`;
+    if (localStorage.getItem(storageKey)) return;
+    mixpanel.alias(firebaseUID);
+    localStorage.setItem(storageKey, '1');
+  } catch (error) {
+    console.warn('Mixpanel alias error:', error);
+  }
+}
+
+/**
  * Identity Management - Call on user login/signup
  */
 export function identifyUser(
@@ -116,6 +139,45 @@ export function setUserProperties(
   } catch (error) {
     console.warn('Mixpanel setUserProperties error:', error);
   }
+}
+
+// =============================================================================
+// AUDIT & SITE FIX FUNNEL
+// =============================================================================
+
+export function trackAuditViewed(props?: AnalyticsBaseProperties): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  mixpanel.track('Audit_Viewed', withBaseProps(props));
+}
+
+export function trackSiteFixOfferViewed(
+  props?: AnalyticsBaseProperties & { skus?: string; audit_lead_id?: string }
+): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  mixpanel.track(
+    'SiteFix_Offer_Viewed',
+    withBaseProps(props, { skus: props?.skus, audit_lead_id: props?.audit_lead_id })
+  );
+}
+
+export function trackSiteFixSkuSelected(
+  props?: AnalyticsBaseProperties & { sku?: string; audit_lead_id?: string }
+): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  mixpanel.track(
+    'SiteFix_Sku_Selected',
+    withBaseProps(props, { sku: props?.sku, audit_lead_id: props?.audit_lead_id })
+  );
+}
+
+export function trackSiteFixCheckoutStarted(
+  props?: AnalyticsBaseProperties & { sku?: string; audit_lead_id?: string }
+): void {
+  if (typeof window === 'undefined' || !mixpanel) return;
+  mixpanel.track(
+    'SiteFix_Checkout_Started',
+    withBaseProps(props, { sku: props?.sku, audit_lead_id: props?.audit_lead_id })
+  );
 }
 
 // =============================================================================

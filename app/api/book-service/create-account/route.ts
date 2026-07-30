@@ -5,6 +5,7 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { trackSiteFixServerEvent } from '@/lib/book-service/analytics-server';
+import { trackServerEvent } from '@/lib/analytics-server';
 import {
   AuthError,
   ClaimError,
@@ -165,6 +166,13 @@ export const POST = withRateLimit(async (req: NextRequest) => {
     });
 
     trackSiteFixServerEvent('site_fix_account_created', { userId: uid, orderId });
+    trackServerEvent('Account_Created', uid, {
+      order_id: orderId,
+      sku: pending.sku,
+      $insert_id: `account_created_${orderId}`,
+      $device_id: orderId,
+      $user_id: uid,
+    });
 
     void runSiteFixAccountGrowthOpsSideEffects({
       normalizedEmail,

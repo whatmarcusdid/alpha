@@ -22,7 +22,8 @@ import { withRateLimit } from '@/lib/middleware/apiHandler';
 import { webhookLimiter } from '@/lib/middleware/rateLimiting';
 import { getStripe, getStripeCustomerPortalUrl } from '@/lib/stripe-server';
 import { handleSiteFixPayment } from '@/lib/book-service/handleSiteFixPayment';
-import { isSiteFixSession } from '@/lib/book-service/stripe-metadata';
+import { isSiteFixSession, parseSiteFixSessionMetadata } from '@/lib/book-service/stripe-metadata';
+import { trackServerEvent } from '@/lib/analytics-server';
 import { isSlackNotificationsEnabled } from '@/lib/slack-enabled';
 
 // --- Growth Engine Helpers ---
@@ -569,6 +570,19 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, span: any) {
   // SITE FIX BRANCH — must come before subscription logic
   if (isSiteFixSession(session.metadata)) {
     await handleSiteFixPayment(session);
+
+    const siteFixMetadata = parseSiteFixSessionMetadata(session.metadata);
+    if (siteFixMetadata) {
+      trackServerEvent('Checkout_Completed', siteFixMetadata.orderId, {
+        order_id: siteFixMetadata.orderId,
+        audit_lead_id: siteFixMetadata.auditLeadId,
+        sku: siteFixMetadata.sku,
+        amount_cents: session.amount_total ?? undefined,
+        stripe_session_id: session.id,
+        $insert_id: session.id,
+      });
+    }
+
     return;
   }
   

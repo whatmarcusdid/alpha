@@ -19,6 +19,10 @@ import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBou
 import { useClientContext } from '@/lib/hooks/useClientContext';
 import { SUPPORT_EMAIL } from '@/lib/config';
 import { formatDashboardGreeting } from '@/lib/dashboard/greeting';
+import {
+  trackDashboardViewed,
+  trackFirstDashboardViewed,
+} from '@/lib/analytics';
 
 type FirestoreTimestamp = {
   toDate?: () => Date;
@@ -102,6 +106,8 @@ function DashboardPageContent() {
   } | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const inviteAcceptedMarkedRef = useRef<boolean>(false);
+  const hasTrackedDashboardViewRef = useRef<boolean>(false);
+  const hasHandledFirstDashboardRef = useRef<boolean>(false);
   const { context: clientContext, status: clientContextStatus } = useClientContext();
 
   useEffect(() => {
@@ -118,6 +124,12 @@ function DashboardPageContent() {
   }, []);
 
   useEffect(() => {
+    if (!authReady || !uid || hasTrackedDashboardViewRef.current) return;
+    hasTrackedDashboardViewRef.current = true;
+    trackDashboardViewed();
+  }, [authReady, uid]);
+
+  useEffect(() => {
     if (authReady && !uid) {
       router.push('/signin');
     }
@@ -126,7 +138,7 @@ function DashboardPageContent() {
   useEffect(() => {
     if (!authReady || !uid) return;
 
-    const { getFirestore, doc, onSnapshot } = require('firebase/firestore');
+    const { getFirestore, doc, onSnapshot, updateDoc } = require('firebase/firestore');
     const db = getFirestore();
 
     const unsubscribe = onSnapshot(
@@ -156,6 +168,18 @@ function DashboardPageContent() {
               : null,
           siteFix,
         });
+
+        if (!hasHandledFirstDashboardRef.current) {
+          hasHandledFirstDashboardRef.current = true;
+          if (data.hasViewedDashboard !== true) {
+            trackFirstDashboardViewed();
+            void updateDoc(doc(db, 'users', uid), { hasViewedDashboard: true }).catch(
+              (error: Error) => {
+                console.warn('[Dashboard] failed to set hasViewedDashboard (non-blocking):', error);
+              }
+            );
+          }
+        }
       },
       (error: Error) => {
         console.error('[Dashboard] user fetch error:', error);

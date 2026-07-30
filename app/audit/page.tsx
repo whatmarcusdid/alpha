@@ -2,7 +2,9 @@
 
 import { Inter } from 'next/font/google';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { trackAuditViewed } from '@/lib/analytics';
 
 import { AuditLoadingAnimation } from '@/components/audit/AuditLoadingAnimation';
 import { AuditRateLimitOverlay } from '@/components/audit/AuditRateLimitOverlay';
@@ -69,6 +71,14 @@ export default function AuditPage() {
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [showRateLimitOverlay, setShowRateLimitOverlay] = useState(false);
   const [hasCheckedSession, setHasCheckedSession] = useState(false);
+  const hasTrackedAuditViewRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasTrackedAuditViewRef.current) {
+      hasTrackedAuditViewRef.current = true;
+      trackAuditViewed();
+    }
+  }, []);
 
   useEffect(() => {
     const session = readAuditSession();

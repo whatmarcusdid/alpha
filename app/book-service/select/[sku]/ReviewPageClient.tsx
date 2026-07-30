@@ -7,6 +7,10 @@ import { SessionExpiredModal } from '@/components/book-service/SessionExpiredMod
 import { SiteFixReviewCard } from '@/components/book-service/SiteFixReviewCard';
 import { SiteFixSelectLayout } from '@/components/book-service/SiteFixSelectLayout';
 import { trackBookServiceEvent } from '@/lib/book-service/analytics-client';
+import {
+  trackSiteFixCheckoutStarted,
+  trackSiteFixSkuSelected,
+} from '@/lib/analytics';
 import { buildSelectPageHref } from '@/lib/book-service/build-select-url';
 import {
   getDisplaySkus,
@@ -55,6 +59,8 @@ export function ReviewPageClient({ skuParam }: ReviewPageClientProps) {
     setCheckoutError(null);
     trackBookServiceEvent('site_fix_sku_selected', { sku });
     trackBookServiceEvent('site_fix_checkout_started', { sku, auditLeadId });
+    trackSiteFixSkuSelected({ sku, audit_lead_id: auditLeadId });
+    trackSiteFixCheckoutStarted({ sku, audit_lead_id: auditLeadId });
 
     try {
       const body: {
