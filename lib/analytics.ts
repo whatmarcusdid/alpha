@@ -6,8 +6,7 @@
  * - Uses require() pattern instead of ES6 imports
  * - Mixpanel only runs in the browser, never on the server
  *
- * Tracks user journeys for: Onboarding, Subscription Management, Support,
- * Feature Discovery, and Game Plan Call booking.
+ * Tracks user journeys for: Onboarding, Feature Discovery, and Game Plan Call booking.
  *
  * SECURITY: Never include emails, passwords, card numbers, or other PII in events.
  */
@@ -142,42 +141,8 @@ export function trackFirstDashboardViewed(props?: AnalyticsBaseProperties): void
 }
 
 // =============================================================================
-// SUBSCRIPTION MANAGEMENT
-// =============================================================================
-
-export function trackSubscriptionUpgraded(props?: AnalyticsBaseProperties & { previous_plan_tier?: string; new_plan_tier?: string; billing_period?: string }): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Subscription_Upgraded', withBaseProps(props, { previous_plan_tier: props?.previous_plan_tier, new_plan_tier: props?.new_plan_tier, billing_period: props?.billing_period }));
-}
-
-export function trackSubscriptionDowngraded(props?: AnalyticsBaseProperties & { previous_plan_tier?: string; new_plan_tier?: string; billing_period?: string }): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Subscription_Downgraded', withBaseProps(props, { previous_plan_tier: props?.previous_plan_tier, new_plan_tier: props?.new_plan_tier, billing_period: props?.billing_period }));
-}
-
-export function trackSubscriptionCancellationStarted(props?: AnalyticsBaseProperties & { previous_plan_tier?: string; cancellation_reason?: string }): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Subscription_Cancellation_Started', withBaseProps(props, { previous_plan_tier: props?.previous_plan_tier, cancellation_reason: props?.cancellation_reason }));
-}
-
-export function trackSubscriptionCanceled(props?: AnalyticsBaseProperties & { previous_plan_tier?: string; cancel_type?: string }): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Subscription_Canceled', withBaseProps(props, { previous_plan_tier: props?.previous_plan_tier, cancel_type: props?.cancel_type }));
-}
-
-export function trackSubscriptionReactivated(props?: AnalyticsBaseProperties & { new_plan_tier?: string }): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Subscription_Reactivated', withBaseProps(props, { new_plan_tier: props?.new_plan_tier }));
-}
-
-// =============================================================================
 // SUPPORT & ENGAGEMENT
 // =============================================================================
-
-export function trackSupportTicketCreated(props?: AnalyticsBaseProperties & { ticket_priority?: string; ticket_category?: string }): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Support_Ticket_Created', withBaseProps(props, { ticket_priority: props?.ticket_priority, ticket_category: props?.ticket_category }));
-}
 
 export function trackSupportTicketResolved(props?: AnalyticsBaseProperties): void {
   if (typeof window === 'undefined' || !mixpanel) return;
@@ -213,11 +178,6 @@ export function trackBillingPageViewed(props?: AnalyticsBaseProperties): void {
   mixpanel.track('Billing_Page_Viewed', withBaseProps(props));
 }
 
-export function trackSettingsPageViewed(props?: AnalyticsBaseProperties): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Settings_Page_Viewed', withBaseProps(props));
-}
-
 export function trackSiteMetricsViewed(props?: AnalyticsBaseProperties & { site_id?: string; feature_name?: string }): void {
   if (typeof window === 'undefined' || !mixpanel) return;
   mixpanel.track('Site_Metrics_Viewed', withBaseProps(props, { site_id: props?.site_id, feature_name: props?.feature_name }));
@@ -243,30 +203,11 @@ export function trackGamePlanCallConfirmationViewed(props?: AnalyticsBasePropert
 }
 
 // =============================================================================
-// GENERIC & PASSWORD TRACKING
+// GENERIC TRACKING
 // =============================================================================
 
 /** Generic track event function */
 export function trackEvent(eventName: string, properties?: Record<string, unknown>): void {
   if (typeof window === 'undefined' || !mixpanel) return;
   mixpanel.track(eventName, properties || {});
-}
-
-/** Password reset: user requested reset (email not included for privacy) */
-export function trackPasswordResetRequested(_properties?: { email?: string } | string): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Password_Reset_Requested', {});
-}
-
-/** Password reset: email sent successfully */
-export function trackPasswordResetEmailSent(properties?: Record<string, unknown>): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  mixpanel.track('Password_Reset_Email_Sent', properties || {});
-}
-
-/** Password reset: request failed */
-export function trackPasswordResetFailed(properties?: { error_type?: string } | string): void {
-  if (typeof window === 'undefined' || !mixpanel) return;
-  const props = typeof properties === 'string' ? { error_type: properties } : (properties || {});
-  mixpanel.track('Password_Reset_Failed', props);
 }

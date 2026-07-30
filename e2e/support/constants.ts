@@ -9,3 +9,12 @@ export const SKU_DISPLAY_NAMES = {
   security_fix: 'Security Fix',
   full_bundle: 'Full Bundle',
 } as const;
+
+// Mirrors lib/book-service/skus.ts's SITE_FIX_SKUS[sku].price (USD, whole
+// dollars) — duplicated literally here for the same reason as above.
+export const SKU_PRICES = {
+  seo_ai_visibility_fix: 679,
+  speed_fix: 799,
+  security_fix: 999,
+  full_bundle: null,
+} as const;

@@ -8,12 +8,6 @@ import SafetyNetDownsellModal from '@/components/manage/SafetyNetDownsellModal';
 import { UpdatePaymentMethodModalWrapper } from '@/components/manage/UpdatePaymentMethodModalWrapper';
 import { PaymentMethodData } from '@/components/manage/UpdatePaymentMethodModal';
 import { NotificationToast } from '@/components/ui/NotificationToast';
-import {
-  trackSubscriptionCancellationStarted,
-  trackSubscriptionCanceled,
-  trackSubscriptionDowngraded,
-} from '@/lib/analytics';
-
 interface ManageSubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -160,11 +154,6 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({
           onClose();
         }}
         onContinue={(reason) => {
-          trackSubscriptionCancellationStarted({
-            previous_plan_tier: currentTier,
-            cancellation_reason: reason || 'not_specified',
-            user_plan_tier: currentTier,
-          });
           setCancellationReason(reason);
           setShowCancelModal(false);
           setShowSafetyNetModal(true);
@@ -211,13 +200,6 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({
 
             const data = await response.json();
 
-            trackSubscriptionDowngraded({
-              previous_plan_tier: currentTier,
-              new_plan_tier: 'safety-net',
-              billing_period: 'annual',
-              user_plan_tier: 'safety-net',
-            });
-            
             // Show success notification
             setNotification({
               type: 'success',
@@ -283,12 +265,6 @@ const ManageSubscriptionModal: React.FC<ManageSubscriptionModalProps> = ({
 
             const data = await response.json();
 
-            trackSubscriptionCanceled({
-              previous_plan_tier: currentTier,
-              cancel_type: 'end_of_period',
-              user_plan_tier: currentTier,
-            });
-            
             // Show success notification
             setNotification({
               type: 'success',

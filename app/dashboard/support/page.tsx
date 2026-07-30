@@ -25,8 +25,6 @@ import SupportTicketCard from '@/components/support/SupportTicketCard';
 import PastSupportTicketsTable from '@/components/support/PastSupportTicketsTable';
 import TicketDetailModal from '@/components/support/TicketDetailModal';
 import { getActiveTickets, getPastTickets } from '@/lib/firestore/support';
-import { getUserSubscription } from '@/lib/firestore';
-import { trackSupportTicketCreated } from '@/lib/analytics';
 import type { SupportTicket } from '@/types/support';
 
 const CATEGORY_OPTIONS: { value: TicketCategory; label: string; description: string }[] = [
@@ -67,7 +65,6 @@ export default function SupportPage() {
     message: string;
     subtitle?: string;
   }>({ show: false, type: 'success', message: '' });
-  const [subscriptionTier, setSubscriptionTier] = useState<string | undefined>();
 
   const tabs: TabItem[] = [
     { id: 'request', label: 'Support Request' },
@@ -89,16 +86,6 @@ export default function SupportPage() {
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    async function loadSubscription() {
-      if (user?.uid) {
-        const sub = await getUserSubscription(user.uid);
-        setSubscriptionTier(sub?.tier);
-      }
-    }
-    loadSubscription();
-  }, [user?.uid]);
 
   const fetchActiveTickets = useCallback(async () => {
     if (!user) return;
@@ -266,20 +253,6 @@ export default function SupportPage() {
         });
         return;
       }
-
-      // Map urgency to priority: low->low, normal->medium, high->high, urgent->critical
-      const priorityMap: Record<TicketUrgency, string> = {
-        low: 'low',
-        normal: 'medium',
-        high: 'high',
-        urgent: 'critical',
-      };
-
-      trackSupportTicketCreated({
-        ticket_priority: priorityMap[urgency],
-        ticket_category: category,
-        user_plan_tier: subscriptionTier,
-      });
 
       setNotification({
         show: true,

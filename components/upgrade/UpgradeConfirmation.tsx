@@ -4,12 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
-import {
-  trackSubscriptionUpgraded,
-  trackSubscriptionDowngraded,
-  trackSubscriptionReactivated,
-} from '@/lib/analytics';
-
 // --- TYPES AND CONSTANTS ---
 type Tier = 'essential' | 'advanced' | 'premium' | 'safety-net';
 
@@ -259,29 +253,6 @@ const UpgradeConfirmation: React.FC<UpgradeConfirmationProps> = ({
 
       if (!response.ok) {
         throw new Error(result.error || 'An unknown error occurred.');
-      }
-
-      // Mixpanel: track after successful API response
-      const billingPeriod = 'annual';
-      if (isReactivation) {
-        trackSubscriptionReactivated({
-          new_plan_tier: newTier,
-          user_plan_tier: newTier,
-        });
-      } else if (isUpgrade) {
-        trackSubscriptionUpgraded({
-          previous_plan_tier: currentTier,
-          new_plan_tier: newTier,
-          billing_period: billingPeriod,
-          user_plan_tier: newTier,
-        });
-      } else if (isDowngrade) {
-        trackSubscriptionDowngraded({
-          previous_plan_tier: currentTier,
-          new_plan_tier: newTier,
-          billing_period: billingPeriod,
-          user_plan_tier: newTier,
-        });
       }
 
       onSuccess();

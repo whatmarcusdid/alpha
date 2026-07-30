@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { changePassword } from '@/lib/auth/password';
-import { trackEvent } from '@/lib/analytics';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -102,9 +101,6 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
     setIsLoading(true);
 
-    // Track analytics
-    trackEvent('password_change_initiated', {});
-
     try {
       const result = await changePassword(
         formData.currentPassword,
@@ -112,9 +108,6 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       );
 
       if (result.success) {
-        // Track success
-        trackEvent('password_change_success', {});
-
         // Clear form
         setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         setErrors({});
@@ -127,11 +120,6 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           onClose();
         }, 1500);
       } else {
-        // Track failure
-        trackEvent('password_change_failed', {
-          error: result.error || 'unknown',
-        });
-
         // Show error in form
         setErrors({
           currentPassword: result.error || 'Failed to change password',
@@ -139,9 +127,6 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       }
     } catch (error) {
       console.error('Password change error:', error);
-      trackEvent('password_change_failed', {
-        error: 'exception',
-      });
       setErrors({
         currentPassword: 'An unexpected error occurred',
       });

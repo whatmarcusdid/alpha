@@ -3,11 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-import {
-  trackPasswordResetRequested,
-  trackPasswordResetEmailSent,
-  trackPasswordResetFailed,
-} from '@/lib/analytics';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -67,8 +62,6 @@ export function ForgotPasswordForm() {
     setToast({ ...toast, show: false });
 
     try {
-      trackPasswordResetRequested('email');
-
       const response = await fetch('/api/auth/request-password-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,9 +79,7 @@ export function ForgotPasswordForm() {
           subtitle:
             'If an account exists for this email, you will receive password reset instructions shortly.',
         });
-        trackPasswordResetEmailSent();
       } else {
-        trackPasswordResetFailed(data.error || 'Unknown error');
         setToast({
           show: true,
           type: 'error',
@@ -97,7 +88,6 @@ export function ForgotPasswordForm() {
       }
     } catch (error) {
       console.error('Password reset request error:', error);
-      trackPasswordResetFailed(error instanceof Error ? error.message : 'Unknown error');
       setToast({
         show: true,
         type: 'error',
