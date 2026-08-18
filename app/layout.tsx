@@ -1,5 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { MetaPixel } from '@/components/analytics/MetaPixel';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        <MetaPixel />
         <AuthProvider>
           {children}
         </AuthProvider>

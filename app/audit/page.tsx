@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import { trackAuditViewed } from '@/lib/analytics';
+import { trackEvent, trackLead } from '@/lib/analytics/metaPixel';
 
 import { AuditLoadingAnimation } from '@/components/audit/AuditLoadingAnimation';
 import { AuditRateLimitOverlay } from '@/components/audit/AuditRateLimitOverlay';
@@ -72,6 +73,7 @@ export default function AuditPage() {
   const [showRateLimitOverlay, setShowRateLimitOverlay] = useState(false);
   const [hasCheckedSession, setHasCheckedSession] = useState(false);
   const hasTrackedAuditViewRef = useRef(false);
+  const hasTrackedFormStartRef = useRef(false);
 
   useEffect(() => {
     if (!hasTrackedAuditViewRef.current) {
@@ -102,6 +104,14 @@ export default function AuditPage() {
       });
     }
   }, [view, auditResult, formValues.firstName]);
+
+  function handleFieldChange(field: keyof FormValues, value: string) {
+    if (!hasTrackedFormStartRef.current) {
+      hasTrackedFormStartRef.current = true;
+      trackEvent('audit_form_start');
+    }
+    setFormValues((values) => ({ ...values, [field]: value }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -167,6 +177,8 @@ export default function AuditPage() {
       setAuditResult(payload.data);
       setApiComplete(true);
       setSubmitting(false);
+      trackLead();
+      trackEvent('audit_result_generated');
     } catch {
       setView('form');
       setError('Network error. Please try again.');
@@ -297,9 +309,7 @@ export default function AuditPage() {
                   autoComplete="given-name"
                   placeholder="e.g. Mike"
                   value={formValues.firstName}
-                  onChange={(e) =>
-                    setFormValues((v) => ({ ...v, firstName: e.target.value }))
-                  }
+                  onChange={(e) => handleFieldChange('firstName', e.target.value)}
                   className="min-h-[40px] rounded-md border-[rgba(111,121,122,0.4)] px-5 py-3 text-sm placeholder:text-[#52525b]"
                 />
               </div>
@@ -316,9 +326,7 @@ export default function AuditPage() {
                   autoComplete="organization"
                   placeholder="e.g. Mike's Pressure Washing"
                   value={formValues.businessName}
-                  onChange={(e) =>
-                    setFormValues((v) => ({ ...v, businessName: e.target.value }))
-                  }
+                  onChange={(e) => handleFieldChange('businessName', e.target.value)}
                   className="min-h-[40px] rounded-md border-[rgba(111,121,122,0.4)] px-5 py-3 text-sm placeholder:text-[#52525b]"
                 />
               </div>
@@ -335,9 +343,7 @@ export default function AuditPage() {
                   autoComplete="email"
                   placeholder="you@yourcompany.com"
                   value={formValues.email}
-                  onChange={(e) =>
-                    setFormValues((v) => ({ ...v, email: e.target.value }))
-                  }
+                  onChange={(e) => handleFieldChange('email', e.target.value)}
                   className="min-h-[40px] rounded-md border-[rgba(111,121,122,0.4)] px-5 py-3 text-sm placeholder:text-[#52525b]"
                 />
               </div>
@@ -354,9 +360,7 @@ export default function AuditPage() {
                   autoComplete="url"
                   placeholder="https://yoursite.com"
                   value={formValues.websiteUrl}
-                  onChange={(e) =>
-                    setFormValues((v) => ({ ...v, websiteUrl: e.target.value }))
-                  }
+                  onChange={(e) => handleFieldChange('websiteUrl', e.target.value)}
                   className="min-h-[40px] rounded-md border-[rgba(111,121,122,0.4)] px-5 py-3 text-sm placeholder:text-[#52525b]"
                 />
               </div>
@@ -389,7 +393,10 @@ export default function AuditPage() {
           <AuditLoadingAnimation
             websiteUrl={formValues.websiteUrl}
             apiComplete={apiComplete}
-            onAnimationComplete={() => setView('results')}
+            onAnimationComplete={() => {
+              trackEvent('audit_results_viewed');
+              setView('results');
+            }}
           />
         </div>
       )}
