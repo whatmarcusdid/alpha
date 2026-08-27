@@ -3,7 +3,6 @@
 import { Inter } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 
-import { trackEvent } from '@/lib/analytics/metaPixel';
 import {
   derivePreSelectedSkus,
   hasAnyFailingGrade,
@@ -232,7 +231,6 @@ export function AuditResults({
   function handleViewSiteFixes() {
     if (!auditLeadId) return;
 
-    trackEvent('site_fix_cta_click');
     storeAuditLeadId(auditLeadId);
     const skus = derivePreSelectedSkus(gradeSnapshot);
     router.push(`/book-service/select?skus=${skus.join(',')}`);

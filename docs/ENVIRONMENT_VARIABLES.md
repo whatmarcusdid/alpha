@@ -99,6 +99,10 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abc...
 | `LOOPS_PASSWORD_RESET_TEMPLATE_ID` | Loops transactional template for password reset emails | 🔒 Yes | Loops → Transactional Emails |
 | `CRON_SECRET` | Optional auth for Vercel Cron (e.g. weekly-sales-digest) | 🔒 Yes | Generate secure random string |
 
+### Meta Pixel / Conversions API
+
+Meta Pixel and the Meta Conversions API are **not enabled**. Do not add `NEXT_PUBLIC_META_PIXEL_ID`, Pixel snippets, `fbq` calls, or server-side Facebook event forwarding. Product analytics use Mixpanel (`NEXT_PUBLIC_MIXPANEL_TOKEN`) only.
+
 ---
 
 ### Loops (Transactional Emails)
